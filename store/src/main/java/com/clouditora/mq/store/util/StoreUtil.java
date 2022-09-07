@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.CRC32;
@@ -85,4 +86,17 @@ public class StoreUtil {
 
         return map;
     }
+
+    public static long string2Long(String str) {
+        return Long.parseLong(str);
+    }
+
+    public static String long2String(long l) {
+        NumberFormat format = NumberFormat.getInstance();
+        format.setMinimumIntegerDigits(20);
+        format.setMaximumFractionDigits(0);
+        format.setGroupingUsed(false);
+        return format.format(l);
+    }
+
 }
