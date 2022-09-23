@@ -29,6 +29,7 @@ public interface MessageConst {
     interface Property {
         String TAGS = "TAGS";
         String KEYS = "KEYS";
+        String MESSAGE_ID = "UNIQ_KEY";
 
         interface Separator {
             String KEY = " ";

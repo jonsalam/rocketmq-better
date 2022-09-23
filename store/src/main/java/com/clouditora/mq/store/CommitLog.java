@@ -17,12 +17,12 @@ public class CommitLog {
     @Getter
     private final int fileSize;
     @Getter
-    private final MappedFileQueue commitLogQueue;
+    private final MappedFileQueue<MappedFile> commitLogQueue;
     private final ThreadLocal<ByteBufferSerializer> serializerThreadLocal;
 
     public CommitLog(MessageStoreConfig config) {
         this.fileSize = config.getCommitLogFileSize();
-        this.commitLogQueue = new MappedFileQueue(config.getCommitLogPath(), config.getCommitLogFileSize());
+        this.commitLogQueue = new MappedFileQueue<>(config.getCommitLogPath(), config.getCommitLogFileSize());
         this.serializerThreadLocal = ThreadLocal.withInitial(ByteBufferSerializer::new);
     }
 
@@ -55,5 +55,14 @@ public class CommitLog {
             log.error("unknown error", e);
             throw new PutException(PutStatus.UNKNOWN_ERROR);
         }
+    }
+
+    public MappedFile slice(long offset) {
+        MappedFile file = commitLogQueue.slice(offset);
+        if (file == null) {
+            return null;
+        }
+        int position = (int) (offset % fileSize);
+        return file.slice(position);
     }
 }

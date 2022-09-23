@@ -8,6 +8,10 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.CRC32;
@@ -99,4 +103,9 @@ public class StoreUtil {
         return format.format(l);
     }
 
+    public static String timestamp2String(long timestamp) {
+        Instant instant = Instant.ofEpochMilli(timestamp);
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        return DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS").format(localDateTime);
+    }
 }

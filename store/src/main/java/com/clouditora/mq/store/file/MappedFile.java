@@ -23,8 +23,7 @@ public class MappedFile {
      * 如果文件没有写满, 值与mappedByteBuffer的position相同
      * 如果文件已经写满, 值与fileSize相同
      */
-    protected final AtomicInteger writePosition = new AtomicInteger(0);
-
+    protected final AtomicInteger writePosition;
     @Getter
     protected final File file;
     @Getter
@@ -38,12 +37,25 @@ public class MappedFile {
     protected final ByteBuffer mappedByteBuffer;
 
     public MappedFile(String fileName, int fileSize) throws IOException {
+        this.writePosition = new AtomicInteger(0);
         this.fileSize = fileSize;
         this.file = new File(fileName);
         this.fileOffset = StoreUtil.string2Long(this.file.getName());
         FileUtil.mkdir(this.file.getParent());
         this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
         this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
+    }
+
+    /**
+     * slice用
+     */
+    public MappedFile(MappedFile mappedFile, long offset, int writePosition, ByteBuffer byteBuffer) {
+        this.fileSize = mappedFile.fileSize;
+        this.file = mappedFile.file;
+        this.fileOffset = mappedFile.fileOffset + offset;
+        this.fileChannel = mappedFile.fileChannel;
+        this.writePosition = new AtomicInteger(writePosition);
+        this.mappedByteBuffer = byteBuffer;
     }
 
     @Override
@@ -66,17 +78,55 @@ public class MappedFile {
         return this.mappedByteBuffer.slice();
     }
 
-    public void write(ByteBuffer byteBuffer, int length) throws PutException {
+    /**
+     * 根据偏移量查找映射文件
+     */
+    public MappedFile slice(int position) {
+        if (position < 0) {
+            return null;
+        }
+        int writePosition = this.writePosition.get();
+        // 等于写位置的时候, 也就没什么内容可以读取了
+        if (position >= writePosition) {
+            return null;
+        }
+        int limit = writePosition - position;
+        // mappedByteBuffer的position不会变, 所以需要2次slice
+        ByteBuffer byteBuffer = mappedByteBuffer
+                .slice().position(position)
+                .slice().limit(limit);
+        return new MappedFile(this, position, limit, byteBuffer);
+    }
+
+    public void write(int position, ByteBuffer byteBuffer, int length) throws PutException {
         if (isFull()) {
             // MappedFileQueue#getCurrentWritingFile 已经保证写位置不会超过文件大小
             log.error("file is full: file={}, wrotePosition={} fileSize={}", this.file, this.writePosition.get(), fileSize);
             throw new PutException(PutStatus.UNKNOWN_ERROR);
         }
-        this.mappedByteBuffer.slice().put(byteBuffer.array(), 0, byteBuffer.limit());
+        this.mappedByteBuffer.slice().put(byteBuffer.array(), position, byteBuffer.limit());
         this.writePosition.addAndGet(length);
     }
 
     public void write(ByteBuffer byteBuffer) throws PutException {
-        write(byteBuffer, byteBuffer.limit());
+        write(0, byteBuffer, byteBuffer.limit());
+    }
+
+    public void write(ByteBuffer byteBuffer, int length) throws PutException {
+        write(0, byteBuffer, length);
+    }
+
+    public void write(int position, ByteBuffer byteBuffer) throws PutException {
+        write(position, byteBuffer, byteBuffer.limit());
+    }
+
+    public void write(int position, int value) {
+        this.mappedByteBuffer.slice().putInt(position, value);
+        this.writePosition.addAndGet(4);
+    }
+
+    public void write(int position, long value) {
+        this.mappedByteBuffer.slice().putLong(position, value);
+        this.writePosition.addAndGet(8);
     }
 }
