@@ -81,7 +81,7 @@ public class MappedFile {
     /**
      * 根据偏移量查找映射文件
      */
-    public MappedFile slice(int position) {
+    public MappedFile slice(int position, int limit) {
         if (position < 0) {
             return null;
         }
@@ -90,7 +90,10 @@ public class MappedFile {
         if (position >= writePosition) {
             return null;
         }
-        int limit = writePosition - position;
+        if (limit <= 0) {
+            // 不使用指定的limit参数
+            limit = writePosition - position;
+        }
         // mappedByteBuffer的position不会变, 所以需要2次slice
         ByteBuffer byteBuffer = mappedByteBuffer
                 .slice().position(position)

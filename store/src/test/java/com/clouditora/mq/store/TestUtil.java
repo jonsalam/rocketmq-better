@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 public class TestUtil {
     private static final byte[] messageBody = "Once, there was a chance for me!".getBytes(StandardCharsets.UTF_8);
@@ -41,5 +42,12 @@ public class TestUtil {
 
     public static MessageEntity buildMessage() {
         return buildMessage("FooBar", messageBody);
+    }
+
+    public static void sleep(int second) {
+        try {
+            TimeUnit.SECONDS.sleep(second);
+        } catch (InterruptedException ignore) {
+        }
     }
 }
