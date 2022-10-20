@@ -57,12 +57,16 @@ public class CommitLog {
         }
     }
 
-    public MappedFile slice(long offset) {
-        MappedFile file = commitLogQueue.slice(offset);
+    public MappedFile slice(long logOffset, int length) {
+        MappedFile file = commitLogQueue.slice(logOffset);
         if (file == null) {
             return null;
         }
-        int position = (int) (offset % fileSize);
-        return file.slice(position);
+        int offset = (int) (logOffset % fileSize);
+        return file.slice(offset, length);
+    }
+
+    public MappedFile slice(long logOffset) {
+        return slice(logOffset, 0);
     }
 }
