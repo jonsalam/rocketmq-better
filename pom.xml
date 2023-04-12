@@ -11,6 +11,7 @@
 
     <modules>
         <module>common</module>
+        <module>network</module>
     </modules>
 
     <properties>
@@ -94,6 +95,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>4.1.65.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>2.0.27</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
