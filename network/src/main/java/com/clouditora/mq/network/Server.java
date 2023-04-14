@@ -1,10 +1,6 @@
-package com.clouditora.mq.network.server;
+package com.clouditora.mq.network;
 
 import com.clouditora.mq.common.util.ThreadUtil;
-import com.clouditora.mq.network.ChannelEventListener;
-import com.clouditora.mq.network.CommandFutureCallback;
-import com.clouditora.mq.network.CommandRequestProcessor;
-import com.clouditora.mq.network.ServerNetworkConfig;
 import com.clouditora.mq.network.coord.AbstractCoordinator;
 import com.clouditora.mq.network.coord.CommandInvoker;
 import com.clouditora.mq.network.coord.NettyCommandDecoder;
@@ -13,6 +9,7 @@ import com.clouditora.mq.network.coord.NettyInboundHandler;
 import com.clouditora.mq.network.exception.SendException;
 import com.clouditora.mq.network.exception.TimeoutException;
 import com.clouditora.mq.network.protocol.Command;
+import com.clouditora.mq.network.server.ServerNettyChannelHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;

@@ -12,9 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @link org.apache.rocketmq.remoting.netty.NettyRemotingAbstract
@@ -55,12 +52,7 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
         );
 
         int publicNum = Math.max(config.getCallbackExecutorThreads(), 4);
-        this.defaultExecutor = new ThreadPoolExecutor(
-                publicNum, publicNum,
-                0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                ThreadUtil.buildFactory(getServiceName() + ":Laborer", publicNum)
-        );
+        this.defaultExecutor = ThreadUtil.newFixedThreadPool(publicNum, getServiceName() + ":Laborer");
     }
 
     @Override

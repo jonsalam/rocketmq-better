@@ -14,9 +14,13 @@ public abstract class AbstractSimpleService extends AbstractNothingService {
     protected Thread thread;
 
     @Override
-    public void startup() {
+    protected void init() throws Exception {
         this.thread = new Thread(() -> AbstractSimpleService.this.run(), getServiceName());
         this.thread.setDaemon(this.daemon);
+    }
+
+    @Override
+    public void startup() {
         super.startup();
         this.thread.start();
     }
