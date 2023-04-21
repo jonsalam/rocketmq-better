@@ -1,0 +1,101 @@
+@startuml
+
+namespace broker {
+    entity TopicConfig {
+        - topic: String
+        --
+        - readNum: int
+        - writeNum: int
+    }
+}
+
+namespace client {
+    entity ProducerPublish {
+        - topic: String
+        --
+        - queueId: int
+    }
+
+    entity ConsumerSubscribe {
+        - topic: String
+        --
+        - tags: Set<String>
+    }
+
+    entity TopicRoute {
+        - topic: String
+        --
+        - queues: List<BrokerQueue>
+        - brokers: List<BrokerEndpoint>
+    }
+    entity BrokerQueue {
+        - brokerName: String
+        --
+        - readNum: int
+        - writeNum: int
+    }
+
+    entity BrokerEndpoint {
+        - brokerName
+        --
+        - brokerId
+        - brokerEndpoint
+    }
+
+    ConsumerSubscribe::topic --o TopicRoute
+    ProducerPublish::topic --o TopicRoute
+    TopicRoute::queues  --o BrokerQueue
+    TopicRoute::brokers --o BrokerEndpoint
+    BrokerQueue::brokerName --o BrokerEndpoint
+}
+
+namespace nameserver {
+    entity Cluster {
+        - clusterName: String
+        --
+        - brokerName: String
+    }
+
+    entity BrokerEndpoint {
+        - brokerName: String
+        --
+        - brokerId: long
+        - brokerEndpoint: String
+    }
+
+    entity BrokerAlive {
+        - brokerEndpoint: String
+        --
+        - brokerChannel: Channel
+        - updateTime: long
+        - dataVersion: DataVersion
+        - haEndpoint: String
+    }
+
+    entity TopicRoute {
+        - topic: String
+        --
+        - brokerName: String
+    }
+
+    entity BrokerQueue {
+        - brokerName: String
+        --
+        - readNum: int
+        - writeNum: int
+    }
+
+    Cluster::brokerName --o BrokerEndpoint
+    BrokerEndpoint::brokerEndpoint --o BrokerAlive
+    TopicRoute::brokerName --o BrokerEndpoint
+    TopicRoute::brokerName --o BrokerQueue
+}
+
+nameserver.BrokerEndpoint::brokerName --o client.BrokerQueue::brokerName
+nameserver.TopicRoute::topic --o client.TopicRoute::topic
+
+nameserver.TopicRoute::topic -- broker.TopicConfig::topic
+'nameserver.BrokerEndpoint -o broker
+'nameserver.Cluster -o broker
+
+@enduml
