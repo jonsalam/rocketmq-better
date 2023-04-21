@@ -16,6 +16,9 @@ public class Message {
     protected byte[] body;
     protected String transactionId;
 
+    public Message() {
+    }
+
     void putProperty(String name, String value) {
         if (properties == null) {
             properties = new HashMap<>();

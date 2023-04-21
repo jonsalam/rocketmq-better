@@ -11,6 +11,6 @@ import lombok.Data;
 @AllArgsConstructor
 public class ChannelEvent {
     private final ChannelEventType type;
-    private final String address;
+    private final String endpoint;
     private final Channel channel;
 }

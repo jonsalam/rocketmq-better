@@ -5,11 +5,11 @@ package com.clouditora.mq.network.exception;
  */
 public class ConnectException extends AbstractNetworkException {
 
-    public ConnectException(String address, Throwable cause) {
-        super("connect", address, cause);
+    public ConnectException(String endpoint, Throwable cause) {
+        super("connect", endpoint, cause);
     }
 
-    public ConnectException(String address) {
-        super(address, null);
+    public ConnectException(String endpoint) {
+        super(endpoint, null);
     }
 }

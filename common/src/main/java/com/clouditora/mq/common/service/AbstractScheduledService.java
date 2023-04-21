@@ -10,36 +10,29 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractScheduledService extends AbstractNothingService {
     private static final long JOIN_TIME = 90 * 1000;
 
-    protected final ScheduledExecutorService timer;
-
+    protected final ScheduledExecutorService scheduledExecutor;
     protected final TimeUnit timeUnit;
-    protected final long initialDelay;
-    protected final long delay;
 
-    protected AbstractScheduledService(TimeUnit timeUnit, long initialDelay, long delay) {
+    protected AbstractScheduledService(TimeUnit timeUnit) {
         this.timeUnit = timeUnit;
-        this.initialDelay = initialDelay;
-        this.delay = delay;
-        this.timer = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
     }
 
-    @Override
-    public void startup() {
-        if (isRunning()) {
-            log.warn("{} service already started", getServiceName());
-            return;
-        }
+    protected AbstractScheduledService() {
+        this(TimeUnit.MILLISECONDS);
+    }
 
-        this.timer.scheduleWithFixedDelay(
-                () -> AbstractScheduledService.this.run(),
-                this.initialDelay,
-                this.delay,
-                this.timeUnit
+    public void register(TimeUnit timeUnit, long delay, long period, Runnable runnable) {
+        this.scheduledExecutor.scheduleWithFixedDelay(
+                runnable,
+                delay,
+                period,
+                timeUnit
         );
+    }
 
-        if (this.running.compareAndSet(false, true)) {
-            log.info("{} service startup", getServiceName());
-        }
+    public void register(long delay, long period, Runnable runnable) {
+        register(this.timeUnit, delay, period, runnable);
     }
 
     public void shutdown(boolean interrupt, long timeout) {
@@ -47,19 +40,20 @@ public abstract class AbstractScheduledService extends AbstractNothingService {
             log.warn("{} service not started", getServiceName());
             return;
         }
+        this.scheduledExecutor.shutdown();
         if (interrupt) {
             try {
-                boolean termination = timer.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+                boolean termination = this.scheduledExecutor.awaitTermination(timeout, TimeUnit.MILLISECONDS);
                 if (termination) {
                     log.info("{} service shutdown", getServiceName());
                 } else {
                     log.warn("{} service shutdown timeout", getServiceName());
+                    this.scheduledExecutor.shutdownNow();
                 }
             } catch (InterruptedException e) {
-                log.error("{} service shutdown InterruptedException", getServiceName());
+                log.error("{} service shutdown interrupted", getServiceName());
+                this.scheduledExecutor.shutdownNow();
             }
-        } else {
-            this.timer.shutdown();
         }
     }
 
@@ -71,6 +65,4 @@ public abstract class AbstractScheduledService extends AbstractNothingService {
     public void shutdown() {
         shutdown(false);
     }
-
-    protected abstract void run();
 }

@@ -8,6 +8,7 @@ import io.netty.channel.ChannelFuture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -19,13 +20,12 @@ public class ClientChannelHolder {
     protected final ClientNetworkConfig config;
     protected final Bootstrap bootstrap;
     protected final ConcurrentMap<String, ChannelFuture> channelFutureMap;
-
     protected final Lock lock = new ReentrantLock();
 
-    public ClientChannelHolder(ClientNetworkConfig config, Bootstrap bootstrap, ConcurrentMap<String, ChannelFuture> channelFutureMap) {
+    public ClientChannelHolder(ClientNetworkConfig config, Bootstrap bootstrap) {
         this.config = config;
         this.bootstrap = bootstrap;
-        this.channelFutureMap = channelFutureMap;
+        this.channelFutureMap = new ConcurrentHashMap<>();
     }
 
     /**
@@ -36,32 +36,29 @@ public class ClientChannelHolder {
             return;
         }
         try {
-            String address = CoordinatorUtil.toAddress(channel);
-            boolean locked = this.lock.tryLock(3000, TimeUnit.MILLISECONDS);
+            String endpoint = CoordinatorUtil.toEndpoint(channel);
+            if (!this.lock.tryLock(3000, TimeUnit.MILLISECONDS)) {
+                log.error("close channel {} wait timeout", endpoint);
+                return;
+            }
             try {
-                if (!locked) {
-                    log.error("[channel] close {} wait timeout", address);
-                    return;
-                }
-                ChannelFuture channelFuture = this.channelFutureMap.get(address);
+                ChannelFuture channelFuture = this.channelFutureMap.get(endpoint);
                 if (channelFuture != null && channelFuture.channel() == channel) {
-                    this.channelFutureMap.remove(address);
+                    this.channelFutureMap.remove(endpoint);
                     CoordinatorUtil.closeChannel(channel);
                 }
             } catch (Exception e) {
-                log.error("[channel] close {} exception", CoordinatorUtil.toAddress(channel), e);
+                log.error("close channel {} exception", CoordinatorUtil.toEndpoint(channel), e);
             } finally {
-                if (locked) {
-                    this.lock.unlock();
-                }
+                this.lock.unlock();
             }
         } catch (InterruptedException e) {
-            log.error("[channel] close {} exception", CoordinatorUtil.toAddress(channel), e);
+            log.error("close channel {} exception", CoordinatorUtil.toEndpoint(channel), e);
         }
     }
 
-    public Channel getChannel(String address) {
-        ChannelFuture channelFuture = this.channelFutureMap.get(address);
+    public Channel getChannel(String endpoint) {
+        ChannelFuture channelFuture = this.channelFutureMap.get(endpoint);
         if (CoordinatorUtil.isActive(channelFuture)) {
             return channelFuture.channel();
         }
@@ -71,60 +68,63 @@ public class ClientChannelHolder {
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#createChannel
      */
-    public Channel getOrCreateChannel(String address) {
-        Channel channel = getChannel(address);
+    public Channel getOrCreateChannel(String endpoint) {
+        Channel channel = getChannel(endpoint);
         if (channel != null) {
             return channel;
         }
-        ChannelFuture channelFuture = createChannelFutureWithLock(address);
-        if (channelFuture != null) {
-            if (channelFuture.awaitUninterruptibly(this.config.getConnectTimeoutMillis())) {
-                if (CoordinatorUtil.isActive(channelFuture)) {
-                    log.info("[channel] {} create success", address);
-                    return channelFuture.channel();
-                } else {
-                    log.error("[channel] {} create failed", address);
-                }
-            } else {
-                log.error("[channel] {} create timeout", address);
-            }
-        }
-        return null;
+        return createChannelWithLock(endpoint);
     }
 
-    private ChannelFuture createChannelFutureWithLock(String address) {
+    private Channel createChannelWithLock(String endpoint) {
         try {
-            boolean locked = this.lock.tryLock(3000, TimeUnit.MILLISECONDS);
+            if (!this.lock.tryLock(3000, TimeUnit.MILLISECONDS)) {
+                log.error("create channel {} wait timeout", endpoint);
+                return null;
+            }
             try {
-                if (!locked) {
-                    log.error("[channel] create {} wait timeout", address);
-                    return null;
-                }
-                ChannelFuture channelFuture = this.channelFutureMap.get(address);
+                ChannelFuture channelFuture = this.channelFutureMap.get(endpoint);
                 if (channelFuture == null) {
-                    return createChannelFuture(address);
+                    return createChannel(endpoint);
                 }
                 if (CoordinatorUtil.isActive(channelFuture)) {
-                    return channelFuture;
+                    return channelFuture.channel();
                 }
-                if (channelFuture.isDone()) {
-                    this.channelFutureMap.remove(address);
-                    return createChannelFuture(address);
+                if (!channelFuture.isDone()) {
+                    return awaitChannel(channelFuture);
                 }
+                this.channelFutureMap.remove(endpoint);
+                return createChannel(endpoint);
             } catch (Exception e) {
-                log.error("[channel] create {} exception", address, e);
+                log.error("create channel {} exception", endpoint, e);
             } finally {
-                if (locked) {
-                    this.lock.unlock();
-                }
+                this.lock.unlock();
             }
         } catch (InterruptedException e) {
-            log.error("[channel] create {} exception", address, e);
+            log.error("create channel {} exception", endpoint, e);
         }
         return null;
     }
 
-    private ChannelFuture createChannelFuture(String address) {
-        return this.channelFutureMap.computeIfAbsent(address, k -> this.bootstrap.connect(CoordinatorUtil.toSocketAddress(k)));
+    private Channel createChannel(String endpoint) {
+        ChannelFuture channelFuture = this.channelFutureMap.computeIfAbsent(endpoint, k -> this.bootstrap.connect(CoordinatorUtil.toSocketAddress(k)));
+        if (channelFuture != null) {
+            return awaitChannel(channelFuture);
+        }
+        return null;
+    }
+
+    private Channel awaitChannel(ChannelFuture channelFuture) {
+        if (channelFuture.awaitUninterruptibly(this.config.getConnectTimeoutMillis())) {
+            if (CoordinatorUtil.isActive(channelFuture)) {
+                log.info("create channel {} success", channelFuture);
+                return channelFuture.channel();
+            } else {
+                log.error("create channel {} failed", channelFuture);
+            }
+        } else {
+            log.error("create channel {} timeout", channelFuture);
+        }
+        return null;
     }
 }

@@ -29,7 +29,7 @@ public class ChannelEventExecutor extends AbstractLoopedService {
 
     @Override
     public String getServiceName() {
-        return "ChannelExecutor";
+        return "ChannelEventExecutor";
     }
 
     public void addEvent(ChannelEvent event) {
@@ -51,10 +51,10 @@ public class ChannelEventExecutor extends AbstractLoopedService {
             return;
         }
         switch (event.getType()) {
-            case idle -> listener.onIdle(event.getAddress(), event.getChannel());
-            case close -> listener.onClose(event.getAddress(), event.getChannel());
-            case connect -> listener.onConnect(event.getAddress(), event.getChannel());
-            case exception -> listener.onException(event.getAddress(), event.getChannel());
+            case idle -> listener.onIdle(event.getEndpoint(), event.getChannel());
+            case close -> listener.onClose(event.getEndpoint(), event.getChannel());
+            case connect -> listener.onConnect(event.getEndpoint(), event.getChannel());
+            case exception -> listener.onException(event.getEndpoint(), event.getChannel());
         }
     }
 }

@@ -9,11 +9,11 @@ public abstract class AbstractNetworkException extends Exception {
         super(message);
     }
 
-    public AbstractNetworkException(String reason, String address) {
-        this(reason, address, null);
+    public AbstractNetworkException(String reason, String endpoint) {
+        this(reason, endpoint, null);
     }
 
-    public AbstractNetworkException(String reason, String address, Throwable cause) {
-        super(String.format("%s exception on [%s]", reason, address), cause);
+    public AbstractNetworkException(String reason, String endpoint, Throwable cause) {
+        super(String.format("%s exception on %s", reason, endpoint), cause);
     }
 }

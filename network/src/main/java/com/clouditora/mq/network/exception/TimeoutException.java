@@ -5,15 +5,15 @@ package com.clouditora.mq.network.exception;
  */
 public class TimeoutException extends AbstractNetworkException {
 
-    public TimeoutException(String address) {
-        super(address);
+    public TimeoutException(String endpoint) {
+        super(endpoint);
     }
 
-    public TimeoutException(String address, long ms) {
-        this(address, ms, null);
+    public TimeoutException(String endpoint, long ms) {
+        this(endpoint, ms, null);
     }
 
-    public TimeoutException(String address, long ms, Throwable cause) {
-        super(String.format("timeout[%s mS]", ms), address, cause);
+    public TimeoutException(String endpoint, long ms, Throwable cause) {
+        super(String.format("timeout[%s mS]", ms), endpoint, cause);
     }
 }

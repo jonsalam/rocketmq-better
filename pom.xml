@@ -10,7 +10,9 @@
     <version>0.0.0-SNAPSHOT</version>
 
     <modules>
+        <module>broker</module>
         <module>common</module>
+        <module>nameserver</module>
         <module>network</module>
         <module>store</module>
     </modules>

@@ -13,13 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Getter
 public class CommandProcessor implements CallbackExecutor {
-    protected final ConcurrentHashMap<Integer, CommandFuture> commandMap;
+    protected final ConcurrentMap<Integer, CommandFuture> commandMap;
     /**
      * This container holds all processors per request code, aka, for each incoming request, we may look up the
      * responding processor in this map to handle the request.
@@ -37,7 +37,7 @@ public class CommandProcessor implements CallbackExecutor {
     protected CommandRequestExecutor defaultProcessor;
     protected ExecutorService callbackExecutor;
 
-    public CommandProcessor(ConcurrentHashMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
+    public CommandProcessor(ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
         this.commandMap = commandMap;
         this.callbackExecutor = callbackExecutor;
     }
@@ -74,7 +74,7 @@ public class CommandProcessor implements CallbackExecutor {
             Command response = Command.buildResponse(ResponseCode.NOT_SUPPORTED, msg);
             response.setOpaque(command.getOpaque());
             context.writeAndFlush(response);
-            log.error("{} request code [{}] is not supported", CoordinatorUtil.toAddress(context.channel()), command.getCode());
+            log.error("{} request code [{}] is not supported", CoordinatorUtil.toEndpoint(context.channel()), command.getCode());
             return;
         }
 
@@ -88,7 +88,7 @@ public class CommandProcessor implements CallbackExecutor {
         int opaque = command.getOpaque();
         CommandFuture commandFuture = this.commandMap.get(opaque);
         if (commandFuture == null) {
-            log.warn("receive request from {}/{}, but not matched any request", CoordinatorUtil.toAddress(context.channel()), opaque);
+            log.warn("receive request from {}/{}, but not matched any request", CoordinatorUtil.toEndpoint(context.channel()), opaque);
             return;
         }
         this.commandMap.remove(opaque);

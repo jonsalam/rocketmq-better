@@ -28,7 +28,7 @@ public class NettyCommandDecoder extends LengthFieldBasedFrameDecoder {
             }
             return CommandCodec.decode(frame);
         } catch (Exception e) {
-            log.error("decode exception: {}", CoordinatorUtil.toAddress(ctx.channel()), e);
+            log.error("decode exception: {}", CoordinatorUtil.toEndpoint(ctx.channel()), e);
             CoordinatorUtil.closeChannel(ctx.channel());
             return null;
         } finally {

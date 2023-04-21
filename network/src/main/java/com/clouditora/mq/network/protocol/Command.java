@@ -1,9 +1,10 @@
 package com.clouditora.mq.network.protocol;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.clouditora.mq.common.command.RequestCode;
+import com.clouditora.mq.common.command.CommandHeader;
 import com.clouditora.mq.common.constant.ClassCanonical;
-import com.clouditora.mq.common.protocol.RequestCode;
-import com.clouditora.mq.network.CommandHeader;
+import com.clouditora.mq.common.constant.SerializeType;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -13,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -157,19 +159,29 @@ public class Command {
         return command;
     }
 
-    public static Command buildRequest(RequestCode code, CommandHeader header) {
-        return buildRequest(code.getCode(), header);
-    }
-
-    public static Command buildResponse(ResponseCode code, String remark) {
-        return buildResponse(code.ordinal(), remark);
-    }
-
     public static Command buildResponse(int code, String remark) {
         Command command = new Command();
         command.markResponseType();
         command.setCode(code);
         command.setRemark(remark);
         return command;
+    }
+
+    public static Command buildRequest(RequestCode code, CommandHeader header) {
+        Command request = buildRequest(code.getCode(), header);
+        Optional.ofNullable(code.getSerializeType()).ifPresent(request::setSerializeType);
+        return request;
+    }
+
+    public static Command buildResponse(ResponseCode code, String remark) {
+        return buildResponse(code.getCode(), remark);
+    }
+
+    public static Command buildResponse(ResponseCode code) {
+        return buildResponse(code.getCode(), null);
+    }
+
+    public static Command buildResponse() {
+        return buildResponse(ResponseCode.SUCCESS);
     }
 }

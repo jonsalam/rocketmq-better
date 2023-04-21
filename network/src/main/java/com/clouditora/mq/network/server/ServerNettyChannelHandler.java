@@ -25,40 +25,40 @@ public class ServerNettyChannelHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        log.debug("[channel] registered on {}", CoordinatorUtil.toAddress(ctx.channel()));
+        log.debug("[channel] registered on {}", CoordinatorUtil.toEndpoint(ctx.channel()));
         super.channelRegistered(ctx);
     }
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        log.debug("[channel] unregistered on {}", CoordinatorUtil.toAddress(ctx.channel()));
+        log.debug("[channel] unregistered on {}", CoordinatorUtil.toEndpoint(ctx.channel()));
         super.channelUnregistered(ctx);
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        String address = CoordinatorUtil.toAddress(ctx.channel());
-        log.debug("[channel] active on {}", address);
+        String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
+        log.debug("[channel] active on {}", endpoint);
         super.channelActive(ctx);
-        executor.addEvent(new ChannelEvent(ChannelEventType.connect, address, ctx.channel()));
+        executor.addEvent(new ChannelEvent(ChannelEventType.connect, endpoint, ctx.channel()));
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        String address = CoordinatorUtil.toAddress(ctx.channel());
-        log.debug("[channel] inactive on {}", address);
+        String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
+        log.debug("[channel] inactive on {}", endpoint);
         super.channelInactive(ctx);
-        executor.addEvent(new ChannelEvent(ChannelEventType.close, address, ctx.channel()));
+        executor.addEvent(new ChannelEvent(ChannelEventType.close, endpoint, ctx.channel()));
     }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent event) {
             if (event.state() == IdleState.ALL_IDLE) {
-                String address = CoordinatorUtil.toAddress(ctx.channel());
-                log.warn("[channel] idle on {}", address);
+                String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
+                log.warn("[channel] idle on {}", endpoint);
                 CoordinatorUtil.closeChannel(ctx.channel());
-                executor.addEvent(new ChannelEvent(ChannelEventType.idle, address, ctx.channel()));
+                executor.addEvent(new ChannelEvent(ChannelEventType.idle, endpoint, ctx.channel()));
             }
         }
         ctx.fireUserEventTriggered(evt);
@@ -66,9 +66,9 @@ public class ServerNettyChannelHandler extends ChannelDuplexHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        String address = CoordinatorUtil.toAddress(ctx.channel());
-        log.error("[channel] exception on {}", address, cause);
-        executor.addEvent(new ChannelEvent(ChannelEventType.exception, address, ctx.channel()));
+        String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
+        log.error("[channel] exception on {}", endpoint, cause);
+        executor.addEvent(new ChannelEvent(ChannelEventType.exception, endpoint, ctx.channel()));
         CoordinatorUtil.closeChannel(ctx.channel());
     }
 }

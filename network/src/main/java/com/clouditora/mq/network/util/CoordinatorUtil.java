@@ -6,6 +6,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -21,45 +22,45 @@ public class CoordinatorUtil {
     /**
      * @link org.apache.rocketmq.remoting.common.RemotingHelper#parseChannelRemoteAddr
      */
-    public static String toAddress(Channel channel) {
+    public static String toEndpoint(Channel channel) {
         if (null == channel) {
             return "";
         }
         Attribute<String> att = channel.attr(REMOTE_ADDRESS_KEY);
         if (att == null) {
             // mocked in unit test
-            return toAddress(channel.remoteAddress());
+            return toEndpoint(channel.remoteAddress());
         }
-        String address = att.get();
-        if (address == null) {
-            address = toAddress(channel.remoteAddress());
-            att.set(address);
+        String endpoint = att.get();
+        if (endpoint == null) {
+            endpoint = toEndpoint(channel.remoteAddress());
+            att.set(endpoint);
         }
-        return address;
+        return endpoint;
     }
 
-    public static String toAddress(SocketAddress socketAddress) {
-        String address = socketAddress == null ? "" : socketAddress.toString();
-        if (address.length() == 0) {
-            return "";
+    public static String toEndpoint(SocketAddress socketAddress) {
+        String endpoint = socketAddress == null ? StringUtils.EMPTY : socketAddress.toString();
+        if (endpoint.length() == 0) {
+            return StringUtils.EMPTY;
         }
-        int index = address.lastIndexOf("/");
+        int index = endpoint.lastIndexOf("/");
         if (index >= 0) {
-            return address.substring(index + 1);
+            return endpoint.substring(index + 1);
         }
-        return address;
+        return endpoint;
     }
 
-    public static SocketAddress toSocketAddress(String address) {
-        String[] split = address.split(":");
+    public static SocketAddress toSocketAddress(String endpoint) {
+        String[] split = endpoint.split(":");
         String ip = split[0];
         String port = split[1];
         return new InetSocketAddress(ip, Integer.parseInt(port));
     }
 
     public static void closeChannel(Channel channel) {
-        String address = toAddress(channel);
-        channel.close().addListener(future -> log.info("close connection: address={}, result={}", address, future.isSuccess()));
+        String endpoint = toEndpoint(channel);
+        channel.close().addListener(future -> log.info("close connection: endpoint={}, result={}", endpoint, future.isSuccess()));
     }
 
     public static String simplifyException(Exception e) {

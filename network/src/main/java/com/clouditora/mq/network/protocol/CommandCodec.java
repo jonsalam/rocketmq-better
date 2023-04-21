@@ -1,6 +1,8 @@
 package com.clouditora.mq.network.protocol;
 
-import com.alibaba.fastjson2.JSONObject;
+import com.clouditora.mq.common.constant.SerializeType;
+import com.clouditora.mq.common.util.EnumUtil;
+import com.clouditora.mq.common.util.JsonUtil;
 import com.clouditora.mq.network.exception.CommandException;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
@@ -133,7 +135,7 @@ public class CommandCodec {
         // code
         command.setCode(byteBuf.readShort());
         // language
-        command.setLanguage(LanguageCode.valueOf(byteBuf.readByte()));
+        command.setLanguage(EnumUtil.ofCode(LanguageCode.class, byteBuf.readByte()));
         // version
         command.setVersion(byteBuf.readShort());
         // opaque
@@ -206,7 +208,7 @@ public class CommandCodec {
 
     static SerializeType decodeSerializeType(int flag) {
         byte code = (byte) ((flag >> 24) & 0xFF);
-        return SerializeType.valueOf(code);
+        return EnumUtil.ofCode(SerializeType.class, code);
     }
 
     /**
@@ -245,12 +247,10 @@ public class CommandCodec {
     static Command decodeFieldsByJson(ByteBuf byteBuf, int length) {
         byte[] bytes = new byte[length];
         byteBuf.readBytes(bytes);
-        String json = new String(bytes, StandardCharsets.UTF_8);
-        return JSONObject.parseObject(json, Command.class);
+        return JsonUtil.parse(bytes, Command.class);
     }
 
     static byte[] encodeFieldsWithJson(Command command) {
-        String json = JSONObject.toJSONString(command);
-        return json.getBytes(StandardCharsets.UTF_8);
+        return JsonUtil.toBytes(command);
     }
 }

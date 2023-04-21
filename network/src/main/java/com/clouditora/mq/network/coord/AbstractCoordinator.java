@@ -11,10 +11,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @link org.apache.rocketmq.remoting.netty.NettyRemotingAbstract
@@ -26,9 +24,9 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
      * This map caches all processing requests.
      * key: opaque
      *
-     * @linke org.apache.rocketmq.remoting.netty.NettyRemotingAbstract#responseTable
+     * @link org.apache.rocketmq.remoting.netty.NettyRemotingAbstract#responseTable
      */
-    protected final ConcurrentHashMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>(256);
+    protected final ConcurrentMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>(256);
     protected final CommandCleaner commandCleaner;
     protected final CommandProcessor commandProcessor;
     /**
@@ -51,16 +49,11 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
         this.channelEventExecutor = new ChannelEventExecutor(channelEventListener);
         this.nettyDefaultEventExecutor = new DefaultEventExecutorGroup(
                 config.getWorkerThreads(),
-                ThreadUtil.buildFactory(getServiceName() + ":NettyDefault", config.getWorkerThreads())
+                ThreadUtil.buildFactory(getServiceName() + "#NettyDefault", config.getWorkerThreads())
         );
 
         int publicNum = Math.max(config.getCallbackExecutorThreads(), 4);
-        this.defaultExecutor = new ThreadPoolExecutor(
-                publicNum, publicNum,
-                0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                ThreadUtil.buildFactory(getServiceName() + ":Laborer", publicNum)
-        );
+        this.defaultExecutor = ThreadUtil.newFixedThreadPool(publicNum, getServiceName() + "#Default");
     }
 
     @Override

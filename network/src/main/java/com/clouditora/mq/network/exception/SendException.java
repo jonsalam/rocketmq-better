@@ -5,7 +5,7 @@ package com.clouditora.mq.network.exception;
  */
 public class SendException extends AbstractNetworkException {
 
-    public SendException(String address, Throwable cause) {
-        super("send", address, cause);
+    public SendException(String endpoint, Throwable cause) {
+        super("send", endpoint, cause);
     }
 }

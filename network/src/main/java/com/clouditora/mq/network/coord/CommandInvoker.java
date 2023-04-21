@@ -10,15 +10,12 @@ import io.netty.channel.ChannelFutureListener;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
 @Getter
 public class CommandInvoker implements CallbackExecutor {
-    protected final ConcurrentHashMap<Integer, CommandFuture> commandMap;
+    protected final ConcurrentMap<Integer, CommandFuture> commandMap;
     /**
      * Semaphore to limit maximum number of ongoing asynchronous requests, which protects system memory footprint.
      *
@@ -33,7 +30,7 @@ public class CommandInvoker implements CallbackExecutor {
     protected final Semaphore onewaySemaphore;
     protected final ExecutorService callbackExecutor;
 
-    public CommandInvoker(int asyncPermits, int onewayPermits, ConcurrentHashMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
+    public CommandInvoker(int asyncPermits, int onewayPermits, ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
         this.asyncSemaphore = new Semaphore(asyncPermits);
         this.onewaySemaphore = new Semaphore(onewayPermits);
         this.commandMap = commandMap;
@@ -78,9 +75,9 @@ public class CommandInvoker implements CallbackExecutor {
                 return response;
             }
             if (commandFuture.isSendOk()) {
-                throw new TimeoutException(CoordinatorUtil.toAddress(channel), timeout, commandFuture.getCause());
+                throw new TimeoutException(CoordinatorUtil.toEndpoint(channel), timeout, commandFuture.getCause());
             } else {
-                throw new SendException(CoordinatorUtil.toAddress(channel), commandFuture.getCause());
+                throw new SendException(CoordinatorUtil.toEndpoint(channel), commandFuture.getCause());
             }
         } finally {
             commandMap.remove(opaque);
@@ -108,7 +105,7 @@ public class CommandInvoker implements CallbackExecutor {
                             prev.setSendOk(false);
                             prev.setCause(f.cause());
                             prev.putResponse(null);
-                            log.warn("send request command failed: channel={}", CoordinatorUtil.toAddress(channel));
+                            log.warn("send request command failed: channel={}", CoordinatorUtil.toEndpoint(channel));
                             try {
                                 CoordinatorUtil.invokeCallback(prev, getCallbackExecutor());
                             } catch (Throwable e) {
@@ -117,9 +114,9 @@ public class CommandInvoker implements CallbackExecutor {
                         }
                     });
         } catch (Exception e) {
-            String address = CoordinatorUtil.toAddress(channel);
-            log.warn("send request command exception: channel={}", address);
-            throw new SendException(address, e);
+            String endpoint = CoordinatorUtil.toEndpoint(channel);
+            log.warn("send request command exception: channel={}", endpoint);
+            throw new SendException(endpoint, e);
         }
     }
 
@@ -137,9 +134,9 @@ public class CommandInvoker implements CallbackExecutor {
                         }
                     });
         } catch (Exception e) {
-            String address = CoordinatorUtil.toAddress(channel);
-            log.warn("send request command exception: channel={}", address);
-            throw new SendException(address, e);
+            String endpoint = CoordinatorUtil.toEndpoint(channel);
+            log.warn("send request command exception: channel={}", endpoint);
+            throw new SendException(endpoint, e);
         }
     }
 }

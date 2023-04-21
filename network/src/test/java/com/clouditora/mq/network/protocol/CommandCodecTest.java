@@ -1,5 +1,6 @@
 package com.clouditora.mq.network.protocol;
 
+import com.clouditora.mq.common.constant.SerializeType;
 import com.clouditora.mq.network.RequestHeader;
 import com.clouditora.mq.network.exception.CommandException;
 import io.netty.buffer.ByteBuf;
@@ -47,9 +48,9 @@ class CommandCodecTest {
 
     @Test
     void codecFieldWithJson() {
-        RequestHeader header = new RequestHeader();
-        header.setCount(1);
-        header.setMessageTitle("message");
+        RequestHeader requestHeader = new RequestHeader();
+        requestHeader.setCount(1);
+        requestHeader.setMessageTitle("message");
 
         Command encode = new Command();
         encode.setCode(1);
@@ -58,7 +59,7 @@ class CommandCodecTest {
         encode.setFlag(4);
         encode.setRemark("remark");
         encode.setExtFields(Map.of("hello", "world"));
-        encode.setHeader(header);
+        encode.setHeader(requestHeader);
         encode.headerToExtFields();
         encode.setHeader(null);
         encode.setSerializeType(SerializeType.JSON);

@@ -20,7 +20,7 @@ public class NettyCommandEncoder extends MessageToByteEncoder<Command> {
         try {
             CommandCodec.encode(byteBuf, command);
         } catch (Exception e) {
-            log.error("encode exception: {}", CoordinatorUtil.toAddress(ctx.channel()), e);
+            log.error("encode exception: {}", CoordinatorUtil.toEndpoint(ctx.channel()), e);
             if (command != null) {
                 log.error(command.toString());
             }

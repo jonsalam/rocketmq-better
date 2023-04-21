@@ -1,10 +1,8 @@
 package com.clouditora.mq.network;
 
-import com.clouditora.mq.network.client.Client;
 import com.clouditora.mq.network.exception.ConnectException;
 import com.clouditora.mq.network.exception.TimeoutException;
 import com.clouditora.mq.network.protocol.Command;
-import com.clouditora.mq.network.server.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

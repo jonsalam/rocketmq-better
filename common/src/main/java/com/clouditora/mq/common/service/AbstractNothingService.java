@@ -21,6 +21,9 @@ public abstract class AbstractNothingService implements Lifecycle {
         }
         if (this.running.compareAndSet(false, true)) {
             log.info("{} service startup", getServiceName());
+        } else {
+            log.error("{} service startup failed", getServiceName());
+            System.exit(-1);
         }
     }
 
