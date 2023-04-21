@@ -1,9 +1,10 @@
-package com.clouditora.mq.network.client;
+package com.clouditora.mq.network;
 
 import com.clouditora.mq.common.util.ThreadUtil;
-import com.clouditora.mq.network.ChannelEventListener;
-import com.clouditora.mq.network.ClientNetworkConfig;
-import com.clouditora.mq.network.CommandFutureCallback;
+import com.clouditora.mq.network.client.ClientChannelHolder;
+import com.clouditora.mq.network.client.ClientCommandInvoker;
+import com.clouditora.mq.network.client.ClientNameServerHolder;
+import com.clouditora.mq.network.client.ClientNettyChannelHandler;
 import com.clouditora.mq.network.coord.AbstractCoordinator;
 import com.clouditora.mq.network.coord.NettyCommandDecoder;
 import com.clouditora.mq.network.coord.NettyCommandEncoder;

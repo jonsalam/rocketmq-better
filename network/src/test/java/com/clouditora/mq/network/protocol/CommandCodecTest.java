@@ -1,5 +1,6 @@
 package com.clouditora.mq.network.protocol;
 
+import com.clouditora.mq.common.constant.SerializeType;
 import com.clouditora.mq.network.RequestHeader;
 import com.clouditora.mq.network.exception.CommandException;
 import io.netty.buffer.ByteBuf;

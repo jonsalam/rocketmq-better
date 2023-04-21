@@ -1,25 +1,14 @@
-package com.clouditora.mq.network.server;
+package com.clouditora.mq.network;
 
 import com.clouditora.mq.common.util.ThreadUtil;
-import com.clouditora.mq.network.ChannelEventListener;
-import com.clouditora.mq.network.CommandFutureCallback;
-import com.clouditora.mq.network.CommandRequestProcessor;
-import com.clouditora.mq.network.ServerNetworkConfig;
-import com.clouditora.mq.network.coord.AbstractCoordinator;
-import com.clouditora.mq.network.coord.CommandInvoker;
-import com.clouditora.mq.network.coord.NettyCommandDecoder;
-import com.clouditora.mq.network.coord.NettyCommandEncoder;
-import com.clouditora.mq.network.coord.NettyInboundHandler;
+import com.clouditora.mq.network.coord.*;
 import com.clouditora.mq.network.exception.SendException;
 import com.clouditora.mq.network.exception.TimeoutException;
 import com.clouditora.mq.network.protocol.Command;
+import com.clouditora.mq.network.server.ServerNettyChannelHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.WriteBufferWaterMark;
+import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -61,6 +50,7 @@ public class Server extends AbstractCoordinator {
             this.nettySelectExecutor = new NioEventLoopGroup(1, ThreadUtil.buildFactory(getServiceName() + ":NettySelector", 1));
             this.nettyWorkExecutor = new NioEventLoopGroup(num, ThreadUtil.buildFactory(getServiceName() + ":NettyWorker", num));
         }
+
         this.commandInvoker = new CommandInvoker(
                 this.config.getServerAsyncSemaphoreValue(),
                 this.config.getServerOnewaySemaphoreValue(),

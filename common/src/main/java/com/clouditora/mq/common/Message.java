@@ -16,6 +16,13 @@ public class Message {
     protected byte[] body;
     protected String transactionId;
 
+    public Message(String topic, String tags, String keys, byte[] body) {
+        this.topic = topic;
+        this.setTags(tags);
+        this.setKeys(keys);
+        this.body = body;
+    }
+
     void putProperty(String name, String value) {
         if (properties == null) {
             properties = new HashMap<>();

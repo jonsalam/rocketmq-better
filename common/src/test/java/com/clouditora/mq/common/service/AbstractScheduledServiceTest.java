@@ -15,15 +15,16 @@ class AbstractScheduledServiceTest {
     @Test
     void startup() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(5);
-        AbstractScheduledService service = new AbstractScheduledService(TimeUnit.MICROSECONDS, 10, 10) {
+        AbstractScheduledService service = new AbstractScheduledService() {
             @Override
             public String getServiceName() {
                 return "schedule";
             }
 
             @Override
-            protected void run() {
-                latch.countDown();
+            protected void init() throws Exception {
+                register(TimeUnit.MICROSECONDS, 10, 10, latch::countDown);
+                super.init();
             }
         };
         service.startup();

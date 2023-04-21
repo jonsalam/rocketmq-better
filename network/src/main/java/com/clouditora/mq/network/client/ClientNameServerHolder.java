@@ -13,10 +13,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
-@Getter
 public class ClientNameServerHolder {
+    @Getter
     protected final ClientChannelHolder channelHolder;
-
     protected final AtomicInteger nameServerAddressIndex = new AtomicInteger(random());
     protected final AtomicReference<List<String>> nameServerAddressList = new AtomicReference<>();
     protected final AtomicReference<String> nameServerAddress = new AtomicReference<>();
@@ -30,6 +29,10 @@ public class ClientNameServerHolder {
         return Math.abs(new Random().nextInt() % 999) % 999;
     }
 
+    public List<String> getNameServerAddressList(){
+        return this.nameServerAddressList.get();
+    }
+
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#getAndCreateNameserverChannel
      */
@@ -39,12 +42,11 @@ public class ClientNameServerHolder {
             return null;
         }
         try {
-            boolean locked = this.lock.tryLock(3000, TimeUnit.MILLISECONDS);
+            if (!this.lock.tryLock(3000, TimeUnit.MILLISECONDS)) {
+                log.error("[channel] create name server wait timeout");
+                return null;
+            }
             try {
-                if (!locked) {
-                    log.error("[channel] create nameserver wait timeout");
-                    return null;
-                }
                 channel = getCurrentChannel();
                 if (channel != null) {
                     return null;
@@ -61,14 +63,12 @@ public class ClientNameServerHolder {
                     }
                 }
             } catch (Exception e) {
-                log.error("[channel] create nameserver exception", e);
+                log.error("[channel] create name server exception", e);
             } finally {
-                if (locked) {
-                    this.lock.unlock();
-                }
+                this.lock.unlock();
             }
         } catch (InterruptedException e) {
-            log.error("[channel] create nameserver exception", e);
+            log.error("[channel] create name server exception", e);
         }
         return null;
     }

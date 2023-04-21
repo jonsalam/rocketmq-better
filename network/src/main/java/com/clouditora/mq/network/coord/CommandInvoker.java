@@ -10,15 +10,12 @@ import io.netty.channel.ChannelFutureListener;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
 @Getter
 public class CommandInvoker implements CallbackExecutor {
-    protected final ConcurrentHashMap<Integer, CommandFuture> commandMap;
+    protected final ConcurrentMap<Integer, CommandFuture> commandMap;
     /**
      * Semaphore to limit maximum number of ongoing asynchronous requests, which protects system memory footprint.
      *
@@ -33,7 +30,7 @@ public class CommandInvoker implements CallbackExecutor {
     protected final Semaphore onewaySemaphore;
     protected final ExecutorService callbackExecutor;
 
-    public CommandInvoker(int asyncPermits, int onewayPermits, ConcurrentHashMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
+    public CommandInvoker(int asyncPermits, int onewayPermits, ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
         this.asyncSemaphore = new Semaphore(asyncPermits);
         this.onewaySemaphore = new Semaphore(onewayPermits);
         this.commandMap = commandMap;

@@ -37,12 +37,11 @@ public class ClientChannelHolder {
         }
         try {
             String address = CoordinatorUtil.toAddress(channel);
-            boolean locked = this.lock.tryLock(3000, TimeUnit.MILLISECONDS);
+            if (!this.lock.tryLock(3000, TimeUnit.MILLISECONDS)) {
+                log.error("[channel] close {} wait timeout", address);
+                return;
+            }
             try {
-                if (!locked) {
-                    log.error("[channel] close {} wait timeout", address);
-                    return;
-                }
                 ChannelFuture channelFuture = this.channelFutureMap.get(address);
                 if (channelFuture != null && channelFuture.channel() == channel) {
                     this.channelFutureMap.remove(address);
@@ -51,9 +50,7 @@ public class ClientChannelHolder {
             } catch (Exception e) {
                 log.error("[channel] close {} exception", CoordinatorUtil.toAddress(channel), e);
             } finally {
-                if (locked) {
-                    this.lock.unlock();
-                }
+                this.lock.unlock();
             }
         } catch (InterruptedException e) {
             log.error("[channel] close {} exception", CoordinatorUtil.toAddress(channel), e);
@@ -94,12 +91,11 @@ public class ClientChannelHolder {
 
     private ChannelFuture createChannelFutureWithLock(String address) {
         try {
-            boolean locked = this.lock.tryLock(3000, TimeUnit.MILLISECONDS);
+            if (!this.lock.tryLock(3000, TimeUnit.MILLISECONDS)) {
+                log.error("[channel] create {} wait timeout", address);
+                return null;
+            }
             try {
-                if (!locked) {
-                    log.error("[channel] create {} wait timeout", address);
-                    return null;
-                }
                 ChannelFuture channelFuture = this.channelFutureMap.get(address);
                 if (channelFuture == null) {
                     return createChannelFuture(address);
@@ -114,9 +110,7 @@ public class ClientChannelHolder {
             } catch (Exception e) {
                 log.error("[channel] create {} exception", address, e);
             } finally {
-                if (locked) {
-                    this.lock.unlock();
-                }
+                this.lock.unlock();
             }
         } catch (InterruptedException e) {
             log.error("[channel] create {} exception", address, e);

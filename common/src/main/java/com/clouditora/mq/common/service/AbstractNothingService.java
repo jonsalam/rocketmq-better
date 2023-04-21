@@ -13,14 +13,27 @@ public abstract class AbstractNothingService implements Lifecycle {
 
     public abstract String getServiceName();
 
+    protected void init() throws Exception {
+
+    }
+
     @Override
     public void startup() {
         if (isRunning()) {
             log.warn("{} service already started", getServiceName());
             return;
         }
+        try {
+            init();
+        } catch (Exception e) {
+            log.error("{} service startup exception", getServiceName(), e);
+            System.exit(-1);
+        }
         if (this.running.compareAndSet(false, true)) {
             log.info("{} service startup", getServiceName());
+        } else {
+            log.error("{} service startup failed", getServiceName());
+            System.exit(-1);
         }
     }
 

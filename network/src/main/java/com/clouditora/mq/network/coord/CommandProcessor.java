@@ -13,13 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Getter
 public class CommandProcessor implements CallbackExecutor {
-    protected final ConcurrentHashMap<Integer, CommandFuture> commandMap;
+    protected final ConcurrentMap<Integer, CommandFuture> commandMap;
     /**
      * This container holds all processors per request code, aka, for each incoming request, we may look up the
      * responding processor in this map to handle the request.
@@ -37,7 +37,7 @@ public class CommandProcessor implements CallbackExecutor {
     protected CommandRequestExecutor defaultProcessor;
     protected ExecutorService callbackExecutor;
 
-    public CommandProcessor(ConcurrentHashMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
+    public CommandProcessor(ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
         this.commandMap = commandMap;
         this.callbackExecutor = callbackExecutor;
     }

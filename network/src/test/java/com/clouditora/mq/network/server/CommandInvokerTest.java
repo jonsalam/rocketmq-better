@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +25,7 @@ class CommandInvokerTest {
     void syncInvoke_timeout() {
         assertThrows(TimeoutException.class, () -> {
             int opaque = 1;
-            ConcurrentHashMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>();
+            ConcurrentMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>();
             CommandInvoker invoker = new CommandInvoker(1, 1, commandMap, null);
 
             Channel channel = Mockito.mock(Channel.class);
@@ -42,7 +43,7 @@ class CommandInvokerTest {
     @Test
     void syncInvoke() throws InterruptedException, SendException, TimeoutException {
         int opaque = 1;
-        ConcurrentHashMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>();
+        ConcurrentMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>();
         CommandInvoker invoker = new CommandInvoker(1, 1, commandMap, null);
 
         Channel channel = Mockito.mock(Channel.class);

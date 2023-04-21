@@ -13,7 +13,7 @@ import io.netty.channel.Channel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
@@ -22,7 +22,7 @@ public class ClientCommandInvoker extends CommandInvoker {
     protected final ClientChannelHolder channelHolder;
     protected final ClientNameServerHolder nameServerHolder;
 
-    public ClientCommandInvoker(ClientNetworkConfig config, ConcurrentHashMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor, ClientNameServerHolder nameServerHolder) {
+    public ClientCommandInvoker(ClientNetworkConfig config, ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor, ClientNameServerHolder nameServerHolder) {
         super(config.getClientAsyncSemaphoreValue(), config.getClientOnewaySemaphoreValue(), commandMap, callbackExecutor);
         this.channelHolder = nameServerHolder.getChannelHolder();
         this.nameServerHolder = nameServerHolder;
@@ -70,7 +70,7 @@ public class ClientCommandInvoker extends CommandInvoker {
     }
 
     /**
-     * @linkn org.apache.rocketmq.remoting.netty.NettyRemotingClient#invokeOneway
+     * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#invokeOneway
      */
     public void onewayInvoke(String address, Command request, long timeout) throws TimeoutException, ConnectException {
         Channel channel = getChannel(address);

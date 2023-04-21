@@ -1,7 +1,6 @@
 package com.clouditora.mq.store.index;
 
 import com.clouditora.mq.store.MessageStoreConfig;
-import com.clouditora.mq.store.util.MapUtil;
 
 import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,18 +16,10 @@ public class ConsumeFileMap {
     }
 
     public ConsumeFileQueue findConsumeQueue(String topic, int queueId) {
-        ConcurrentMap<Integer, ConsumeFileQueue> queueMap = MapUtil.putIfAbsentAtomically(
-                consumeMap,
-                topic,
-                key -> new ConcurrentHashMap<>(128)
-        );
-        return MapUtil.putIfAbsentAtomically(
-                queueMap,
-                queueId,
-                key -> {
-                    String path = config.getConsumeQueuePath() + File.separator + topic + File.separator + queueId;
-                    return new ConsumeFileQueue(path, config.getConsumeQueueFileSize());
-                }
-        );
+        ConcurrentMap<Integer, ConsumeFileQueue> queueMap = consumeMap.computeIfAbsent(topic, k -> new ConcurrentHashMap<>(128));
+        return queueMap.computeIfAbsent(queueId, k -> {
+            String path = config.getConsumeQueuePath() + File.separator + topic + File.separator + queueId;
+            return new ConsumeFileQueue(path, config.getConsumeQueueFileSize());
+        });
     }
 }

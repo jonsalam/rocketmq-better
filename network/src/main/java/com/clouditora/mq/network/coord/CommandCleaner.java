@@ -9,25 +9,18 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Getter
 public class CommandCleaner extends AbstractScheduledService implements CallbackExecutor {
-    protected final ConcurrentHashMap<Integer, CommandFuture> commandMap;
+    protected final ConcurrentMap<Integer, CommandFuture> commandMap;
     protected ExecutorService callbackExecutor;
 
-    public CommandCleaner(ConcurrentHashMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
-        super(TimeUnit.MILLISECONDS, 3000, 1000);
+    public CommandCleaner(ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
         this.commandMap = commandMap;
         this.callbackExecutor = callbackExecutor;
-    }
-
-    public CommandCleaner(long initialDelay, long delay, ConcurrentHashMap<Integer, CommandFuture> commandMap) {
-        super(TimeUnit.MILLISECONDS, initialDelay, delay);
-        this.commandMap = commandMap;
     }
 
     @Override
@@ -36,8 +29,8 @@ public class CommandCleaner extends AbstractScheduledService implements Callback
     }
 
     @Override
-    protected void run() {
-        cleanTimeoutCommand();
+    protected void init() {
+        register(3000, 1000, this::cleanTimeoutCommand);
     }
 
     /**
