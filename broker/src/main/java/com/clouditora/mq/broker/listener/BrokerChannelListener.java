@@ -3,7 +3,7 @@ package com.clouditora.mq.broker.listener;
 import com.clouditora.mq.network.ChannelEventListener;
 import io.netty.channel.Channel;
 
-public class ChannelListener implements ChannelEventListener {
+public class BrokerChannelListener implements ChannelEventListener {
     @Override
     public void onConnect(String endpoint, Channel channel) {
 

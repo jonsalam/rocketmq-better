@@ -1,7 +1,7 @@
 package com.clouditora.mq.broker;
 
-import com.clouditora.mq.broker.listener.ChannelListener;
-import com.clouditora.mq.broker.nameserver.NameServerRpcFacade;
+import com.clouditora.mq.broker.listener.BrokerChannelListener;
+import com.clouditora.mq.broker.nameserver.NameserverRpcFacade;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.common.util.ThreadUtil;
 import com.clouditora.mq.network.Client;
@@ -22,22 +22,22 @@ public class BrokerController extends AbstractNothingService {
     private final ClientNetworkConfig clientNetworkConfig;
     private final Server server;
     private final Client client;
-    private final NameServerRpcFacade nameServerRpcFacade;
-    private final ExecutorService nameServerRpcExecutor;
+    private final NameserverRpcFacade nameserverRpcFacade;
+    private final ExecutorService nameserverRpcExecutor;
 
     public BrokerController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig) {
         this.brokerConfig = brokerConfig;
         this.serverNetworkConfig = serverNetworkConfig;
         this.clientNetworkConfig = clientNetworkConfig;
-        this.server = new Server(this.serverNetworkConfig, new ChannelListener());
+        this.server = new Server(this.serverNetworkConfig, new BrokerChannelListener());
         this.client = new Client(clientNetworkConfig, null, BrokerController.this::registerBroker);
-        this.nameServerRpcExecutor = new ThreadPoolExecutor(
+        this.nameserverRpcExecutor = new ThreadPoolExecutor(
                 4, 10,
                 1, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(32),
                 ThreadUtil.buildFactory("RpcExecutor", 10)
         );
-        this.nameServerRpcFacade = new NameServerRpcFacade(client, nameServerRpcExecutor);
+        this.nameserverRpcFacade = new NameserverRpcFacade(client, nameserverRpcExecutor);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class BrokerController extends AbstractNothingService {
 
     @Override
     public void startup() {
-        this.client.updateNameServerEndpoints(this.brokerConfig.getNameServerEndpoints());
+        this.client.updateNameserverEndpoints(this.brokerConfig.getNameserverEndpoints());
         this.server.startup();
         this.client.startup();
         registerBroker();
@@ -58,7 +58,7 @@ public class BrokerController extends AbstractNothingService {
     public void shutdown() {
         this.server.shutdown();
         this.client.shutdown();
-        this.nameServerRpcExecutor.shutdown();
+        this.nameserverRpcExecutor.shutdown();
         unregisterBroker();
         super.shutdown();
     }
@@ -68,7 +68,7 @@ public class BrokerController extends AbstractNothingService {
      */
     private void registerBroker() {
         String endpoint = this.brokerConfig.getBrokerIp() + ":" + serverNetworkConfig.getListenPort();
-        this.nameServerRpcFacade.registerBroker(
+        this.nameserverRpcFacade.registerBroker(
                 this.brokerConfig.getBrokerClusterName(),
                 endpoint,
                 endpoint,
@@ -82,7 +82,7 @@ public class BrokerController extends AbstractNothingService {
      */
     private void unregisterBroker() {
         String endpoint = this.brokerConfig.getBrokerIp() + ":" + serverNetworkConfig.getListenPort();
-        this.nameServerRpcFacade.unregisterBroker(
+        this.nameserverRpcFacade.unregisterBroker(
                 this.brokerConfig.getBrokerClusterName(),
                 endpoint,
                 endpoint,

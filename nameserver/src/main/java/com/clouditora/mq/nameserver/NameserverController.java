@@ -13,8 +13,8 @@ import java.util.concurrent.ExecutorService;
 /**
  * @link org.apache.rocketmq.namesrv.NamesrvController
  */
-public class NameServerController extends AbstractNothingService {
-    private final NameServerConfig nameserverConfig;
+public class NameserverController extends AbstractNothingService {
+    private final NameserverConfig nameserverConfig;
     private final ServerNetworkConfig serverNetworkConfig;
     private final RouteInfoManager routeInfoManager;
     /**
@@ -26,7 +26,7 @@ public class NameServerController extends AbstractNothingService {
      */
     private Server server;
 
-    public NameServerController(NameServerConfig nameserverConfig, ServerNetworkConfig serverNetworkConfig) {
+    public NameserverController(NameserverConfig nameserverConfig, ServerNetworkConfig serverNetworkConfig) {
         this.nameserverConfig = nameserverConfig;
         this.serverNetworkConfig = serverNetworkConfig;
         this.routeInfoManager = new RouteInfoManager();
@@ -39,7 +39,7 @@ public class NameServerController extends AbstractNothingService {
 
     @Override
     public String getServiceName() {
-        return "NameServer";
+        return "Nameserver";
     }
 
     @Override

@@ -22,12 +22,12 @@ import java.net.SocketAddress;
 public class ClientNettyChannelHandler extends ChannelDuplexHandler {
     protected final ChannelEventExecutor channelEventExecutor;
     protected final ClientCommandInvoker commandInvoker;
-    protected final ClientNameServerManager nameServerManager;
+    protected final ClientChannelPool channelPool;
 
-    public ClientNettyChannelHandler(ChannelEventExecutor channelEventExecutor, ClientCommandInvoker commandInvoker, ClientNameServerManager nameServerManager) {
+    public ClientNettyChannelHandler(ChannelEventExecutor channelEventExecutor, ClientCommandInvoker commandInvoker, ClientChannelPool channelPool) {
         this.channelEventExecutor = channelEventExecutor;
         this.commandInvoker = commandInvoker;
-        this.nameServerManager = nameServerManager;
+        this.channelPool = channelPool;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ClientNettyChannelHandler extends ChannelDuplexHandler {
     public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
         log.debug("[channel] disconnect {}", endpoint);
-        nameServerManager.closeChannel(ctx.channel());
+        channelPool.closeChannel(ctx.channel());
         super.disconnect(ctx, promise);
         channelEventExecutor.addEvent(new ChannelEvent(ChannelEventType.close, endpoint, ctx.channel()));
     }
@@ -52,7 +52,7 @@ public class ClientNettyChannelHandler extends ChannelDuplexHandler {
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
         log.debug("[channel] close {}", endpoint);
-        nameServerManager.closeChannel(ctx.channel());
+        channelPool.closeChannel(ctx.channel());
         super.close(ctx, promise);
         commandInvoker.failFast(ctx.channel());
         channelEventExecutor.addEvent(new ChannelEvent(ChannelEventType.close, endpoint, ctx.channel()));
@@ -64,7 +64,7 @@ public class ClientNettyChannelHandler extends ChannelDuplexHandler {
             if (event.state() == IdleState.ALL_IDLE) {
                 String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
                 log.warn("[channel] idle on {}", endpoint);
-                nameServerManager.closeChannel(ctx.channel());
+                channelPool.closeChannel(ctx.channel());
                 channelEventExecutor.addEvent(new ChannelEvent(ChannelEventType.idle, endpoint, ctx.channel()));
             }
         }
@@ -75,7 +75,7 @@ public class ClientNettyChannelHandler extends ChannelDuplexHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         String endpoint = CoordinatorUtil.toEndpoint(ctx.channel());
         log.error("[channel] exception on {}", endpoint, cause);
-        nameServerManager.closeChannel(ctx.channel());
+        channelPool.closeChannel(ctx.channel());
         channelEventExecutor.addEvent(new ChannelEvent(ChannelEventType.exception, endpoint, ctx.channel()));
     }
 }

@@ -1,4 +1,4 @@
-package com.clouditora.mq.broker.nameserver;
+package com.clouditora.mq.client.broker;
 
 import com.clouditora.mq.common.command.RequestCode;
 import com.clouditora.mq.common.command.protocol.BrokerRegister;
@@ -12,10 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter
-public class NameServerApiFacade {
+public class BrokerApiFacade {
     private final Client client;
 
-    public NameServerApiFacade(Client client) {
+    public BrokerApiFacade(Client client) {
         this.client = client;
     }
 

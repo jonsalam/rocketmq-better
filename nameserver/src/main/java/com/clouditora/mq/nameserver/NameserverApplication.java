@@ -8,18 +8,18 @@ import lombok.extern.slf4j.Slf4j;
  * @link org.apache.rocketmq.namesrv.NamesrvStartup
  */
 @Slf4j
-public class NameServerApplication {
+public class NameserverApplication {
     public static void main(String[] args) {
-        NameServerConfig nameserverConfig = getNameServerConfig();
+        NameserverConfig nameserverConfig = getNameserverConfig();
         ServerNetworkConfig serverNetworkConfig = getNetworkConfig();
-        NameServerController controller = buildController(nameserverConfig, serverNetworkConfig);
+        NameserverController controller = buildController(nameserverConfig, serverNetworkConfig);
         addShutdownHook(controller);
         controller.startup();
-        System.out.printf("name server startup success: %s%n", serverNetworkConfig.getListenPort());
+        System.out.printf("nameserver startup success: %s%n", serverNetworkConfig.getListenPort());
     }
 
-    private static NameServerConfig getNameServerConfig() {
-        NameServerConfig nameserverConfig = new NameServerConfig();
+    private static NameserverConfig getNameserverConfig() {
+        NameserverConfig nameserverConfig = new NameserverConfig();
         if (nameserverConfig.getRocketmqHome() == null) {
             System.out.printf("Please set the %s variable in your environment to match the location of the RocketMQ installation%n", GlobalConstant.ROCKETMQ_HOME_ENV);
             System.exit(-2);
@@ -33,20 +33,20 @@ public class NameServerApplication {
         return config;
     }
 
-    private static NameServerController buildController(NameServerConfig nameserverConfig, ServerNetworkConfig serverNetworkConfig) {
-        return new NameServerController(nameserverConfig, serverNetworkConfig);
+    private static NameserverController buildController(NameserverConfig nameserverConfig, ServerNetworkConfig serverNetworkConfig) {
+        return new NameserverController(nameserverConfig, serverNetworkConfig);
     }
 
-    private static void addShutdownHook(NameServerController controller) {
+    private static void addShutdownHook(NameserverController controller) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("name server shutdown...");
+            System.out.println("nameserver shutdown...");
             long startTime = System.currentTimeMillis();
             try {
                 controller.shutdown();
             } catch (Exception e) {
-                log.error("name server shutdown exception", e);
+                log.error("nameserver shutdown exception", e);
             }
-            System.out.printf("name server shutdown elapsed %dmS%n", System.currentTimeMillis() - startTime);
+            System.out.printf("nameserver shutdown elapsed %dmS%n", System.currentTimeMillis() - startTime);
         }));
     }
 }

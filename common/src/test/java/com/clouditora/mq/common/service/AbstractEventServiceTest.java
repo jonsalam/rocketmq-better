@@ -9,12 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-class AbstractDrivenServiceTest {
+class AbstractEventServiceTest {
 
     @Test
     void shutdown() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        AbstractDrivenService service = new AbstractDrivenService() {
+        AbstractEventService service = new AbstractEventService() {
             @Override
             public String getServiceName() {
                 return "test";
@@ -39,7 +39,7 @@ class AbstractDrivenServiceTest {
     @Test
     void wakeup() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        AbstractDrivenService service = new AbstractDrivenService() {
+        AbstractEventService service = new AbstractEventService() {
             @Override
             public String getServiceName() {
                 return "test";

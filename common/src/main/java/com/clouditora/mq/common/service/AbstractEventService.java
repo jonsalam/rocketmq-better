@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
-public abstract class AbstractDrivenService extends AbstractSimpleService {
+public abstract class AbstractEventService extends AbstractSimpleService {
     protected final ResettableCountDownLatch resettableCountDownLatch = new ResettableCountDownLatch(1);
     protected volatile AtomicBoolean waken = new AtomicBoolean(false);
     @Setter
@@ -34,10 +34,6 @@ public abstract class AbstractDrivenService extends AbstractSimpleService {
         }
     }
 
-    /**
-     * 如果被主动唤醒, 直接执行onWakeup
-     * 否则, 等待被唤醒
-     */
     protected void waitForWakeup() {
         log.info("{} service wait for wake up, waken={}, timeout={}mS", getServiceName(), waken, this.interval);
         if (this.waken.compareAndSet(true, false)) {

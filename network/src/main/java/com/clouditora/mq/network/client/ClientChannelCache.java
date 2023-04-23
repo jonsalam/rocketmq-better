@@ -16,13 +16,21 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Getter
-public class ClientChannelHolder {
+public class ClientChannelCache {
+    /**
+     * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#LOCK_TIMEOUT_MILLIS
+     */
+    private static final long LOCK_TIMEOUT_MILLIS = 3000;
+
     protected final ClientNetworkConfig config;
     protected final Bootstrap bootstrap;
+    /**
+     * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#channelTables
+     */
     protected final ConcurrentMap<String, ChannelFuture> channelFutureMap;
     protected final Lock lock = new ReentrantLock();
 
-    public ClientChannelHolder(ClientNetworkConfig config, Bootstrap bootstrap) {
+    public ClientChannelCache(ClientNetworkConfig config, Bootstrap bootstrap) {
         this.config = config;
         this.bootstrap = bootstrap;
         this.channelFutureMap = new ConcurrentHashMap<>();
@@ -57,6 +65,9 @@ public class ClientChannelHolder {
         }
     }
 
+    /**
+     * @link NettyRemotingClient#channelTables.get(addr)
+     */
     public Channel getChannel(String endpoint) {
         ChannelFuture channelFuture = this.channelFutureMap.get(endpoint);
         if (CoordinatorUtil.isActive(channelFuture)) {
@@ -68,62 +79,58 @@ public class ClientChannelHolder {
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#createChannel
      */
-    public Channel getOrCreateChannel(String endpoint) {
+    public Channel createChannel(String endpoint) {
         Channel channel = getChannel(endpoint);
         if (channel != null) {
             return channel;
         }
-        return createChannelWithLock(endpoint);
-    }
-
-    private Channel createChannelWithLock(String endpoint) {
         try {
-            if (!this.lock.tryLock(3000, TimeUnit.MILLISECONDS)) {
-                log.error("create channel {} wait timeout", endpoint);
+            if (!this.lock.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+                log.error("[channel] create channel {} wait timeout", endpoint);
                 return null;
             }
             try {
                 ChannelFuture channelFuture = this.channelFutureMap.get(endpoint);
                 if (channelFuture == null) {
-                    return createChannel(endpoint);
+                    return connectToEndpoint(endpoint);
                 }
                 if (CoordinatorUtil.isActive(channelFuture)) {
                     return channelFuture.channel();
                 }
                 if (!channelFuture.isDone()) {
-                    return awaitChannel(channelFuture);
+                    return awaitChannelFuture(channelFuture);
                 }
                 this.channelFutureMap.remove(endpoint);
-                return createChannel(endpoint);
+                return connectToEndpoint(endpoint);
             } catch (Exception e) {
-                log.error("create channel {} exception", endpoint, e);
+                log.error("[channel] create channel {} exception", endpoint, e);
             } finally {
                 this.lock.unlock();
             }
         } catch (InterruptedException e) {
-            log.error("create channel {} exception", endpoint, e);
+            log.error("[channel] create channel {} exception", endpoint, e);
         }
         return null;
     }
 
-    private Channel createChannel(String endpoint) {
+    private Channel connectToEndpoint(String endpoint) {
         ChannelFuture channelFuture = this.channelFutureMap.computeIfAbsent(endpoint, k -> this.bootstrap.connect(CoordinatorUtil.toSocketAddress(k)));
         if (channelFuture != null) {
-            return awaitChannel(channelFuture);
+            return awaitChannelFuture(channelFuture);
         }
         return null;
     }
 
-    private Channel awaitChannel(ChannelFuture channelFuture) {
+    private Channel awaitChannelFuture(ChannelFuture channelFuture) {
         if (channelFuture.awaitUninterruptibly(this.config.getConnectTimeoutMillis())) {
             if (CoordinatorUtil.isActive(channelFuture)) {
-                log.info("create channel {} success", channelFuture);
+                log.info("[channel] create channel {} success", channelFuture);
                 return channelFuture.channel();
             } else {
-                log.error("create channel {} failed", channelFuture);
+                log.error("[channel] create channel {} failed", channelFuture);
             }
         } else {
-            log.error("create channel {} timeout", channelFuture);
+            log.error("[channel] create channel {} timeout", channelFuture);
         }
         return null;
     }

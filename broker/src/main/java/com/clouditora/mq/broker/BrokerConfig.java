@@ -24,7 +24,7 @@ public class BrokerConfig {
 
     private int registerBrokerTimeoutMills = 6000;
 
-    public List<String> getNameServerEndpoints() {
+    public List<String> getNameserverEndpoints() {
         return Arrays.stream(Optional.ofNullable(namesrvAddr).orElse("localhost:9876").split(";")).collect(Collectors.toList());
     }
 }

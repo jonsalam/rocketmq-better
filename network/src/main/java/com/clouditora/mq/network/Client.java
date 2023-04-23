@@ -1,8 +1,8 @@
 package com.clouditora.mq.network;
 
-import com.clouditora.mq.network.client.ClientChannelHolder;
+import com.clouditora.mq.network.client.ClientChannelCache;
 import com.clouditora.mq.network.client.ClientCommandInvoker;
-import com.clouditora.mq.network.client.ClientNameServerManager;
+import com.clouditora.mq.network.client.ClientChannelPool;
 import com.clouditora.mq.network.client.ClientNettyChannelHandler;
 import com.clouditora.mq.network.coord.AbstractCoordinator;
 import com.clouditora.mq.network.coord.NettyCommandDecoder;
@@ -37,7 +37,7 @@ public class Client extends AbstractCoordinator {
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#eventLoopGroupWorker
      */
     private final EventLoopGroup nettyWorkerExecutor;
-    private final ClientNameServerManager nameServerManager;
+    private final ClientChannelPool channelPool;
     private final ClientCommandInvoker commandInvoker;
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#callbackExecutor
@@ -46,18 +46,18 @@ public class Client extends AbstractCoordinator {
     @Setter
     private ExecutorService callbackExecutor;
 
-    public Client(ClientNetworkConfig config, ChannelEventListener channelEventListener, Runnable nameServerScheduled) {
+    public Client(ClientNetworkConfig config, ChannelEventListener channelEventListener, Runnable nameserverScheduled) {
         super(config, channelEventListener);
         this.config = config;
         this.nettyBootstrap = new Bootstrap();
         this.nettyWorkerExecutor = new NioEventLoopGroup(1, (ThreadFactory) r -> new Thread(r, getServiceName() + "#NettyWorker"));
-        ClientChannelHolder channelHolder = new ClientChannelHolder(config, this.nettyBootstrap);
-        this.nameServerManager = new ClientNameServerManager(channelHolder, nameServerScheduled);
+        ClientChannelCache channelHolder = new ClientChannelCache(config, this.nettyBootstrap);
+        this.channelPool = new ClientChannelPool(channelHolder, nameserverScheduled);
         this.commandInvoker = new ClientCommandInvoker(
                 this.config,
                 super.commandMap,
                 getCallbackExecutor(),
-                nameServerManager
+                channelPool
         );
     }
 
@@ -82,7 +82,7 @@ public class Client extends AbstractCoordinator {
                                         new NettyCommandEncoder(),
                                         new NettyCommandDecoder(),
                                         new IdleStateHandler(0, 0, config.getClientChannelMaxIdleTimeSeconds()),
-                                        new ClientNettyChannelHandler(Client.this.channelEventExecutor, Client.this.commandInvoker, Client.this.nameServerManager),
+                                        new ClientNettyChannelHandler(Client.this.channelEventExecutor, Client.this.commandInvoker, Client.this.channelPool),
                                         new NettyInboundHandler(Client.this)
                                 );
                     }
@@ -100,13 +100,13 @@ public class Client extends AbstractCoordinator {
             WriteBufferWaterMark waterMark = new WriteBufferWaterMark(config.getWriteBufferLowWaterMark(), config.getWriteBufferHighWaterMark());
             this.nettyBootstrap.option(ChannelOption.WRITE_BUFFER_WATER_MARK, waterMark);
         }
-        this.nameServerManager.startup();
+        this.channelPool.startup();
         super.startup();
     }
 
     @Override
     public void shutdown() {
-        this.nameServerManager.shutdown();
+        this.channelPool.shutdown();
         super.shutdown();
     }
 
@@ -127,11 +127,11 @@ public class Client extends AbstractCoordinator {
         commandInvoker.onewayInvoke(endpoint, request, timeout);
     }
 
-    public List<String> getNameServerEndpoints() {
-        return this.nameServerManager.getNameServerEndpoints();
+    public List<String> getNameserverEndpoints() {
+        return this.channelPool.getNameserverEndpoints();
     }
 
-    public void updateNameServerEndpoints(List<String> list) {
-        this.nameServerManager.updateNameServerEndpoints(list);
+    public void updateNameserverEndpoints(List<String> list) {
+        this.channelPool.updateNameserverEndpoints(list);
     }
 }

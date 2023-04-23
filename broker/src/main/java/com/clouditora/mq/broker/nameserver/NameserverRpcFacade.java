@@ -11,12 +11,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class NameServerRpcFacade {
-    private final NameServerApiFacade nameServerApiFacade;
+public class NameserverRpcFacade {
+    private final NameserverApiFacade nameserverApiFacade;
     private final ExecutorService executor;
 
-    public NameServerRpcFacade(Client client, ExecutorService executor) {
-        this.nameServerApiFacade = new NameServerApiFacade(client);
+    public NameserverRpcFacade(Client client, ExecutorService executor) {
+        this.nameserverApiFacade = new NameserverApiFacade(client);
         this.executor = executor;
     }
 
@@ -26,15 +26,15 @@ public class NameServerRpcFacade {
         requestHeader.setBrokerName(brokerName);
         requestHeader.setBrokerEndpoint(brokerEndpoint);
         requestHeader.setBrokerId(brokerId);
-        List<String> nameServerEndpoints = this.nameServerApiFacade.getClient().getNameServerEndpoints();
-        CountDownLatch latch = new CountDownLatch(nameServerEndpoints.size());
-        for (String nameServerEndpoint : nameServerEndpoints) {
+        List<String> nameserverEndpoints = this.nameserverApiFacade.getClient().getNameserverEndpoints();
+        CountDownLatch latch = new CountDownLatch(nameserverEndpoints.size());
+        for (String nameserverEndpoint : nameserverEndpoints) {
             executor.submit(() -> {
                 try {
-                    this.nameServerApiFacade.registerBroker(nameServerEndpoint, requestHeader, timeout);
-                    log.info("register broker to {}", nameServerEndpoint);
+                    this.nameserverApiFacade.registerBroker(nameserverEndpoint, requestHeader, timeout);
+                    log.info("register broker to {}", nameserverEndpoint);
                 } catch (Exception e) {
-                    log.error("register broker to {} exception", nameServerEndpoint, e);
+                    log.error("register broker to {} exception", nameserverEndpoint, e);
                 }
             });
             latch.countDown();
@@ -53,15 +53,15 @@ public class NameServerRpcFacade {
         requestHeader.setBrokerName(brokerName);
         requestHeader.setBrokerEndpoint(brokerEndpoint);
         requestHeader.setBrokerId(brokerId);
-        List<String> nameServerEndpoints = this.nameServerApiFacade.getClient().getNameServerEndpoints();
-        CountDownLatch latch = new CountDownLatch(nameServerEndpoints.size());
-        for (String nameServerEndpoint : nameServerEndpoints) {
+        List<String> nameserverEndpoints = this.nameserverApiFacade.getClient().getNameserverEndpoints();
+        CountDownLatch latch = new CountDownLatch(nameserverEndpoints.size());
+        for (String nameserverEndpoint : nameserverEndpoints) {
             executor.submit(() -> {
                 try {
-                    this.nameServerApiFacade.unregisterBroker(nameServerEndpoint, requestHeader, timeout);
-                    log.info("unregister broker to {}", nameServerEndpoint);
+                    this.nameserverApiFacade.unregisterBroker(nameserverEndpoint, requestHeader, timeout);
+                    log.info("unregister broker to {}", nameserverEndpoint);
                 } catch (Exception e) {
-                    log.error("unregister broker to {} exception", nameServerEndpoint, e);
+                    log.error("unregister broker to {} exception", nameserverEndpoint, e);
                 }
             });
             latch.countDown();
