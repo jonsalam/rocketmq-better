@@ -1,5 +1,6 @@
-package com.clouditora.mq.client;
+package com.clouditora.mq.client.instance;
 
+import com.clouditora.mq.client.ClientConfig;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.network.Client;
 
