@@ -2,6 +2,7 @@ package com.clouditora.mq.broker;
 
 import com.clouditora.mq.broker.listener.BrokerChannelListener;
 import com.clouditora.mq.broker.nameserver.NameserverRpcFacade;
+import com.clouditora.mq.broker.processor.DefaultRequestProcessor;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.common.util.ThreadUtil;
 import com.clouditora.mq.network.Client;
@@ -10,10 +11,7 @@ import com.clouditora.mq.network.Server;
 import com.clouditora.mq.network.ServerNetworkConfig;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
 public class BrokerController extends AbstractNothingService {
@@ -22,15 +20,18 @@ public class BrokerController extends AbstractNothingService {
     private final ClientNetworkConfig clientNetworkConfig;
     private final Server server;
     private final Client client;
-    private final NameserverRpcFacade nameserverRpcFacade;
     private final ExecutorService nameserverRpcExecutor;
+    private final NameserverRpcFacade nameserverRpcFacade;
+    private final ScheduledExecutorService scheduledExecutor;
 
     public BrokerController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig) {
         this.brokerConfig = brokerConfig;
         this.serverNetworkConfig = serverNetworkConfig;
         this.clientNetworkConfig = clientNetworkConfig;
         this.server = new Server(this.serverNetworkConfig, new BrokerChannelListener());
-        this.client = new Client(clientNetworkConfig, null, BrokerController.this::registerBroker);
+        DefaultRequestProcessor requestProcessor = new DefaultRequestProcessor(brokerController);
+        this.server.setDefaultProcessor(requestProcessor, null);
+        this.client = new Client(clientNetworkConfig, null);
         this.nameserverRpcExecutor = new ThreadPoolExecutor(
                 4, 10,
                 1, TimeUnit.MINUTES,
@@ -38,6 +39,7 @@ public class BrokerController extends AbstractNothingService {
                 ThreadUtil.buildFactory("RpcExecutor", 10)
         );
         this.nameserverRpcFacade = new NameserverRpcFacade(client, nameserverRpcExecutor);
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, "ScheduledExecutor"));
     }
 
     @Override
@@ -51,6 +53,8 @@ public class BrokerController extends AbstractNothingService {
         this.server.startup();
         this.client.startup();
         registerBroker();
+        // @link org.apache.rocketmq.common.BrokerConfig#registerNameServerPeriod
+        this.scheduledExecutor.scheduleWithFixedDelay(this::registerBroker, 10, 30, TimeUnit.SECONDS);
         super.startup();
     }
 

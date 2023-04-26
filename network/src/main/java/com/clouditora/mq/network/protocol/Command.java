@@ -1,10 +1,11 @@
 package com.clouditora.mq.network.protocol;
 
 import com.alibaba.fastjson2.annotation.JSONField;
-import com.clouditora.mq.common.command.RequestCode;
 import com.clouditora.mq.common.command.CommandHeader;
+import com.clouditora.mq.common.command.RequestCode;
 import com.clouditora.mq.common.constant.ClassCanonical;
 import com.clouditora.mq.common.constant.SerializeType;
+import com.clouditora.mq.common.util.JsonUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -67,17 +68,14 @@ public class Command {
         return (this.flag & BIT_ONEWAY) == BIT_ONEWAY;
     }
 
-    public void addExtField(String key, String value) {
-        if (null == extFields) {
-            extFields = new HashMap<>();
-        }
-        extFields.put(key, value);
+    private Field[] getClassFields(Class<? extends CommandHeader> clazz) {
+        return HEADER_FIELD_MAP.computeIfAbsent(clazz, k -> clazz.getDeclaredFields());
     }
 
     /**
      * @link org.apache.rocketmq.remoting.protocol.RemotingCommand#makeCustomHeaderToNet
      */
-    public void headerToExtFields() {
+    public void encodeHeader() {
         if (this.header == null) {
             return;
         }
@@ -94,6 +92,10 @@ public class Command {
             if (name.startsWith("this")) {
                 continue;
             }
+            JSONField jsonField = field.getAnnotation(JSONField.class);
+            if (jsonField != null && jsonField.name() != null) {
+                name = jsonField.name();
+            }
             try {
                 field.setAccessible(true);
                 Object value = field.get(this.header);
@@ -102,21 +104,17 @@ public class Command {
                 }
             } catch (UnsupportedOperationException e) {
                 this.extFields = new HashMap<>(this.extFields);
-                headerToExtFields();
+                encodeHeader();
             } catch (Exception e) {
                 log.error("header to ext field exception", e);
             }
         }
     }
 
-    private Field[] getClassFields(Class<? extends CommandHeader> clazz) {
-        return HEADER_FIELD_MAP.computeIfAbsent(clazz, k -> clazz.getDeclaredFields());
-    }
-
     /**
      * @link org.apache.rocketmq.remoting.protocol.RemotingCommand#decodeCommandCustomHeader
      */
-    public <T extends CommandHeader> T extFieldsToHeader(Class<T> clazz) {
+    public <T extends CommandHeader> T decodeHeader(Class<T> clazz) {
         if (MapUtils.isEmpty(this.extFields)) {
             return null;
         }
@@ -150,6 +148,14 @@ public class Command {
             }
         }
         return instance;
+    }
+
+    public <T> T decodeBody(Class<T> clazz) {
+        if (this.serializeType == SerializeType.JSON) {
+            return JsonUtil.parse(this.body, clazz);
+        } else {
+            return null;
+        }
     }
 
     public static Command buildRequest(int code, CommandHeader header) {

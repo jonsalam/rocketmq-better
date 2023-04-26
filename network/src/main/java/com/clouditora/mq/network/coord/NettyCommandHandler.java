@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Getter
-public class CommandProcessor implements CallbackExecutor {
+public class NettyCommandHandler implements CallbackExecutor {
     protected final ConcurrentMap<Integer, CommandFuture> commandMap;
     /**
      * This container holds all processors per request code, aka, for each incoming request, we may look up the
@@ -37,7 +37,7 @@ public class CommandProcessor implements CallbackExecutor {
     protected CommandRequestExecutor defaultProcessor;
     protected ExecutorService callbackExecutor;
 
-    public CommandProcessor(ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
+    public NettyCommandHandler(ConcurrentMap<Integer, CommandFuture> commandMap, ExecutorService callbackExecutor) {
         this.commandMap = commandMap;
         this.callbackExecutor = callbackExecutor;
     }
@@ -50,7 +50,7 @@ public class CommandProcessor implements CallbackExecutor {
     }
 
     public void processCommand(ChannelHandlerContext context, Command command) {
-        log.debug("received: {}", command);
+        log.debug("process: {}", command);
         if (command == null) {
             return;
         }

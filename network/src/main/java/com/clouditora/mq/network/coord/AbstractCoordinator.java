@@ -28,7 +28,7 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
      */
     protected final ConcurrentMap<Integer, CommandFuture> commandMap = new ConcurrentHashMap<>(256);
     protected final CommandCleaner commandCleaner;
-    protected final CommandProcessor commandProcessor;
+    protected final NettyCommandHandler nettyCommandHandler;
     /**
      * Executor to feed netty events to user defined {@link ChannelEventListener}.
      */
@@ -44,7 +44,7 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
 
     protected AbstractCoordinator(CoordinatorConfig config, ChannelEventListener channelEventListener) {
         this.commandCleaner = new CommandCleaner(commandMap, getCallbackExecutor());
-        this.commandProcessor = new CommandProcessor(commandMap, getCallbackExecutor());
+        this.nettyCommandHandler = new NettyCommandHandler(commandMap, getCallbackExecutor());
 
         this.channelEventExecutor = new ChannelEventExecutor(channelEventListener);
         this.nettyDefaultEventExecutor = new DefaultEventExecutorGroup(
@@ -75,15 +75,15 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
     }
 
     public void registerProcessor(int code, CommandRequestProcessor processor, ExecutorService executor) {
-        this.commandProcessor.registerProcessor(code, processor, executor);
+        this.nettyCommandHandler.registerProcessor(code, processor, executor);
     }
 
     public void setDefaultProcessor(CommandRequestProcessor processor, ExecutorService executor) {
-        this.commandProcessor.setDefaultProcessor(CommandRequestExecutor.of(processor, executor));
+        this.nettyCommandHandler.setDefaultProcessor(CommandRequestExecutor.of(processor, executor));
     }
 
     public void processCommand(ChannelHandlerContext channel, Command command) throws Exception {
-        commandProcessor.processCommand(channel, command);
+        nettyCommandHandler.processCommand(channel, command);
     }
 
 }

@@ -43,7 +43,7 @@ public class DefaultRequestProcessor implements CommandRequestProcessor {
      * @link org.apache.rocketmq.namesrv.processor.DefaultRequestProcessor#registerBrokerWithFilterServer
      */
     private Command registerBrokerWithFilterServer(ChannelHandlerContext context, Command request) {
-        BrokerRegister.RequestHeader requestHeader = request.extFieldsToHeader(BrokerRegister.RequestHeader.class);
+        BrokerRegister.RequestHeader requestHeader = request.decodeHeader(BrokerRegister.RequestHeader.class);
         this.routeInfoManager.registerBroker(
                 requestHeader.getClusterName(),
                 requestHeader.getBrokerName(),
@@ -58,7 +58,7 @@ public class DefaultRequestProcessor implements CommandRequestProcessor {
      * @link org.apache.rocketmq.namesrv.processor.DefaultRequestProcessor#unregisterBroker
      */
     private Command unregisterBroker(ChannelHandlerContext context, Command request) {
-        BrokerUnregister.RequestHeader requestHeader = request.extFieldsToHeader(BrokerUnregister.RequestHeader.class);
+        BrokerUnregister.RequestHeader requestHeader = request.decodeHeader(BrokerUnregister.RequestHeader.class);
         this.routeInfoManager.unregisterBroker(
                 requestHeader.getClusterName(),
                 requestHeader.getBrokerName(),

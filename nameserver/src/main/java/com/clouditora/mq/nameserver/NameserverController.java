@@ -20,11 +20,11 @@ public class NameserverController extends AbstractNothingService {
     /**
      * @link org.apache.rocketmq.namesrv.NamesrvController#remotingExecutor
      */
-    private ExecutorService defaultExecutor;
+    private final ExecutorService defaultExecutor;
     /**
      * @link org.apache.rocketmq.namesrv.NamesrvController#remotingServer
      */
-    private Server server;
+    private final Server server;
 
     public NameserverController(NameserverConfig nameserverConfig, ServerNetworkConfig serverNetworkConfig) {
         this.nameserverConfig = nameserverConfig;

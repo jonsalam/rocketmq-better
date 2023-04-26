@@ -60,7 +60,7 @@ class CommandCodecTest {
         encode.setRemark("remark");
         encode.setExtFields(Map.of("hello", "world"));
         encode.setHeader(requestHeader);
-        encode.headerToExtFields();
+        encode.encodeHeader();
         encode.setHeader(null);
         encode.setSerializeType(SerializeType.JSON);
 

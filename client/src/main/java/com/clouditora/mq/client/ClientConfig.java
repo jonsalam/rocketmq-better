@@ -15,11 +15,12 @@ import java.util.stream.Collectors;
  */
 @Data
 public class ClientConfig {
+    public static final String DEFAULT_INSTANCE = "DEFAULT";
     private String namesrvAddr = System.getProperty(GlobalConstant.NAMESRV_ADDR_PROPERTY, System.getenv(GlobalConstant.NAMESRV_ADDR_ENV));
     private String clientIP = NetworkUtil.getLocalIp();
-    private String instanceName = System.getProperty("rocketmq.client.name", "DEFAULT");
+    private String instanceName = System.getProperty("rocketmq.client.name", DEFAULT_INSTANCE);
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
-    protected String namespace;
+    private String namespace;
     private boolean namespaceInitialized = false;
     /**
      * Pulling topic information interval from the named server
@@ -40,5 +41,12 @@ public class ClientConfig {
 
     public List<String> getNameserverEndpoints() {
         return Arrays.stream(Optional.ofNullable(namesrvAddr).orElse("localhost:9876").split(";")).collect(Collectors.toList());
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.ClientConfig#buildMQClientId
+     */
+    public String buildClientId() {
+        return instanceName;
     }
 }

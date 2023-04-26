@@ -16,7 +16,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
-public class ClientChannelPool extends AbstractScheduledService {
+public class ClientChannelPool {
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#LOCK_TIMEOUT_MILLIS
      */
@@ -39,26 +39,9 @@ public class ClientChannelPool extends AbstractScheduledService {
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#namesrvChannelLock
      */
     protected final Lock lock = new ReentrantLock();
-    protected final Runnable task;
 
-    public ClientChannelPool(ClientChannelCache channelPool, Runnable task) {
+    public ClientChannelPool(ClientChannelCache channelPool) {
         this.channelPool = channelPool;
-        this.task = task;
-    }
-
-    @Override
-    public String getServiceName() {
-        return "ClientChannelPool";
-    }
-
-    /**
-     * Allowing values are between 10, 000 and 60, 000 milliseconds.
-     *
-     * @link org.apache.rocketmq.common.BrokerConfig#registerNameServerPeriod
-     */
-    @Override
-    public void startup() {
-        register(TimeUnit.SECONDS, 10, 30, task);
     }
 
     public List<String> getNameserverEndpoints() {

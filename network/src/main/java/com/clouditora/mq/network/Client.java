@@ -46,13 +46,13 @@ public class Client extends AbstractCoordinator {
     @Setter
     private ExecutorService callbackExecutor;
 
-    public Client(ClientNetworkConfig config, ChannelEventListener channelEventListener, Runnable nameserverScheduled) {
+    public Client(ClientNetworkConfig config, ChannelEventListener channelEventListener) {
         super(config, channelEventListener);
         this.config = config;
         this.nettyBootstrap = new Bootstrap();
         this.nettyWorkerExecutor = new NioEventLoopGroup(1, (ThreadFactory) r -> new Thread(r, getServiceName() + "#NettyWorker"));
         ClientChannelCache channelHolder = new ClientChannelCache(config, this.nettyBootstrap);
-        this.channelPool = new ClientChannelPool(channelHolder, nameserverScheduled);
+        this.channelPool = new ClientChannelPool(channelHolder);
         this.commandInvoker = new ClientCommandInvoker(
                 this.config,
                 super.commandMap,

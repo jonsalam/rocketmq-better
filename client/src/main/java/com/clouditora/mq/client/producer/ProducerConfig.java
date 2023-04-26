@@ -1,5 +1,6 @@
-package com.clouditora.mq.client;
+package com.clouditora.mq.client.producer;
 
+import com.clouditora.mq.client.ClientConfig;
 import com.clouditora.mq.common.constant.SystemTopic;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -1,36 +1,36 @@
 package com.clouditora.mq.client.producer;
 
-import com.clouditora.mq.client.ProducerConfig;
+import com.clouditora.mq.client.ClientConfig;
+import com.clouditora.mq.client.instance.ClientInstance;
+import com.clouditora.mq.client.instance.InstanceFactory;
+import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.service.AbstractNothingService;
-import com.clouditora.mq.common.util.ThreadUtil;
+import com.clouditora.mq.network.ClientNetworkConfig;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.*;
 
 /**
  * @link org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl
  */
 @Slf4j
 public class DefaultMqProducer extends AbstractNothingService {
-    protected ProducerConfig producerConfig;
-    private final BlockingQueue<Runnable> asyncSenderQueue;
-    private final ExecutorService asyncSenderExecutor;
+    protected final ClientConfig clientConfig;
+    protected final ClientNetworkConfig networkConfig;
+    protected final ProducerConfig producerConfig;
+    protected final ClientInstance clientInstance;
 
-    public DefaultMqProducer(String producerGroup) {
+    public DefaultMqProducer(String producerGroup, ClientConfig clientConfig, ClientNetworkConfig networkConfig) {
         super();
+        String instanceName = clientConfig.getInstanceName();
+        if (ClientConfig.DEFAULT_INSTANCE.equals(instanceName)) {
+            // @link org.apache.rocketmq.client.ClientConfig#changeInstanceNameToPID
+            clientConfig.setInstanceName(String.format("%s#%d", GlobalConstant.PID, System.nanoTime()));
+        }
+        this.clientConfig = clientConfig;
+        this.networkConfig = networkConfig;
         this.producerConfig = new ProducerConfig();
         this.producerConfig.setProducerGroup(producerGroup);
 
-        this.asyncSenderQueue = new LinkedBlockingQueue<>(50000);
-        int poolSize = Runtime.getRuntime().availableProcessors();
-        this.asyncSenderExecutor = new ThreadPoolExecutor(
-                poolSize,
-                poolSize,
-                1000 * 60,
-                TimeUnit.MILLISECONDS,
-                this.asyncSenderQueue,
-                ThreadUtil.buildFactory("AsyncSenderExecutor", poolSize)
-        );
+        this.clientInstance = InstanceFactory.create(clientConfig);
     }
 
     @Override
@@ -38,4 +38,8 @@ public class DefaultMqProducer extends AbstractNothingService {
         return "Producer";
     }
 
+    @Override
+    public void startup() {
+        super.startup();
+    }
 }

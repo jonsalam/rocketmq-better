@@ -42,7 +42,7 @@ public class CommandCodec {
         // skip, 因为一开始不知道长度
         byteBuf.writeLong(0);
         int fieldsLength;
-        command.headerToExtFields();
+        command.encodeHeader();
         if (command.getSerializeType() == SerializeType.BINARY) {
             int begin = byteBuf.writerIndex();
             encodeFieldsByBinary(byteBuf, command);
