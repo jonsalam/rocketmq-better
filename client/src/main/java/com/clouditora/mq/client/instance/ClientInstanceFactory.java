@@ -8,11 +8,11 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * @link org.apache.rocketmq.client.impl.MQClientManager
  */
-public class InstanceFactory {
+public class ClientInstanceFactory {
     private static final ConcurrentMap<String, ClientInstance> CACHE = new ConcurrentHashMap<>();
-    private static final InstanceFactory instance = new InstanceFactory();
+    private static final ClientInstanceFactory instance = new ClientInstanceFactory();
 
-    private InstanceFactory() {
+    private ClientInstanceFactory() {
     }
 
     /**

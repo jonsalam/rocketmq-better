@@ -1,11 +1,17 @@
 package com.clouditora.mq.client.instance;
 
 import com.clouditora.mq.client.ClientConfig;
+import com.clouditora.mq.client.producer.DefaultMqProducer;
+import com.clouditora.mq.common.command.protocol.ClientHeartBeat;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.network.Client;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ClientInstance extends AbstractNothingService {
     private final ClientConfig clientConfig;
     private final Client client;
+    private final ConcurrentMap<String, DefaultMqProducer> producerMap = new ConcurrentHashMap<>();
     /**
      * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#lockHeartbeat
      */
@@ -30,7 +37,7 @@ public class ClientInstance extends AbstractNothingService {
 
     @Override
     public String getServiceName() {
-        return "ClientInstance#" + this.clientConfig.getInstanceName();
+        return "Client#" + this.clientConfig.getInstanceName();
     }
 
     @Override
@@ -38,10 +45,6 @@ public class ClientInstance extends AbstractNothingService {
         this.client.updateNameserverEndpoints(this.clientConfig.getNameserverEndpoints());
         this.client.startup();
         super.startup();
-    }
-
-    public void registerProducer(){
-
     }
 
     /**
@@ -60,5 +63,10 @@ public class ClientInstance extends AbstractNothingService {
         } else {
             log.warn("lock heartBeat, but failed. [{}]", this.clientId);
         }
+    }
+
+    private void sendHeartbeatToAllBroker() {
+        Set<String> producerGroups = producerMap.keySet();
+        ClientHeartBeat
     }
 }

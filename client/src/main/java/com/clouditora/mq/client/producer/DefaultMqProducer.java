@@ -2,7 +2,7 @@ package com.clouditora.mq.client.producer;
 
 import com.clouditora.mq.client.ClientConfig;
 import com.clouditora.mq.client.instance.ClientInstance;
-import com.clouditora.mq.client.instance.InstanceFactory;
+import com.clouditora.mq.client.instance.ClientInstanceFactory;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.network.ClientNetworkConfig;
@@ -30,7 +30,7 @@ public class DefaultMqProducer extends AbstractNothingService {
         this.producerConfig = new ProducerConfig();
         this.producerConfig.setProducerGroup(producerGroup);
 
-        this.clientInstance = InstanceFactory.create(clientConfig);
+        this.clientInstance = ClientInstanceFactory.create(clientConfig);
     }
 
     @Override
