@@ -1,0 +1,24 @@
+@startuml
+class MQClientInstance {
+  - topicRouteTable: Map<String, TopicRouteData>
+}
+
+class TopicRouteData {
+  - queueDatas: List<QueueData>
+  - brokerDatas: List<BrokerData>
+}
+
+class QueueData {
+  - readQueueNums: int
+  - writeQueueNums: int
+}
+
+class BrokerData {
+  - brokerAddrs: Map<Long, String>
+}
+
+MQClientInstance -> TopicRouteData : topicRouteTable
+TopicRouteData -> QueueData : queueDatas
+TopicRouteData -> BrokerData : brokerDatas
+BrokerData -> Map : brokerAddrs
+@enduml

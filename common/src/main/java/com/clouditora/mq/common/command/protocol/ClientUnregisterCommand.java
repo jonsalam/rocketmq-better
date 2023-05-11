@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.command.CommandHeader;
 import lombok.Data;
 
-public class ClientUnregister {
+public class ClientUnregisterCommand {
     /**
      * @link org.apache.rocketmq.common.protocol.header.UnregisterClientRequestHeader
      */

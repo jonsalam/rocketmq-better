@@ -1,6 +1,5 @@
 package com.clouditora.mq.common.route;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,16 +14,15 @@ import java.util.Map;
 @Data
 public class BrokerEndpoint {
     private String cluster;
-    private String brokerName;
+    private String name;
     /**
      * id: endpoint
      */
-    @JSONField(name = "addressMap")
     private HashMap<Long, String> endpointMap;
 
-    public BrokerEndpoint(String cluster, String broker) {
+    public BrokerEndpoint(String cluster, String name) {
         this.cluster = cluster;
-        this.brokerName = broker;
+        this.name = name;
         this.endpointMap = new HashMap<>();
     }
 

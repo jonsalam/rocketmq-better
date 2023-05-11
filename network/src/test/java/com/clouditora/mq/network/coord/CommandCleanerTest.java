@@ -20,7 +20,7 @@ class CommandCleanerTest {
         CommandCleaner cleaner = new CommandCleaner(commandMap, null) {
             @Override
             public void startup() {
-                register(10, 10, this::cleanTimeoutCommand);
+                scheduled(10, 10, this::cleanTimeoutCommand);
             }
 
             @Override

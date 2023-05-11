@@ -135,7 +135,7 @@ public class CommandCodec {
         // code
         command.setCode(byteBuf.readShort());
         // language
-        command.setLanguage(EnumUtil.ofCode(LanguageCode.class, byteBuf.readByte()));
+        command.setLanguage(EnumUtil.ofCode(byteBuf.readByte(), LanguageCode.class));
         // version
         command.setVersion(byteBuf.readShort());
         // opaque
@@ -208,7 +208,7 @@ public class CommandCodec {
 
     static SerializeType decodeSerializeType(int flag) {
         byte code = (byte) ((flag >> 24) & 0xFF);
-        return EnumUtil.ofCode(SerializeType.class, code);
+        return EnumUtil.ofCode(code, SerializeType.class);
     }
 
     /**

@@ -3,7 +3,6 @@ package com.clouditora.mq.common.util;
 import lombok.extern.slf4j.Slf4j;
 
 import java.beans.FeatureDescriptor;
-import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
@@ -17,16 +16,13 @@ import java.util.stream.Stream;
 public class BeanUtil {
     private static final ConcurrentMap<Class<?>, List<PropertyDescriptor>> CACHE = new ConcurrentHashMap<>();
 
-    public static <T> T copy(Object source, Class<T> clazz) {
+    public static <T> T copy(T source) {
+        if (source == null) {
+            return null;
+        }
         try {
-            T target = clazz.getConstructor().newInstance();
-
-            Class<?> sourceClass = source.getClass();
-            if (sourceClass != clazz) {
-                log.error("copy {} exception: source class {} different from target", clazz, sourceClass);
-                return null;
-            }
-            for (PropertyDescriptor pd : getPropertyDescriptors(clazz)) {
+            T target = (T) source.getClass().getConstructor().newInstance();
+            for (PropertyDescriptor pd : getPropertyDescriptors(source.getClass())) {
                 Method getter = pd.getReadMethod();
                 if (getter == null) {
                     continue;
@@ -40,7 +36,7 @@ public class BeanUtil {
             }
             return target;
         } catch (Exception e) {
-            log.error("copy {} exception", clazz, e);
+            log.error("copy {} exception", source.getClass(), e);
             return null;
         }
     }

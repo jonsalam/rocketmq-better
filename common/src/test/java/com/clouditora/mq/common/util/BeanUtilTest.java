@@ -5,8 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BeanUtilTest {
 
@@ -27,8 +26,9 @@ class BeanUtilTest {
     @Test
     void copy() {
         Child source = new Child();
-        Child target = BeanUtil.copy(source, Child.class);
+        Child target = BeanUtil.copy(source);
         assertNotSame(source, target);
         assertEquals(source, target);
+        assertNotEquals(System.identityHashCode(source), System.identityHashCode(target));
     }
 }

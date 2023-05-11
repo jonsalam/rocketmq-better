@@ -1,4 +1,4 @@
-package com.clouditora.mq.client;
+package com.clouditora.mq.client.instance;
 
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.util.NetworkUtil;

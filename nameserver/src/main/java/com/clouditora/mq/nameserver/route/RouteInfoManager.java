@@ -24,17 +24,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class RouteInfoManager extends AbstractScheduledService {
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 120_000;
     /**
-     * brokerName: BrokerEndpoint
-     *
-     * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#brokerAddrTable
-     */
-    private final Map<String, BrokerEndpoint> brokerEndpointMap;
-    /**
      * clusterName: BrokerName
      *
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#clusterAddrTable
      */
     private final Map<String, BrokerName> brokerNameMap;
+    /**
+     * brokerName: BrokerEndpoint
+     *
+     * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#brokerAddrTable
+     */
+    private final Map<String, BrokerEndpoint> brokerEndpointMap;
     /**
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#brokerLiveTable
      */
@@ -54,34 +54,34 @@ public class RouteInfoManager extends AbstractScheduledService {
 
     @Override
     public void startup() {
-        register(TimeUnit.SECONDS, 5, 10, RouteInfoManager.this::evictInactiveBroker);
+        scheduled(TimeUnit.SECONDS, 5, 10, RouteInfoManager.this::evictInactiveBroker);
     }
 
     /**
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#registerBroker
      */
-    public void registerBroker(String cluster, String brokerNameStr, String endpointStr, long brokerId, Channel channel) {
+    public void registerBroker(String cluster, String name, String endpoint, long id, Channel channel) {
         try {
             try {
                 this.lock.writeLock().lockInterruptibly();
-                log.info("register broker: cluster={}, broker={}, endpoint={}, id={}", cluster, brokerNameStr, endpointStr, brokerId);
+                log.info("register broker: cluster={}, broker={}, endpoint={}, id={}", cluster, name, endpoint, id);
 
-                BrokerName brokerName = this.brokerNameMap.computeIfAbsent(cluster, k -> {
+                BrokerName names = this.brokerNameMap.computeIfAbsent(cluster, k -> {
                     log.info("register cluster: {}", cluster);
                     return new BrokerName();
                 });
-                brokerName.add(brokerNameStr);
+                names.add(name);
 
-                BrokerEndpoint endpoint = this.brokerEndpointMap.computeIfAbsent(brokerNameStr, k -> {
-                    log.info("register broker: {}", brokerNameStr);
-                    return new BrokerEndpoint(cluster, brokerNameStr);
+                BrokerEndpoint endpoints = this.brokerEndpointMap.computeIfAbsent(name, k -> {
+                    log.info("register broker: {}", name);
+                    return new BrokerEndpoint(cluster, name);
                 });
-                endpoint.put(brokerId, endpointStr);
+                endpoints.put(id, endpoint);
 
                 BrokerAlive brokerAlive = new BrokerAlive();
-                brokerAlive.setEndpoint(endpointStr);
+                brokerAlive.setEndpoint(endpoint);
                 brokerAlive.setChannel(channel);
-                this.brokerAliveMap.put(endpointStr, brokerAlive);
+                this.brokerAliveMap.put(endpoint, brokerAlive);
             } finally {
                 this.lock.writeLock().unlock();
             }
@@ -93,21 +93,21 @@ public class RouteInfoManager extends AbstractScheduledService {
     /**
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#unregisterBroker
      */
-    public void unregisterBroker(String cluster, String brokerNameStr, String endpointStr, long brokerId) {
+    public void unregisterBroker(String cluster, String name, String endpoint, long id) {
         try {
             try {
                 this.lock.writeLock().lockInterruptibly();
-                log.info("unregister broker: cluster={}, broker={}, id={}", cluster, brokerNameStr, brokerId);
+                log.info("unregister broker: cluster={}, broker={}, id={}", cluster, name, id);
 
-                this.brokerAliveMap.remove(endpointStr);
+                this.brokerAliveMap.remove(endpoint);
 
-                BrokerEndpoint endpoint = this.brokerEndpointMap.get(endpointStr);
-                boolean isEmpty = endpoint.removeById(brokerId);
+                BrokerEndpoint endpoints = this.brokerEndpointMap.get(endpoint);
+                boolean isEmpty = endpoints.removeById(id);
                 if (isEmpty) {
-                    this.brokerEndpointMap.remove(brokerNameStr);
-                    BrokerName brokerName = this.brokerNameMap.get(cluster);
-                    if (brokerName != null) {
-                        isEmpty = brokerName.remove(brokerNameStr);
+                    this.brokerEndpointMap.remove(name);
+                    BrokerName names = this.brokerNameMap.get(cluster);
+                    if (names != null) {
+                        isEmpty = names.remove(name);
                         if (isEmpty) {
                             this.brokerNameMap.remove(cluster);
                             log.info("unregister cluster: {}", cluster);
@@ -125,29 +125,29 @@ public class RouteInfoManager extends AbstractScheduledService {
     /**
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#onChannelDestroy
      */
-    public void unregisterBroker(String endpointStr, Channel channel) {
+    public void unregisterBroker(String endpoint, Channel channel) {
         try {
             try {
                 this.lock.writeLock().lockInterruptibly();
-                log.info("close channel: endpoint={}, channel={}", endpointStr, channel);
+                log.info("close channel: endpoint={}, channel={}", endpoint, channel);
 
-                endpointStr = Optional.ofNullable(getEndpointByChannel(channel)).orElse(endpointStr);
-                if (StringUtils.isBlank(endpointStr)) {
+                endpoint = Optional.ofNullable(getEndpointByChannel(channel)).orElse(endpoint);
+                if (StringUtils.isBlank(endpoint)) {
                     log.warn("close channel: broker endpoint is null");
                     return;
                 }
 
-                this.brokerAliveMap.remove(endpointStr);
+                this.brokerAliveMap.remove(endpoint);
 
-                BrokerEndpoint endpoint = findEndpointByEndpointStr(endpointStr);
-                if (endpoint != null) {
-                    endpoint.removeByEndpoint(endpointStr);
-                    if (endpoint.isEmpty()) {
+                BrokerEndpoint endpoints = findEndpointByEndpointStr(endpoint);
+                if (endpoints != null) {
+                    endpoints.removeByEndpoint(endpoint);
+                    if (endpoints.isEmpty()) {
                         Iterator<Map.Entry<String, BrokerName>> it = this.brokerNameMap.entrySet().iterator();
                         while (it.hasNext()) {
                             Map.Entry<String, BrokerName> entry = it.next();
                             BrokerName brokerName = entry.getValue();
-                            boolean removed = brokerName.remove(endpoint.getBrokerName());
+                            boolean removed = brokerName.remove(endpoints.getName());
                             if (removed && brokerName.isEmpty()) {
                                 it.remove();
                                 log.info("unregister cluster: {}", entry.getKey());
@@ -165,6 +165,10 @@ public class RouteInfoManager extends AbstractScheduledService {
     }
 
     private BrokerEndpoint findEndpointByEndpointStr(String endpoint) {
+        this.brokerEndpointMap.values().stream()
+                .filter(e -> e.findIdByEndpoint(endpoint)!=null)
+                .findFirst()
+                .orElse(null);
         for (Map.Entry<String, BrokerEndpoint> entry : this.brokerEndpointMap.entrySet()) {
             Long id = entry.getValue().findIdByEndpoint(endpoint);
             if (id != null) {
@@ -192,14 +196,13 @@ public class RouteInfoManager extends AbstractScheduledService {
         Iterator<Map.Entry<String, BrokerAlive>> it = this.brokerAliveMap.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, BrokerAlive> next = it.next();
-            String endpoint = next.getKey();
-            BrokerAlive info = next.getValue();
-            if (System.currentTimeMillis() - info.getUpdateTime() > BROKER_CHANNEL_EXPIRED_TIME) {
-                Channel channel = info.getChannel();
+            BrokerAlive alive = next.getValue();
+            if (alive.isInactive(BROKER_CHANNEL_EXPIRED_TIME)) {
+                Channel channel = alive.getChannel();
                 CoordinatorUtil.closeChannel(channel);
                 it.remove();
-                log.warn("broker {} expired", endpoint);
-                unregisterBroker(endpoint, channel);
+                log.warn("broker {} expired", alive.getEndpoint());
+                unregisterBroker(alive.getEndpoint(), channel);
             }
         }
     }

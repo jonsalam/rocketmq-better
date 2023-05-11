@@ -23,7 +23,7 @@ class AbstractScheduledServiceTest {
 
             @Override
             public void startup() {
-                register(TimeUnit.MICROSECONDS, 10, 10, latch::countDown);
+                scheduled(TimeUnit.MICROSECONDS, 10, 10, latch::countDown);
             }
         };
         service.startup();

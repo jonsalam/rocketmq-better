@@ -1,4 +1,4 @@
-package com.clouditora.mq.client;
+package com.clouditora.mq.client.consumer;
 
 import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.MessageModel;

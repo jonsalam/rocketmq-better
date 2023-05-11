@@ -30,7 +30,7 @@ public class CommandCleaner extends AbstractScheduledService implements Callback
 
     @Override
     public void startup() {
-        register(3000, 1000, this::cleanTimeoutCommand);
+        scheduled(3000, 1000, this::cleanTimeoutCommand);
     }
 
     /**

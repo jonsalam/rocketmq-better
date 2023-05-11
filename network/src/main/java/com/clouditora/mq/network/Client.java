@@ -100,13 +100,11 @@ public class Client extends AbstractCoordinator {
             WriteBufferWaterMark waterMark = new WriteBufferWaterMark(config.getWriteBufferLowWaterMark(), config.getWriteBufferHighWaterMark());
             this.nettyBootstrap.option(ChannelOption.WRITE_BUFFER_WATER_MARK, waterMark);
         }
-        this.channelPool.startup();
         super.startup();
     }
 
     @Override
     public void shutdown() {
-        this.channelPool.shutdown();
         super.shutdown();
     }
 
@@ -116,15 +114,15 @@ public class Client extends AbstractCoordinator {
     }
 
     public Command syncInvoke(String endpoint, Command request, long timeout) throws TimeoutException, InterruptedException, ConnectException {
-        return commandInvoker.syncInvoke(endpoint, request, timeout);
+        return this.commandInvoker.syncInvoke(endpoint, request, timeout);
     }
 
     public void asyncInvoke(String endpoint, Command request, long timeout, CommandFutureCallback callback) throws TimeoutException, ConnectException {
-        commandInvoker.asyncInvoke(endpoint, request, timeout, callback);
+        this.commandInvoker.asyncInvoke(endpoint, request, timeout, callback);
     }
 
     public void onewayInvoke(String endpoint, Command request, long timeout) throws TimeoutException, ConnectException {
-        commandInvoker.onewayInvoke(endpoint, request, timeout);
+        this.commandInvoker.onewayInvoke(endpoint, request, timeout);
     }
 
     public List<String> getNameserverEndpoints() {

@@ -1,6 +1,7 @@
 package com.clouditora.mq.common.command.protocol;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.clouditora.mq.common.command.CommandJsonBody;
 import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.MessageModel;
 import lombok.Data;
@@ -8,12 +9,12 @@ import lombok.Data;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ClientHeartBeat {
+public class ClientHeartBeatCommand {
     /**
      * @link org.apache.rocketmq.common.protocol.heartbeat.HeartbeatData
      */
     @Data
-    public static class RequestBody {
+    public static class RequestBody implements CommandJsonBody {
         @JSONField(name = "clientID")
         private String clientId;
         @JSONField(name = "producerDataSet")

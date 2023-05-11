@@ -1,5 +1,6 @@
 package com.clouditora.mq.network.coord;
 
+import com.clouditora.mq.common.command.RequestCode;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.common.util.ThreadUtil;
 import com.clouditora.mq.network.ChannelEventListener;
@@ -76,6 +77,10 @@ public abstract class AbstractCoordinator extends AbstractNothingService impleme
 
     public void registerProcessor(int code, CommandRequestProcessor processor, ExecutorService executor) {
         this.nettyCommandHandler.registerProcessor(code, processor, executor);
+    }
+
+    public void registerProcessor(RequestCode code, CommandRequestProcessor processor, ExecutorService executor) {
+        registerProcessor(code.getCode(), processor, executor);
     }
 
     public void setDefaultProcessor(CommandRequestProcessor processor, ExecutorService executor) {

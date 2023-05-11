@@ -1,8 +1,8 @@
 package com.clouditora.mq.nameserver.processor;
 
 import com.clouditora.mq.common.command.RequestCode;
-import com.clouditora.mq.common.command.protocol.BrokerRegister;
-import com.clouditora.mq.common.command.protocol.BrokerUnregister;
+import com.clouditora.mq.common.command.protocol.BrokerRegisterCommand;
+import com.clouditora.mq.common.command.protocol.BrokerUnregisterCommand;
 import com.clouditora.mq.common.util.EnumUtil;
 import com.clouditora.mq.nameserver.route.RouteInfoManager;
 import com.clouditora.mq.network.CommandRequestProcessor;
@@ -24,7 +24,7 @@ public class DefaultRequestProcessor implements CommandRequestProcessor {
 
     @Override
     public Command process(ChannelHandlerContext context, Command request) throws Exception {
-        RequestCode requestCode = EnumUtil.ofCode(RequestCode.class, request.getCode());
+        RequestCode requestCode = EnumUtil.ofCode(request.getCode(), RequestCode.class);
         switch (requestCode) {
             case REGISTER_BROKER -> {
                 return registerBrokerWithFilterServer(context, request);
@@ -43,7 +43,7 @@ public class DefaultRequestProcessor implements CommandRequestProcessor {
      * @link org.apache.rocketmq.namesrv.processor.DefaultRequestProcessor#registerBrokerWithFilterServer
      */
     private Command registerBrokerWithFilterServer(ChannelHandlerContext context, Command request) {
-        BrokerRegister.RequestHeader requestHeader = request.decodeHeader(BrokerRegister.RequestHeader.class);
+        BrokerRegisterCommand.RequestHeader requestHeader = request.decodeHeader(BrokerRegisterCommand.RequestHeader.class);
         this.routeInfoManager.registerBroker(
                 requestHeader.getClusterName(),
                 requestHeader.getBrokerName(),
@@ -58,7 +58,7 @@ public class DefaultRequestProcessor implements CommandRequestProcessor {
      * @link org.apache.rocketmq.namesrv.processor.DefaultRequestProcessor#unregisterBroker
      */
     private Command unregisterBroker(ChannelHandlerContext context, Command request) {
-        BrokerUnregister.RequestHeader requestHeader = request.decodeHeader(BrokerUnregister.RequestHeader.class);
+        BrokerUnregisterCommand.RequestHeader requestHeader = request.decodeHeader(BrokerUnregisterCommand.RequestHeader.class);
         this.routeInfoManager.unregisterBroker(
                 requestHeader.getClusterName(),
                 requestHeader.getBrokerName(),

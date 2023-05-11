@@ -9,20 +9,20 @@ import java.util.Set;
 @Slf4j
 @Data
 public class BrokerName {
-    private Set<String> brokerNames = new HashSet<>();
+    private Set<String> names = new HashSet<>();
 
-    public void add(String brokerName) {
-        this.brokerNames.add(brokerName);
+    public void add(String name) {
+        this.names.add(name);
     }
 
-    public boolean remove(String brokerName) {
-        boolean removed = this.brokerNames.remove(brokerName);
-        log.info("remove broker name: name={}, removed={}", brokerName, removed);
+    public boolean remove(String name) {
+        boolean removed = this.names.remove(name);
+        log.info("remove broker name: name={}, removed={}", name, removed);
         return removed;
     }
 
     public boolean isEmpty() {
-        return this.brokerNames.isEmpty();
+        return this.names.isEmpty();
     }
 
 }

@@ -22,7 +22,7 @@ public abstract class AbstractScheduledService extends AbstractNothingService {
         this(TimeUnit.MILLISECONDS);
     }
 
-    public void register(TimeUnit timeUnit, long delay, long period, Runnable runnable) {
+    public void scheduled(TimeUnit timeUnit, long delay, long period, Runnable runnable) {
         this.scheduledExecutor.scheduleWithFixedDelay(
                 runnable,
                 delay,
@@ -31,8 +31,8 @@ public abstract class AbstractScheduledService extends AbstractNothingService {
         );
     }
 
-    public void register(long delay, long period, Runnable runnable) {
-        register(this.timeUnit, delay, period, runnable);
+    public void scheduled(long delay, long period, Runnable runnable) {
+        scheduled(this.timeUnit, delay, period, runnable);
     }
 
     public void shutdown(boolean interrupt, long timeout) {

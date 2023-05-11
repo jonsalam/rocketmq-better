@@ -1,6 +1,5 @@
 package com.clouditora.mq.network.client;
 
-import com.clouditora.mq.common.service.AbstractScheduledService;
 import com.clouditora.mq.network.exception.ConnectException;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +20,7 @@ public class ClientChannelPool {
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#LOCK_TIMEOUT_MILLIS
      */
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
-
-    protected final ClientChannelCache channelPool;
+    protected final ClientChannelCache channelCache;
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#namesrvAddrList
      */
@@ -40,8 +38,8 @@ public class ClientChannelPool {
      */
     protected final Lock lock = new ReentrantLock();
 
-    public ClientChannelPool(ClientChannelCache channelPool) {
-        this.channelPool = channelPool;
+    public ClientChannelPool(ClientChannelCache channelCache) {
+        this.channelCache = channelCache;
     }
 
     public List<String> getNameserverEndpoints() {
@@ -57,7 +55,7 @@ public class ClientChannelPool {
     }
 
     public void closeChannel(Channel channel) {
-        this.channelPool.closeChannel(channel);
+        this.channelCache.closeChannel(channel);
     }
 
     /**
@@ -68,7 +66,7 @@ public class ClientChannelPool {
         if (endpoint == null) {
             return createNameserverChannel();
         }
-        return channelPool.createChannel(endpoint);
+        return this.channelCache.createChannel(endpoint);
     }
 
     /**
@@ -92,11 +90,11 @@ public class ClientChannelPool {
                     return null;
                 }
 
-                List<String> list = nameserverEndpoints.get();
+                List<String> list = this.nameserverEndpoints.get();
                 for (String ignored : list) {
                     int index = randomIndex(list);
                     String endpoint = list.get(index);
-                    channel = channelPool.createChannel(endpoint);
+                    channel = this.channelCache.createChannel(endpoint);
                     if (channel != null) {
                         this.currentNameserverEndpoint.set(endpoint);
                         log.info("[channel] nameserver {} change to {}", this.currentNameserverEndpoint.get(), endpoint);
@@ -116,15 +114,15 @@ public class ClientChannelPool {
     }
 
     protected int randomIndex(List<String> list) {
-        int index = Math.abs(nameserverEndpointIndex.incrementAndGet());
+        int index = Math.abs(this.nameserverEndpointIndex.incrementAndGet());
         return index % list.size();
     }
 
     protected Channel getCurrentNameserverChannel() {
         String endpoint = this.currentNameserverEndpoint.get();
-        if (endpoint != null) {
+        if (endpoint == null) {
             return null;
         }
-        return channelPool.getChannel(endpoint);
+        return this.channelCache.getChannel(endpoint);
     }
 }

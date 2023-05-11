@@ -4,11 +4,9 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.command.CommandHeader;
 import lombok.Data;
 
-public class BrokerRegister {
+public class BrokerUnregisterCommand {
     /**
-     * compressed 属性未加上, 默认 false
-     *
-     * @link org.apache.rocketmq.common.protocol.header.namesrv.RegisterBrokerRequestHeader
+     * @link org.apache.rocketmq.common.protocol.header.namesrv.UnRegisterBrokerRequestHeader
      */
     @Data
     public static class RequestHeader implements CommandHeader {
