@@ -1,97 +1,104 @@
 @startuml
 
-package nameserver {
-    package clusterAddrTable {
-        entity ClusterName2BrokerName {
-            - clusterName: String
-            --
-            - brokerName: String
-        }
+namespace nameserver {
+    entity ClusterMap {
+        - clusterName: String
+        --
+        - brokerName: String
     }
 
-    package brokerAddrTable {
-        entity BrokerName2BrokerId {
-            - brokerName: String
-            --
-            - brokerId: long
-        }
-
-        entity "BrokerEndpoint: BrokerData" as BrokerId2BrokerEndpoint {
-            - brokerId: long
-            --
-            - brokerEndpoint: String
-        }
+    entity BrokerEndpointMap {
+        - brokerName
+        --
+        - brokerId
+        - brokerEndpoint
     }
 
-    package brokerLiveTable {
-        entity BrokerEndpoint2BrokerChannel {
-            - brokerEndpoint: String
-            --
-            - brokerChannel: Channel
-        }
-
-        entity "BrokerAlive: BrokerLiveInfo" as BrokerAlive {
-            - brokerChannel: Channel
-            --
-            - updateTime: long
-            - dataVersion: DataVersion
-            - haEndpoint: String
-        }
+    entity BrokerAliveMap {
+        - brokerEndpoint: String
+        --
+        - brokerChannel: Channel
+        - updateTime: long
+        - dataVersion: DataVersion
+        - haEndpoint: String
     }
 
-    package topicQueueTable {
-        entity BrokerTopic2BrokerName {
-            - topic: String
-            --
-            - brokerName: String
-        }
-
-        entity BrokerQueue {
-            - brokerName: String
-            --
-            - readNum: int
-            - writeNum: int
-        }
-    }
-
-    ClusterName2BrokerName::brokerName --o BrokerName2BrokerId
-    BrokerName2BrokerId::brokerId --o BrokerId2BrokerEndpoint
-    BrokerId2BrokerEndpoint::brokerEndpoint --o BrokerEndpoint2BrokerChannel
-    BrokerEndpoint2BrokerChannel::brokerChannel --o BrokerAlive
-    BrokerTopic2BrokerName::brokerName --o BrokerQueue
-}
-
-package client {
-    entity Producer {
-        - group: String
+    entity TopicBrokerMap {
         - topic: String
+        --
+        - brokerName: String
     }
-    entity Consumer {
-        - group: String
-        - topic: String
-    }
-    entity Queue {
+
+    entity BrokerQueue {
+        - brokerName: String
+        --
         - readNum: int
         - writeNum: int
     }
 
-    entity TopicRouteData {
-        - topic: String
-        --
-        - queues: List<Queue>
-        - brokers: List<BrokerEndpoint>
-    }
-    entity BrokerEndpoint {
-        - brokerName: String
-        - brokerId: long
-        - brokerEndpoint: String
-    }
+    ClusterMap::brokerName --o BrokerEndpointMap
+    BrokerEndpointMap::brokerEndpoint --o BrokerAliveMap
+    TopicBrokerMap::brokerName --o BrokerEndpointMap
+    TopicBrokerMap::brokerName -o BrokerQueue
+}
 
-    Consumer::topic --o TopicRouteData
-    Producer::topic --o TopicRouteData
-    TopicRouteData::queues  --o Queue
-    TopicRouteData::brokers --o BrokerEndpoint
+namespace broker {
 
 }
+
+namespace client {
+    entity ProducerPublish {
+        - topic: String
+        --
+        - queueId: int
+    }
+    entity ProducerMap {
+        - group: String
+        --
+        - topic: ProducerPublish
+    }
+
+    entity ConsumerMap {
+        - group: String
+        --
+        - topic: ConsumerSubscribe
+    }
+    entity ConsumerSubscribe {
+        - topic: String
+        --
+        - tags: Set<String>
+    }
+    ProducerMap::topic --o ProducerPublish
+    ConsumerMap::topic --o ConsumerSubscribe
+
+    entity TopicRouteMap {
+        - topic: String
+        --
+        - queues: List<BrokerQueue>
+        - brokers: List<BrokerEndpoint>
+    }
+    entity BrokerQueue {
+        - brokerName: String
+        --
+        - readNum: int
+        - writeNum: int
+    }
+
+    entity BrokerEndpointMap {
+        - brokerName
+        --
+        - brokerId
+        - brokerEndpoint
+    }
+
+    ConsumerMap::topic --o TopicRouteMap
+    ProducerMap::topic --o TopicRouteMap
+    TopicRouteMap::queues  --o BrokerQueue
+    TopicRouteMap::brokers -o BrokerEndpointMap
+    BrokerQueue::brokerName -o BrokerEndpointMap
+}
+
+nameserver.BrokerEndpointMap::brokerName -o client.BrokerQueue::brokerName
+nameserver.TopicBrokerMap::topic -o client.TopicRouteMap::topic
 
 @enduml
