@@ -9,8 +9,8 @@ import lombok.Data;
  */
 @Data
 public class ClientChannel {
-    private Channel channel;
     private String clientId;
+    private Channel channel;
     private LanguageCode language;
     private long updateTime = System.currentTimeMillis();
 }

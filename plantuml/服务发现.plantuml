@@ -1,17 +1,66 @@
 @startuml
 
+namespace broker {
+    entity Topic {
+        - topic: String
+        --
+        - readNum: int
+        - writeNum: int
+    }
+}
+
+namespace client {
+    entity ProducerPublish {
+        - topic: String
+        --
+        - queueId: int
+    }
+
+    entity ConsumerSubscribe {
+        - topic: String
+        --
+        - tags: Set<String>
+    }
+
+    entity TopicRoute {
+        - topic: String
+        --
+        - queues: List<Queue>
+        - brokers: List<BrokerEndpoint>
+    }
+    entity Queue {
+        - brokerName: String
+        --
+        - readNum: int
+        - writeNum: int
+    }
+
+    entity BrokerEndpoint {
+        - brokerName
+        --
+        - brokerId
+        - brokerEndpoint
+    }
+
+    ConsumerSubscribe::topic --o TopicRoute
+    ProducerPublish::topic --o TopicRoute
+    TopicRoute::queues  --o Queue
+    TopicRoute::brokers --o BrokerEndpoint
+    Queue::brokerName --o BrokerEndpoint
+}
+
 namespace nameserver {
-    entity ClusterMap {
+    entity Cluster {
         - clusterName: String
         --
         - brokerName: String
     }
 
-    entity BrokerEndpointMap {
-        - brokerName
+    entity BrokerEndpoint {
+        - brokerName: String
         --
-        - brokerId
-        - brokerEndpoint
+        - brokerId: long
+        - brokerEndpoint: String
     }
 
     entity BrokerAliveMap {
@@ -23,82 +72,30 @@ namespace nameserver {
         - haEndpoint: String
     }
 
-    entity TopicBrokerMap {
+    entity TopicRoute {
         - topic: String
         --
         - brokerName: String
     }
 
-    entity BrokerQueue {
-        - brokerName: String
-        --
-        - readNum: int
-        - writeNum: int
-    }
-
-    ClusterMap::brokerName --o BrokerEndpointMap
-    BrokerEndpointMap::brokerEndpoint --o BrokerAliveMap
-    TopicBrokerMap::brokerName --o BrokerEndpointMap
-    TopicBrokerMap::brokerName -o BrokerQueue
-}
-
-namespace broker {
-
-}
-
-namespace client {
-    entity ProducerPublish {
-        - topic: String
-        --
-        - queueId: int
-    }
-    entity ProducerMap {
-        - group: String
-        --
-        - topic: ProducerPublish
-    }
-
-    entity ConsumerMap {
-        - group: String
-        --
-        - topic: ConsumerSubscribe
-    }
-    entity ConsumerSubscribe {
-        - topic: String
-        --
-        - tags: Set<String>
-    }
-    ProducerMap::topic --o ProducerPublish
-    ConsumerMap::topic --o ConsumerSubscribe
-
-    entity TopicRouteMap {
-        - topic: String
-        --
-        - queues: List<BrokerQueue>
-        - brokers: List<BrokerEndpoint>
-    }
-    entity BrokerQueue {
+    entity Queue {
         - brokerName: String
         --
         - readNum: int
         - writeNum: int
     }
 
-    entity BrokerEndpointMap {
-        - brokerName
-        --
-        - brokerId
-        - brokerEndpoint
-    }
-
-    ConsumerMap::topic --o TopicRouteMap
-    ProducerMap::topic --o TopicRouteMap
-    TopicRouteMap::queues  --o BrokerQueue
-    TopicRouteMap::brokers -o BrokerEndpointMap
-    BrokerQueue::brokerName -o BrokerEndpointMap
+    Cluster::brokerName --o BrokerEndpoint
+    BrokerEndpoint::brokerEndpoint --o BrokerAliveMap
+    TopicRoute::brokerName --o BrokerEndpoint
+    TopicRoute::brokerName --o Queue
 }
 
-nameserver.BrokerEndpointMap::brokerName -o client.BrokerQueue::brokerName
-nameserver.TopicBrokerMap::topic -o client.TopicRouteMap::topic
+nameserver.BrokerEndpoint::brokerName --o client.Queue::brokerName
+nameserver.TopicRoute::topic --o client.TopicRoute::topic
+
+nameserver.TopicRoute::topic -- broker.Topic::topic
+'nameserver.BrokerEndpoint -o broker
+'nameserver.Cluster -o broker
 
 @enduml

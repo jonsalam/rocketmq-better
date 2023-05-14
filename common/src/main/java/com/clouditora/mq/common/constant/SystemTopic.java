@@ -74,4 +74,8 @@ public enum SystemTopic {
     public static boolean isSystemTopic(String topic) {
         return SYSTEM_TOPIC_SET.contains(topic) || topic.startsWith(SYSTEM_TOPIC_PREFIX);
     }
+
+    public static void addSystemTopic(String topic) {
+        SYSTEM_TOPIC_SET.add(topic);
+    }
 }

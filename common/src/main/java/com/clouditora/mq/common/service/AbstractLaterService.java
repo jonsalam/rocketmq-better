@@ -13,9 +13,9 @@ public abstract class AbstractLaterService extends AbstractLoopedService {
 
     protected final ScheduledExecutorService scheduledExecutor;
     @Setter
-    protected TimeUnit timeUnit;
+    protected TimeUnit timeUnit = TimeUnit.MILLISECONDS;
     @Setter
-    protected long delay;
+    protected long delay = 0;
 
     public AbstractLaterService() {
         this.scheduledExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
@@ -36,7 +36,7 @@ public abstract class AbstractLaterService extends AbstractLoopedService {
     }
 
     public void later(long delay, Runnable runnable) {
-        later(TimeUnit.MILLISECONDS, delay, runnable);
+        later(this.timeUnit, delay, runnable);
     }
 
     public void later(Runnable runnable) {

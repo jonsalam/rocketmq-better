@@ -6,9 +6,17 @@ import org.apache.commons.lang3.StringUtils;
 import java.nio.charset.StandardCharsets;
 
 public class JsonUtil {
-    public static byte[] toBytes(Object obj) {
+    public static String toJson(Object obj) {
         String json = JSONObject.toJSONString(obj);
         if (StringUtils.isBlank(json)) {
+            return null;
+        }
+        return json;
+    }
+
+    public static byte[] toBytes(Object obj) {
+        String json = toJson(obj);
+        if (json == null) {
             return null;
         }
         return json.getBytes(StandardCharsets.UTF_8);

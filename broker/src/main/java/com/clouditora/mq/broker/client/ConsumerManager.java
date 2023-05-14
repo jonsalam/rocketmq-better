@@ -38,12 +38,12 @@ public class ConsumerManager {
         Iterator<Map.Entry<String, ClientChannel>> it = this.consumerMap.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, ClientChannel> next = it.next();
-            ClientChannel info = next.getValue();
-            if (System.currentTimeMillis() - info.getUpdateTime() > CHANNEL_EXPIRED_TIME) {
-                Channel channel = info.getChannel();
+            ClientChannel client = next.getValue();
+            if (System.currentTimeMillis() - client.getUpdateTime() > CHANNEL_EXPIRED_TIME) {
+                Channel channel = client.getChannel();
                 CoordinatorUtil.closeChannel(channel);
                 it.remove();
-                log.warn("consumer {} expired", info.getClientId());
+                log.warn("consumer {} expired", client.getClientId());
             }
         }
     }

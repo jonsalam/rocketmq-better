@@ -16,9 +16,11 @@ public enum PermitBit {
     private final int code;
 
     public static final int RW;
+    public static final int SYSTEM;
 
     static {
         RW = PermitBit.mix(PermitBit.PERM_READ, PermitBit.PERM_WRITE);
+        SYSTEM = PermitBit.mix(PermitBit.PERM_READ, PermitBit.PERM_WRITE, PERM_INHERIT);
     }
 
     public static int mix(PermitBit... bits) {
