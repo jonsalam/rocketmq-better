@@ -7,14 +7,13 @@ import com.clouditora.mq.common.broker.BrokerQueues;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.service.AbstractScheduledService;
 import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicRoute;
 import com.clouditora.mq.nameserver.broker.BrokerAlive;
 import com.clouditora.mq.network.util.NetworkUtil;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -262,5 +261,39 @@ public class TopicRouteManager extends AbstractScheduledService {
         } catch (InterruptedException e) {
             log.error("printRoute interrupted", e);
         }
+    }
+
+    /**
+     * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#pickupTopicRouteData
+     */
+    public TopicRoute getTopicRoute(String topic) {
+        try {
+            try {
+                this.lock.readLock().lockInterruptibly();
+                BrokerQueues brokerQueues = this.topicRouteMap.get(topic);
+                if (brokerQueues == null) {
+                    return null;
+                }
+
+                Set<String> brokerNames = brokerQueues.getBrokerNames();
+                List<BrokerEndpoints> brokers = new ArrayList<>(brokerNames.size());
+                for (String brokerName : brokerNames) {
+                    BrokerEndpoints endpoints = brokerEndpointMap.get(brokerName);
+                    if (endpoints != null) {
+                        brokers.add(endpoints);
+                    }
+                }
+
+                TopicRoute topicRoute = new TopicRoute();
+                topicRoute.setQueues(brokerQueues.getBrokerQueues());
+                topicRoute.setBrokers(brokers);
+                return topicRoute;
+            } finally {
+                this.lock.readLock().unlock();
+            }
+        } catch (Exception e) {
+            log.error("exception", e);
+        }
+        return null;
     }
 }

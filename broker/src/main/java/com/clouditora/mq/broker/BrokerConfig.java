@@ -29,6 +29,17 @@ public class BrokerConfig {
     private int registerNameServerPeriod = 30_000;
     private int registerBrokerTimeoutMills = 6000;
 
+    interface TreadPoolSize {
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#clientManageThreadPoolNums
+         */
+        int clientManager = Math.min(32, Runtime.getRuntime().availableProcessors());
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#heartbeatThreadPoolNums
+         */
+        int heartbeat = Math.min(32, Runtime.getRuntime().availableProcessors());
+    }
+
     private MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
     public List<String> getNameserverEndpoints() {

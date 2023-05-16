@@ -104,6 +104,7 @@ public class ClientNetwork extends AbstractNetwork {
 
     @Override
     public void shutdown() {
+        this.nettyWorkerExecutor.shutdownGracefully();
         super.shutdown();
     }
 

@@ -1,6 +1,8 @@
 package com.clouditora.mq.broker.client;
 
 import com.clouditora.mq.broker.BrokerConfig;
+import com.clouditora.mq.broker.BrokerController;
+import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.constant.SystemTopic;
 import com.clouditora.mq.common.service.AbstractPersistentService;
 import com.clouditora.mq.common.topic.TopicQueue;
@@ -17,11 +19,13 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Slf4j
 public class TopicManager extends AbstractPersistentService {
+    private final BrokerController brokerController;
     @Getter
     private final ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>(1024);
 
-    public TopicManager(BrokerConfig brokerConfig) {
+    public TopicManager(BrokerConfig brokerConfig, BrokerController brokerController) {
         super("%s/config/topics.json".formatted(brokerConfig.getMessageStoreConfig().getStorePathRootDir()));
+        this.brokerController = brokerController;
 
         {
             String topic = SystemTopic.SELF_TEST_TOPIC.getTopic();
@@ -76,5 +80,21 @@ public class TopicManager extends AbstractPersistentService {
         TopicQueueWrapper config = new TopicQueueWrapper();
         config.setTopicMap(this.topicMap);
         return JsonUtil.toJsonStringPretty(config);
+    }
+
+    /**
+     * @link org.apache.rocketmq.broker.topic.TopicConfigManager#createTopicInSendMessageBackMethod
+     */
+    public void registerTopic(String topic, int readQueueNum, int writeQueueNum) {
+        this.topicMap.computeIfAbsent(topic, e -> {
+            TopicQueue topicQueue = new TopicQueue();
+            topicQueue.setTopic(topic);
+            topicQueue.setReadQueueNum(readQueueNum);
+            topicQueue.setWriteQueueNum(writeQueueNum);
+            super.persist();
+            log.info("register topic {}: {}", topic, topicQueue);
+            brokerController.registerBroker(RpcModel.ONEWAY);
+            return topicQueue;
+        });
     }
 }
