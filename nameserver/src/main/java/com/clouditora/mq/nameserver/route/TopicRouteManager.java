@@ -26,25 +26,25 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class TopicRouteManager extends AbstractScheduledService {
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 120_000;
     /**
-     * clusterName: BrokerName
+     * cluster name:
      *
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#clusterAddrTable
      */
     private final Map<String, BrokerNames> clusterMap = new HashMap<>(128);
     /**
-     * brokerName: BrokerEndpoint
+     * broker name:
      *
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#brokerAddrTable
      */
     private final Map<String, BrokerEndpoints> brokerEndpointMap = new HashMap<>(32);
     /**
-     * endpoint: BrokerAlive
+     * endpoint:
      *
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#brokerLiveTable
      */
     private final Map<String, BrokerAlive> brokerAliveMap = new HashMap<>(256);
     /**
-     * topic: TopicRoute
+     * topic:
      *
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#topicQueueTable
      */

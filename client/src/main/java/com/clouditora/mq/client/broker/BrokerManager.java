@@ -1,10 +1,17 @@
 package com.clouditora.mq.client.broker;
 
 import com.clouditora.mq.client.instance.ClientConfig;
+import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.broker.BrokerEndpoints;
 import com.clouditora.mq.common.constant.GlobalConstant;
+import com.clouditora.mq.common.constant.RpcModel;
+import com.clouditora.mq.common.exception.BrokerException;
+import com.clouditora.mq.common.message.MessageQueue;
+import com.clouditora.mq.common.message.SendResult;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
+import com.clouditora.mq.network.exception.ConnectException;
+import com.clouditora.mq.network.exception.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -76,5 +83,19 @@ public class BrokerManager {
                 }
             }
         }
+    }
+
+    public SendResult send(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws BrokerException, InterruptedException, TimeoutException, ConnectException {
+        BrokerEndpoints endpoints = this.endpointMap.get(queue.getBrokerName());
+        String endpoint = endpoints.getEndpointMap().get(GlobalConstant.MASTER_ID);
+        return this.brokerApiFacade.sendMessage(
+                rpcModel,
+                endpoint,
+                group,
+                message,
+                queue.getQueueId(),
+                queue.getBrokerName(),
+                timeout
+        );
     }
 }

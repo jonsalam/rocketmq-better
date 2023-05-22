@@ -143,7 +143,7 @@ public class ServerNetwork extends AbstractNetwork {
         return defaultExecutor;
     }
 
-    public Command syncInvoke(Channel channel, Command command, long timeout) throws SendException, TimeoutException, InterruptedException {
+    public Command syncInvoke(Channel channel, Command command, long timeout) throws InterruptedException, SendException, TimeoutException {
         return commandInvoker.syncInvoke(channel, command, timeout);
     }
 

@@ -1,6 +1,7 @@
 package com.clouditora.mq.common.broker;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.clouditora.mq.common.constant.PermitBit;
 import lombok.Data;
 
 /**
@@ -13,6 +14,8 @@ public class BrokerQueue implements Comparable<BrokerQueue> {
     private int writeNum;
     @JSONField(name = "writeQueueNums")
     private int readNum;
+    @JSONField(name = "perm")
+    private int permit = PermitBit.RW;
 
     /**
      * @link org.apache.rocketmq.common.protocol.route.QueueData#compareTo

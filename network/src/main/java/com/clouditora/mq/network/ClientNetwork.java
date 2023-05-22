@@ -113,15 +113,15 @@ public class ClientNetwork extends AbstractNetwork {
         return this.callbackExecutor != null ? this.callbackExecutor : super.defaultExecutor;
     }
 
-    public Command syncInvoke(String endpoint, Command request, long timeout) throws TimeoutException, InterruptedException, ConnectException {
+    public Command syncInvoke(String endpoint, Command request, long timeout) throws InterruptedException, ConnectException, TimeoutException {
         return this.commandInvoker.syncInvoke(endpoint, request, timeout);
     }
 
-    public void asyncInvoke(String endpoint, Command request, long timeout, CommandFutureCallback callback) throws TimeoutException, ConnectException {
+    public void asyncInvoke(String endpoint, Command request, long timeout, CommandFutureCallback callback) throws ConnectException, TimeoutException {
         this.commandInvoker.asyncInvoke(endpoint, request, timeout, callback);
     }
 
-    public void onewayInvoke(String endpoint, Command request, long timeout) throws TimeoutException, ConnectException {
+    public void onewayInvoke(String endpoint, Command request, long timeout) throws ConnectException, TimeoutException {
         this.commandInvoker.onewayInvoke(endpoint, request, timeout);
     }
 

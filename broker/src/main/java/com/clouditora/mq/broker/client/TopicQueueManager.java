@@ -18,12 +18,12 @@ import java.util.concurrent.ConcurrentMap;
  * @link org.apache.rocketmq.broker.topic.TopicConfigManager
  */
 @Slf4j
-public class TopicManager extends AbstractPersistentService {
+public class TopicQueueManager extends AbstractPersistentService {
     private final BrokerController brokerController;
     @Getter
     private final ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>(1024);
 
-    public TopicManager(BrokerConfig brokerConfig, BrokerController brokerController) {
+    public TopicQueueManager(BrokerConfig brokerConfig, BrokerController brokerController) {
         super("%s/config/topics.json".formatted(brokerConfig.getMessageStoreConfig().getStorePathRootDir()));
         this.brokerController = brokerController;
 

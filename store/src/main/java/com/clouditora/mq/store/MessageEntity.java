@@ -2,6 +2,7 @@ package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;
+import com.clouditora.mq.common.util.MessageUtil;
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,6 +34,14 @@ public class MessageEntity extends Message {
     private String messageId;
     private byte[] propertyBytes;
 
+    public MessageEntity(){
+
+    }
+
+    public MessageEntity(String topic, String tags, String keys, byte[] body) {
+        super(topic, tags, keys, body);
+    }
+
     @Override
     public void setBody(byte[] body) {
         this.body = body;
@@ -57,7 +66,7 @@ public class MessageEntity extends Message {
         this.propertyBytes = bytes;
 
         String properties = new String(bytes, StandardCharsets.UTF_8);
-        Map<String, String> map = StoreUtil.string2Properties(properties);
+        Map<String, String> map = MessageUtil.string2Properties(properties);
         super.setProperties(map);
     }
 
@@ -65,12 +74,12 @@ public class MessageEntity extends Message {
         if (this.propertyBytes != null) {
             return this.propertyBytes;
         }
-        return StoreUtil.properties2Bytes(properties);
+        return MessageUtil.properties2Bytes(properties);
     }
 
     @Override
     public void setProperties(Map<String, String> properties) {
         super.setProperties(properties);
-        this.propertyBytes = StoreUtil.properties2Bytes(properties);
+        this.propertyBytes = MessageUtil.properties2Bytes(properties);
     }
 }

@@ -15,7 +15,6 @@ import java.util.List;
 public class TopicRoute {
     @JSONField(name = "brokerDatas")
     private List<BrokerEndpoints> brokers;
-
     @JSONField(name = "queueDatas")
     private List<BrokerQueue> queues;
 

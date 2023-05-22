@@ -32,7 +32,7 @@ public class BrokerController extends AbstractScheduledService {
     private final NameserverApiFacade nameserverApiFacade;
     private final ProducerManager producerManager;
     private final ConsumerManager consumerManager;
-    private final TopicManager topicManager;
+    private final TopicQueueManager topicQueueManager;
 
     public BrokerController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig) {
         this.brokerConfig = brokerConfig;
@@ -43,9 +43,9 @@ public class BrokerController extends AbstractScheduledService {
                 new ArrayBlockingQueue<>(32),
                 ThreadUtil.buildFactory("ApiExecutor", 10)
         );
-        this.topicManager = new TopicManager(brokerConfig, this);
+        this.topicQueueManager = new TopicQueueManager(brokerConfig, this);
         this.producerManager = new ProducerManager();
-        this.consumerManager = new ConsumerManager(topicManager);
+        this.consumerManager = new ConsumerManager(topicQueueManager);
         this.serverNetwork = new ServerNetwork(serverNetworkConfig, new ClientChannelListener(producerManager, consumerManager));
         this.clientNetwork = new ClientNetwork(clientNetworkConfig, null);
         this.clientNetwork.updateNameserverEndpoints(this.brokerConfig.getNameserverEndpoints());
@@ -62,7 +62,7 @@ public class BrokerController extends AbstractScheduledService {
         registerDispatchers();
         this.serverNetwork.startup();
         this.clientNetwork.startup();
-        this.topicManager.startup();
+        this.topicQueueManager.startup();
         registerBroker();
         scheduled(10_000, brokerConfig.getRegisterNameServerPeriod(), this::registerBroker);
         scheduled(10_000, 10_000, this::cleanExpiredClient);
@@ -75,7 +75,7 @@ public class BrokerController extends AbstractScheduledService {
         this.serverNetwork.shutdown();
         this.clientNetwork.shutdown();
         this.nameserverApiExecutor.shutdown();
-        this.topicManager.shutdown();
+        this.topicQueueManager.shutdown();
         super.shutdown();
     }
 
@@ -114,7 +114,7 @@ public class BrokerController extends AbstractScheduledService {
                 this.brokerConfig.getBrokerName(),
                 this.brokerConfig.getBrokerEndpoint(),
                 this.brokerConfig.getBrokerId(),
-                this.topicManager.getTopicMap()
+                this.topicQueueManager.getTopicMap()
         );
     }
 

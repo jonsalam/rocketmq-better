@@ -29,7 +29,7 @@ public class ClientCommandInvoker extends CommandInvoker {
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#invokeSync
      */
-    public Command syncInvoke(String endpoint, Command request, long timeout) throws TimeoutException, InterruptedException, ConnectException {
+    public Command syncInvoke(String endpoint, Command request, long timeout) throws InterruptedException, ConnectException, TimeoutException {
         Channel channel = channelPool.createChannel(endpoint);
         if (channel == null || !channel.isActive()) {
             log.error("sync invoke exception: invalid channel={}, endpoint={}", channel, endpoint);
@@ -47,7 +47,7 @@ public class ClientCommandInvoker extends CommandInvoker {
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingClient#invokeAsync
      */
-    public void asyncInvoke(String endpoint, Command request, long timeout, CommandFutureCallback callback) throws TimeoutException, ConnectException {
+    public void asyncInvoke(String endpoint, Command request, long timeout, CommandFutureCallback callback) throws ConnectException, TimeoutException {
         Channel channel = channelPool.createChannel(endpoint);
         if (channel == null || !channel.isActive()) {
             throw new ConnectException(endpoint);

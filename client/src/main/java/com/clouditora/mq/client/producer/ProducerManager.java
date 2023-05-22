@@ -1,6 +1,7 @@
 package com.clouditora.mq.client.producer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 
 import java.util.List;
 import java.util.Set;
@@ -15,12 +16,20 @@ public class ProducerManager {
     private final ConcurrentMap<String, Producer> producerMap = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+    public boolean isNotEmpty() {
+        return MapUtils.isNotEmpty(this.producerMap);
+    }
+
     public Set<String> getGroups() {
         return this.producerMap.keySet();
     }
 
     public List<String> getTopics() {
         return this.producerMap.values().stream().map(Producer::getTopic).distinct().collect(Collectors.toList());
+    }
+
+    public Producer get(String topic) {
+        return this.producerMap.get(topic);
     }
 
     /**

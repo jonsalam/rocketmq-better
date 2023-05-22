@@ -4,7 +4,6 @@ package com.clouditora.mq.network.exception;
  * @link org.apache.rocketmq.remoting.exception.RemotingException
  */
 public abstract class AbstractNetworkException extends Exception {
-
     public AbstractNetworkException(String message) {
         super(message);
     }

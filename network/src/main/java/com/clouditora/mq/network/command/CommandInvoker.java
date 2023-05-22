@@ -55,7 +55,7 @@ public class CommandInvoker implements CallbackExecutor {
     /**
      * @link org.apache.rocketmq.remoting.netty.NettyRemotingAbstract#invokeSyncImpl
      */
-    public Command syncInvoke(Channel channel, Command request, long timeout) throws SendException, TimeoutException, InterruptedException {
+    public Command syncInvoke(Channel channel, Command request, long timeout) throws InterruptedException, SendException, TimeoutException {
         log.debug("[invoke][sync] channel={}, request={}, timeout={}", channel, request, timeout);
         int opaque = request.getOpaque();
         try {

@@ -1,15 +1,17 @@
 package com.clouditora.mq.common.exception;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.Getter;
 
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
 public class ClientException extends Exception {
     private final int code;
     private final String msg;
+
+    public ClientException(int code, String msg, Throwable cause) {
+        super(msg, cause);
+        this.code = code;
+        this.msg = msg;
+    }
 
     public ClientException(int code, String msg) {
         super(msg);

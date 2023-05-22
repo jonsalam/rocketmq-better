@@ -1,5 +1,6 @@
 package com.clouditora.mq.common.broker;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,6 +21,7 @@ public class BrokerEndpoints implements Comparable<BrokerEndpoints> {
     /**
      * id: endpoint
      */
+    @JSONField(name = "brokerAddrs")
     private HashMap<Long, String> endpointMap;
 
     public BrokerEndpoints(String cluster, String brokerName) {

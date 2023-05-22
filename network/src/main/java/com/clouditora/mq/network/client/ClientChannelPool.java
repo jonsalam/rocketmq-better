@@ -89,7 +89,7 @@ public class ClientChannelPool {
 
                 List<String> list = this.nameserverEndpoints.get();
                 for (String ignored : list) {
-                    int index = randomIndex(list);
+                    int index = nextIndex(list);
                     String endpoint = list.get(index);
                     channel = this.channelCache.createChannel(endpoint);
                     if (channel != null) {
@@ -110,7 +110,7 @@ public class ClientChannelPool {
         return null;
     }
 
-    protected int randomIndex(List<String> list) {
+    protected int nextIndex(List<String> list) {
         int index = Math.abs(this.nameserverEndpointIndex.incrementAndGet());
         return index % list.size();
     }

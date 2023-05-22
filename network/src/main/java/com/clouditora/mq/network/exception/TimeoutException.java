@@ -4,7 +4,6 @@ package com.clouditora.mq.network.exception;
  * @link org.apache.rocketmq.remoting.exception.RemotingTimeoutException
  */
 public class TimeoutException extends AbstractNetworkException {
-
     public TimeoutException(String endpoint) {
         super(endpoint);
     }

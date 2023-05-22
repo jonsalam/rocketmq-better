@@ -7,10 +7,17 @@ import com.clouditora.mq.client.consumer.ConsumerManager;
 import com.clouditora.mq.client.nameserver.NameserverApiFacade;
 import com.clouditora.mq.client.producer.Producer;
 import com.clouditora.mq.client.producer.ProducerManager;
+import com.clouditora.mq.client.topic.MessageRoute;
+import com.clouditora.mq.client.topic.MessageRouteManager;
 import com.clouditora.mq.client.topic.TopicRouteManager;
+import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.concurrent.ConsumeStrategy;
 import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.GlobalConstant;
+import com.clouditora.mq.common.constant.RpcModel;
+import com.clouditora.mq.common.exception.BrokerException;
+import com.clouditora.mq.common.message.MessageQueue;
+import com.clouditora.mq.common.message.SendResult;
 import com.clouditora.mq.common.service.AbstractScheduledService;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
@@ -18,6 +25,8 @@ import com.clouditora.mq.common.topic.TopicRoute;
 import com.clouditora.mq.common.util.NetworkUtil;
 import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
+import com.clouditora.mq.network.exception.ConnectException;
+import com.clouditora.mq.network.exception.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
@@ -48,6 +57,7 @@ public class ClientInstance extends AbstractScheduledService {
     private final ProducerManager producerManager;
     private final ConsumerManager consumerManager;
     private final TopicRouteManager topicRouteManager;
+    private final MessageRouteManager messageRouteManager;
     private final Lock lock = new ReentrantLock();
 
     /**
@@ -73,6 +83,7 @@ public class ClientInstance extends AbstractScheduledService {
         this.producerManager = new ProducerManager();
         this.consumerManager = new ConsumerManager();
         this.topicRouteManager = new TopicRouteManager();
+        this.messageRouteManager = new MessageRouteManager();
         registerDefaultProducer();
     }
 
@@ -116,6 +127,7 @@ public class ClientInstance extends AbstractScheduledService {
      */
     public void registerProducer(Producer producer) {
         this.producerManager.register(producer);
+        producer.setClientInstance(this);
     }
 
     /**
@@ -168,20 +180,24 @@ public class ClientInstance extends AbstractScheduledService {
     /**
      * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#updateTopicRouteInfoFromNameServer
      */
-    private void updateTopicRoute(String topic) {
+    public void updateTopicRoute(String topic) {
         try {
             if (!this.lock.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                 log.error("update topic route {} wait timeout", topic);
                 return;
             }
             try {
-                TopicRoute route = this.nameserverApiFacade.getTopicRoute(topic);
-                TopicRoute prev = this.topicRouteManager.getTopicRoute(topic);
+                TopicRoute topicRoute = this.nameserverApiFacade.getTopicRoute(topic);
+                TopicRoute prevTopicRoute = this.topicRouteManager.get(topic);
                 // TODO 优化
-                if (!route.equals(prev)) {
-                    log.debug("update topic route {}: {}", topic, route);
-                    this.brokerManager.addBrokers(route.getBrokers());
-                    this.topicRouteManager.addTopicRoute(topic, route);
+                if (!topicRoute.equals(prevTopicRoute)) {
+                    log.debug("update topic route {}: {}", topic, topicRoute);
+                    this.brokerManager.addBrokers(topicRoute.getBrokers());
+                    if (this.producerManager.isNotEmpty()) {
+                        MessageRoute messageRoute = MessageRoute.build(topic, topicRoute);
+                        this.messageRouteManager.put(topic, messageRoute);
+                    }
+                    this.topicRouteManager.put(topic, topicRoute);
                 }
             } catch (Exception e) {
                 log.error("update topic route {} exception", topic, e);
@@ -219,5 +235,13 @@ public class ClientInstance extends AbstractScheduledService {
                 .collect(Collectors.toSet());
 
         this.brokerManager.heartbeat(this.clientId, producers, consumers);
+    }
+
+    public MessageRoute getMessageRoute(String topic) {
+        return this.messageRouteManager.get(topic);
+    }
+
+    public SendResult send(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
+        return this.brokerManager.send(rpcModel, group, queue, message, timeout);
     }
 }

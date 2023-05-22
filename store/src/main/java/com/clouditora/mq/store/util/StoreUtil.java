@@ -52,45 +52,6 @@ public class StoreUtil {
         return new String(hexChars);
     }
 
-    private static final byte[] EMPTY_BYTES = new byte[0];
-
-    public static byte[] properties2Bytes(Map<String, String> properties) {
-        if (properties == null || properties.size() == 0) {
-            return EMPTY_BYTES;
-        }
-        return properties.keySet().stream()
-                .map(key -> key + MessageConst.Property.Separator.NAME_VALUE + properties.get(key))
-                .reduce((a, b) -> a + MessageConst.Property.Separator.PROPERTY + b)
-                .orElse(StringUtils.EMPTY)
-                .getBytes(StandardCharsets.UTF_8);
-    }
-
-    public static Map<String, String> string2Properties(String properties) {
-        Map<String, String> map = new HashMap<>();
-        if (properties == null) {
-            return map;
-        }
-        int len = properties.length();
-        int index = 0;
-        while (index < len) {
-            int newIndex = properties.indexOf(MessageConst.Property.Separator.PROPERTY, index);
-            if (newIndex < 0) {
-                newIndex = len;
-            }
-            if (newIndex - index >= 3) {
-                int kvSepIndex = properties.indexOf(MessageConst.Property.Separator.NAME_VALUE, index);
-                if (kvSepIndex > index && kvSepIndex < newIndex - 1) {
-                    String k = properties.substring(index, kvSepIndex);
-                    String v = properties.substring(kvSepIndex + 1, newIndex);
-                    map.put(k, v);
-                }
-            }
-            index = newIndex + 1;
-        }
-
-        return map;
-    }
-
     public static long string2Long(String str) {
         return Long.parseLong(str);
     }

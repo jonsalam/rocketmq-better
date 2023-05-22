@@ -4,6 +4,10 @@ import com.clouditora.mq.common.constant.CodeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
  * @link org.apache.rocketmq.common.protocol.ResponseCode
  * @link org.apache.rocketmq.remoting.protocol.RemotingSysResponseCode
@@ -51,4 +55,15 @@ public enum ResponseCode implements CodeEnum {
     ;
 
     private final int code;
+
+    public static final Set<Integer> RETRY_RESPONSE_CODES = Stream.of(
+                    ResponseCode.TOPIC_NOT_EXIST,
+                    ResponseCode.SERVICE_NOT_AVAILABLE,
+                    ResponseCode.SYSTEM_ERROR,
+                    ResponseCode.NO_PERMISSION,
+                    ResponseCode.NO_BUYER_ID,
+                    ResponseCode.NOT_IN_CURRENT_UNIT
+            )
+            .map(ResponseCode::getCode)
+            .collect(Collectors.toSet());
 }
