@@ -2,6 +2,7 @@ package com.clouditora.mq.broker;
 
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.util.NetworkUtil;
+import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.Data;
 
 import java.util.Arrays;
@@ -33,11 +34,30 @@ public class BrokerConfig {
         /**
          * @link org.apache.rocketmq.common.BrokerConfig#clientManageThreadPoolNums
          */
-        int clientManager = Math.min(32, Runtime.getRuntime().availableProcessors());
+        int CLIENT_MANAGER = Math.min(32, Runtime.getRuntime().availableProcessors());
         /**
          * @link org.apache.rocketmq.common.BrokerConfig#heartbeatThreadPoolNums
          */
-        int heartbeat = Math.min(32, Runtime.getRuntime().availableProcessors());
+        int CLIENT_HEARTBEAT = Math.min(32, Runtime.getRuntime().availableProcessors());
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#sendMessageThreadPoolNums
+         */
+        int SEND_MESSAGE = Math.min(Runtime.getRuntime().availableProcessors(), 4);
+    }
+
+    interface QueueCapacity {
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#heartbeatThreadPoolQueueCapacity
+         */
+        int CLIENT_HEARTBEAT = 50000;
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#clientManagerThreadPoolQueueCapacity
+         */
+        int CLIENT_MANAGE = 100_0000;
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#sendThreadPoolQueueCapacity
+         */
+        int SEND_MESSAGE = 10000;
     }
 
     private MessageStoreConfig messageStoreConfig = new MessageStoreConfig();

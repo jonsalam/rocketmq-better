@@ -24,7 +24,7 @@ public class TopicQueueManager extends AbstractPersistentService {
     private final ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>(1024);
 
     public TopicQueueManager(BrokerConfig brokerConfig, BrokerController brokerController) {
-        super("%s/config/topics.json".formatted(brokerConfig.getMessageStoreConfig().getStorePathRootDir()));
+        super("%s/config/topics.json".formatted(brokerConfig.getMessageStoreConfig().getRootPath()));
         this.brokerController = brokerController;
 
         {

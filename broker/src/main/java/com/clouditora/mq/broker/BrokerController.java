@@ -1,6 +1,8 @@
 package com.clouditora.mq.broker;
 
 import com.clouditora.mq.broker.client.*;
+import com.clouditora.mq.broker.dispatcher.ClientCommandDispatcher;
+import com.clouditora.mq.broker.dispatcher.SendMessageDispatcher;
 import com.clouditora.mq.broker.nameserver.NameserverApiFacade;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.network.RequestCode;
@@ -12,6 +14,7 @@ import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetwork;
 import com.clouditora.mq.network.ServerNetworkConfig;
+import com.clouditora.mq.store.MessageStore;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
@@ -34,6 +37,8 @@ public class BrokerController extends AbstractScheduledService {
     private final ConsumerManager consumerManager;
     private final TopicQueueManager topicQueueManager;
 
+    private final MessageStore messageStore;
+
     public BrokerController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig) {
         this.brokerConfig = brokerConfig;
         this.brokerConfig.setBrokerPort(serverNetworkConfig.getListenPort());
@@ -50,6 +55,8 @@ public class BrokerController extends AbstractScheduledService {
         this.clientNetwork = new ClientNetwork(clientNetworkConfig, null);
         this.clientNetwork.updateNameserverEndpoints(this.brokerConfig.getNameserverEndpoints());
         this.nameserverApiFacade = new NameserverApiFacade(brokerConfig, clientNetwork, nameserverApiExecutor);
+
+        this.messageStore = new MessageStore(brokerConfig.getMessageStoreConfig());
     }
 
     @Override
@@ -79,25 +86,38 @@ public class BrokerController extends AbstractScheduledService {
         super.shutdown();
     }
 
+    /**
+     * @link org.apache.rocketmq.broker.BrokerController#registerProcessor
+     */
     private void registerDispatchers() {
         ExecutorService clientHeartbeatExecutor = new ThreadPoolExecutor(
-                BrokerConfig.TreadPoolSize.heartbeat,
-                BrokerConfig.TreadPoolSize.heartbeat,
+                BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT,
+                BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT,
                 60, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(32),
-                ThreadUtil.buildFactory("Heartbeat", BrokerConfig.TreadPoolSize.heartbeat)
+                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.CLIENT_HEARTBEAT),
+                ThreadUtil.buildFactory("Heartbeat", BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT)
         );
         ExecutorService clientManageExecutor = new ThreadPoolExecutor(
-                BrokerConfig.TreadPoolSize.clientManager,
-                BrokerConfig.TreadPoolSize.clientManager,
+                BrokerConfig.TreadPoolSize.CLIENT_MANAGER,
+                BrokerConfig.TreadPoolSize.CLIENT_MANAGER,
                 60, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(32),
-                ThreadUtil.buildFactory("Client", BrokerConfig.TreadPoolSize.clientManager)
+                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.CLIENT_MANAGE),
+                ThreadUtil.buildFactory("Client", BrokerConfig.TreadPoolSize.CLIENT_MANAGER)
+        );
+        ExecutorService sendMessageExecutor = new ThreadPoolExecutor(
+                BrokerConfig.TreadPoolSize.SEND_MESSAGE,
+                BrokerConfig.TreadPoolSize.SEND_MESSAGE,
+                60, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
+                ThreadUtil.buildFactory("Message", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
         );
 
         ClientCommandDispatcher clientDispatcher = new ClientCommandDispatcher(this);
         this.serverNetwork.registerDispatcher(RequestCode.REGISTER_CLIENT, clientDispatcher, clientHeartbeatExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.UNREGISTER_CLIENT, clientDispatcher, clientManageExecutor);
+        SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher();
+        this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE, sendMessageDispatcher, sendMessageExecutor);
+        this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
     }
 
     public void registerBroker() {

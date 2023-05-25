@@ -28,6 +28,11 @@
             <artifactId>nameserver</artifactId>
             <version>0.0.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.clouditora.mq</groupId>
+            <artifactId>store</artifactId>
+            <version>0.0.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 </project>

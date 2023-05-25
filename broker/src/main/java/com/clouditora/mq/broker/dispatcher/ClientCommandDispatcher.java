@@ -1,6 +1,7 @@
-package com.clouditora.mq.broker.client;
+package com.clouditora.mq.broker.dispatcher;
 
 import com.clouditora.mq.broker.BrokerController;
+import com.clouditora.mq.broker.client.ClientChannel;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.ClientRegisterCommand;
 import com.clouditora.mq.common.network.command.ClientUnregisterCommand;
