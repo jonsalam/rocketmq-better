@@ -14,7 +14,9 @@ import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetwork;
 import com.clouditora.mq.network.ServerNetworkConfig;
+import com.clouditora.mq.store.MessageEntity;
 import com.clouditora.mq.store.MessageStore;
+import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
@@ -39,7 +41,12 @@ public class BrokerController extends AbstractScheduledService {
 
     private final MessageStore messageStore;
 
-    public BrokerController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig) {
+    public BrokerController(
+            BrokerConfig brokerConfig,
+            ServerNetworkConfig serverNetworkConfig,
+            ClientNetworkConfig clientNetworkConfig,
+            MessageStoreConfig messageStoreConfig
+    ) {
         this.brokerConfig = brokerConfig;
         this.brokerConfig.setBrokerPort(serverNetworkConfig.getListenPort());
         this.nameserverApiExecutor = new ThreadPoolExecutor(
@@ -48,7 +55,7 @@ public class BrokerController extends AbstractScheduledService {
                 new ArrayBlockingQueue<>(32),
                 ThreadUtil.buildFactory("ApiExecutor", 10)
         );
-        this.topicQueueManager = new TopicQueueManager(brokerConfig, this);
+        this.topicQueueManager = new TopicQueueManager(brokerConfig, messageStoreConfig, this);
         this.producerManager = new ProducerManager();
         this.consumerManager = new ConsumerManager(topicQueueManager);
         this.serverNetwork = new ServerNetwork(serverNetworkConfig, new ClientChannelListener(producerManager, consumerManager));
@@ -56,7 +63,7 @@ public class BrokerController extends AbstractScheduledService {
         this.clientNetwork.updateNameserverEndpoints(this.brokerConfig.getNameserverEndpoints());
         this.nameserverApiFacade = new NameserverApiFacade(brokerConfig, clientNetwork, nameserverApiExecutor);
 
-        this.messageStore = new MessageStore(brokerConfig.getMessageStoreConfig());
+        this.messageStore = new MessageStore(messageStoreConfig);
     }
 
     @Override
@@ -172,5 +179,9 @@ public class BrokerController extends AbstractScheduledService {
     private void cleanExpiredClient() {
         producerManager.cleanExpiredClient();
         consumerManager.cleanExpiredClient();
+    }
+
+    public void putMessage(MessageEntity message) {
+        this.messageStore.putMessage(message);
     }
 }

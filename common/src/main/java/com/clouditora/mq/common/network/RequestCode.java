@@ -92,6 +92,9 @@ public enum RequestCode implements CodeEnum {
     GET_CONSUMER_RUNNING_INFO(307),
     QUERY_CORRECTION_OFFSET(308),
     CONSUME_MESSAGE_DIRECTLY(309),
+    /**
+     * 加快了header的解析速度
+     */
     SEND_MESSAGE_V2(310),
     GET_UNIT_TOPIC_LIST(311),
     GET_HAS_UNIT_SUB_TOPIC_LIST(312),

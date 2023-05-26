@@ -17,14 +17,14 @@ public class BodyCrcSerializer implements Serializer {
     @Override
     public void serialize(SerializerChain chain) throws SerializeException {
         ByteBuffer byteBuffer = chain.getByteBuffer();
-        byteBuffer.putInt(chain.getMessage().getBodyCRC());
+        byteBuffer.putInt(chain.getMessage().getBodyCrc());
         chain.next();
     }
 
     @Override
     public void deserialize(DeserializerChain chain) {
         ByteBuffer byteBuffer = chain.getByteBuffer();
-        chain.getMessage().setBodyCRC(byteBuffer.getInt());
+        chain.getMessage().setBodyCrc(byteBuffer.getInt());
         chain.next();
     }
 }

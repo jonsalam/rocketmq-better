@@ -92,16 +92,9 @@ public class Command {
 
         Field[] fields = getClassFields(this.header.getClass());
         for (Field field : fields) {
-            if (Modifier.isStatic(field.getModifiers())) {
+            String name = getFieldName(field);
+            if (name == null) {
                 continue;
-            }
-            String name = field.getName();
-            if (name.startsWith("this")) {
-                continue;
-            }
-            JSONField jsonField = field.getAnnotation(JSONField.class);
-            if (jsonField != null && jsonField.name() != null) {
-                name = jsonField.name();
             }
             try {
                 field.setAccessible(true);
@@ -135,23 +128,16 @@ public class Command {
 
         Field[] fields = getClassFields(clazz);
         for (Field field : fields) {
-            if (Modifier.isStatic(field.getModifiers())) {
+            String name = getFieldName(field);
+            if (name == null) {
                 continue;
-            }
-            String name = field.getName();
-            if (name.startsWith("this")) {
-                continue;
-            }
-            JSONField jsonField = field.getAnnotation(JSONField.class);
-            if (jsonField != null && jsonField.name() != null) {
-                name = jsonField.name();
             }
             String value = this.extFields.get(name);
             if (StringUtils.isBlank(value)) {
                 continue;
             }
-            field.setAccessible(true);
             try {
+                field.setAccessible(true);
                 Object fieldValue = ClassCanonical.parseValue(field.getType().getCanonicalName(), value);
                 field.set(instance, fieldValue);
             } catch (IllegalAccessException e) {
@@ -159,6 +145,21 @@ public class Command {
             }
         }
         return instance;
+    }
+
+    private static String getFieldName(Field field) {
+        if (Modifier.isStatic(field.getModifiers())) {
+            return null;
+        }
+        String name = field.getName();
+        if (name.startsWith("this")) {
+            return null;
+        }
+        JSONField jsonField = field.getAnnotation(JSONField.class);
+        if (jsonField != null && jsonField.name() != null) {
+            name = jsonField.name();
+        }
+        return name;
     }
 
     public <T> T decodeBody(Class<T> clazz) {

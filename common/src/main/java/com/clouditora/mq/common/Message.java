@@ -32,7 +32,7 @@ public class Message {
         this(topic, tags, StringUtils.EMPTY, body);
     }
 
-    void putProperty(String name, String value) {
+    public void putProperty(String name, String value) {
         if (this.properties == null) {
             this.properties = new HashMap<>();
         }

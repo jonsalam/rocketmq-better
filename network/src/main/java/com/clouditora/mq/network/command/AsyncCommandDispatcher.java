@@ -8,8 +8,8 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public interface AsyncCommandDispatcher extends CommandDispatcher {
 
-    default void request(ChannelHandlerContext ctx, Command request, CommandCallback callback) throws Exception {
-        Command response = request(ctx, request);
+    default void asyncRequest(ChannelHandlerContext context, Command request, CommandCallback callback) throws Exception {
+        Command response = request(context, request);
         callback.callback(response);
     }
 }

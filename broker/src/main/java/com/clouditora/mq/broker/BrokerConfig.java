@@ -2,7 +2,6 @@ package com.clouditora.mq.broker;
 
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.util.NetworkUtil;
-import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.Data;
 
 import java.util.Arrays;
@@ -59,8 +58,6 @@ public class BrokerConfig {
          */
         int SEND_MESSAGE = 10000;
     }
-
-    private MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
     public List<String> getNameserverEndpoints() {
         return Arrays.stream(Optional.ofNullable(namesrvAddr).orElse("localhost:9876").split(";")).collect(Collectors.toList());

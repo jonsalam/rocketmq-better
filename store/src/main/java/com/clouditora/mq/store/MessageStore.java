@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 
+/**
+ * @link org.apache.rocketmq.store.DefaultMessageStore
+ */
 @Slf4j
 public class MessageStore {
     private final MessageStoreConfig storeConfig;
@@ -25,7 +28,7 @@ public class MessageStore {
     }
 
     public void start() {
-        dispatcher.start();
+        this.dispatcher.start();
     }
 
     /**

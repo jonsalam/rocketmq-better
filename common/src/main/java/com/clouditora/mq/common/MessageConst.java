@@ -30,6 +30,7 @@ public interface MessageConst {
         String TAGS = "TAGS";
         String KEYS = "KEYS";
         String MESSAGE_ID = "UNIQ_KEY";
+        String CLUSTER = "CLUSTER";
 
         interface Separator {
             String KEY = " ";

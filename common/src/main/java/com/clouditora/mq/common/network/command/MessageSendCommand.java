@@ -5,6 +5,7 @@ import com.clouditora.mq.common.network.CommandHeader;
 import com.clouditora.mq.common.network.CommandJsonBody;
 import com.clouditora.mq.common.topic.TopicQueue;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -18,10 +19,51 @@ public class MessageSendCommand {
         @JSONField(name = "producerGroup")
         private String group;
         private String topic;
+        private String defaultTopic;
+        @JSONField(name = "defaultTopicQueueNums")
+        private Integer defaultTopicQueueNum;
         private Integer queueId;
+        private Integer sysFlag;
         private Long bornTimestamp;
         private Integer flag;
         private String properties;
+        @JSONField(name = "reconsumeTimes")
+        private Integer reConsumeTimes;
+        private boolean unitMode = false;
+        private boolean batch = false;
+        @JSONField(name = "maxReconsumeTimes")
+        private Integer maxReConsumeTimes;
+    }
+
+    @EqualsAndHashCode(callSuper = true)
+    @Data
+    public static class RequestHeaderV2 extends RequestHeader {
+        @JSONField(name = "a")
+        private String group;
+        @JSONField(name = "b")
+        private String topic;
+        @JSONField(name = "c")
+        private String defaultTopic;
+        @JSONField(name = "d")
+        private Integer defaultTopicQueueNum;
+        @JSONField(name = "e")
+        private Integer queueId;
+        @JSONField(name = "f")
+        private Integer sysFlag;
+        @JSONField(name = "g")
+        private Long bornTimestamp;
+        @JSONField(name = "h")
+        private Integer flag;
+        @JSONField(name = "i")
+        private String properties;
+        @JSONField(name = "j")
+        private Integer reConsumeTimes;
+        @JSONField(name = "k")
+        private boolean unitMode = false;
+        @JSONField(name = "l")
+        private boolean batch = false;
+        @JSONField(name = "m")
+        private Integer maxReConsumeTimes;
     }
 
     /**

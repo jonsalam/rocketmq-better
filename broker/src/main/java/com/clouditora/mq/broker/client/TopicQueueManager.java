@@ -8,6 +8,7 @@ import com.clouditora.mq.common.service.AbstractPersistentService;
 import com.clouditora.mq.common.topic.TopicQueue;
 import com.clouditora.mq.common.topic.TopicQueueWrapper;
 import com.clouditora.mq.common.util.JsonUtil;
+import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,8 +24,8 @@ public class TopicQueueManager extends AbstractPersistentService {
     @Getter
     private final ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>(1024);
 
-    public TopicQueueManager(BrokerConfig brokerConfig, BrokerController brokerController) {
-        super("%s/config/topics.json".formatted(brokerConfig.getMessageStoreConfig().getRootPath()));
+    public TopicQueueManager(BrokerConfig brokerConfig, MessageStoreConfig messageStoreConfig, BrokerController brokerController) {
+        super("%s/config/topics.json".formatted(messageStoreConfig.getRootPath()));
         this.brokerController = brokerController;
 
         {

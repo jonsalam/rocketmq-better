@@ -29,7 +29,7 @@ public class CommandDispatcherExecutor {
             this.executor.submit(() -> {
                 try {
                     if (this.dispatcher instanceof AsyncCommandDispatcher async) {
-                        async.request(context, request, response -> callback(context, request, response));
+                        async.asyncRequest(context, request, response -> callback(context, request, response));
                     } else {
                         Command response = this.dispatcher.request(context, request);
                         callback(context, request, response);

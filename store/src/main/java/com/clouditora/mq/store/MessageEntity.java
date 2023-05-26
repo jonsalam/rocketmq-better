@@ -13,14 +13,17 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+/**
+ * @link org.apache.rocketmq.common.message.MessageExt
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true, exclude = "propertyBytes")
+@ToString(callSuper = true )
 public class MessageEntity extends Message {
     private String brokerName;
     private int messageLength;
     private int magicCode;
-    private int bodyCRC;
+    private int bodyCrc;
     private int queueId;
     private long queueOffset;
     private long logOffset;
@@ -32,9 +35,8 @@ public class MessageEntity extends Message {
     private int reConsumeTimes;
     private long transactionOffset;
     private String messageId;
-    private byte[] propertyBytes;
 
-    public MessageEntity(){
+    public MessageEntity() {
 
     }
 
@@ -45,7 +47,7 @@ public class MessageEntity extends Message {
     @Override
     public void setBody(byte[] body) {
         this.body = body;
-        this.bodyCRC = StoreUtil.crc32(body);
+        this.bodyCrc = StoreUtil.crc32(body);
     }
 
     public void setBornHost(InetSocketAddress bornHost) {
@@ -63,23 +65,13 @@ public class MessageEntity extends Message {
     }
 
     public void setPropertyBytes(byte[] bytes) {
-        this.propertyBytes = bytes;
-
-        String properties = new String(bytes, StandardCharsets.UTF_8);
-        Map<String, String> map = MessageUtil.string2Properties(properties);
+        String string = new String(bytes, StandardCharsets.UTF_8);
+        Map<String, String> map = MessageUtil.string2Properties(string);
         super.setProperties(map);
     }
 
     public byte[] getPropertyBytes() {
-        if (this.propertyBytes != null) {
-            return this.propertyBytes;
-        }
         return MessageUtil.properties2Bytes(properties);
     }
 
-    @Override
-    public void setProperties(Map<String, String> properties) {
-        super.setProperties(properties);
-        this.propertyBytes = MessageUtil.properties2Bytes(properties);
-    }
 }

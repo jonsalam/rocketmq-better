@@ -42,25 +42,25 @@ public class CommitLogDispatcher implements Runnable {
     }
 
     private void dispatch() {
-        MappedFile mappedFile = commitLog.slice(offset);
-        if (mappedFile == null) {
+        MappedFile file = this.commitLog.slice(offset);
+        if (file == null) {
             return;
         }
-        offset = mappedFile.getFileOffset();
-        ByteBuffer byteBuffer = mappedFile.getByteBuffer();
-        for (long position = 0; position < mappedFile.getWritePosition(); ) {
+        offset = file.getFileOffset();
+        ByteBuffer byteBuffer = file.getByteBuffer();
+        for (long position = 0; position < file.getWritePosition(); ) {
             // TODO 消息可能反序列化失败
-            MessageEntity message = deserializer.deserialize(byteBuffer);
+            MessageEntity message = this.deserializer.deserialize(byteBuffer);
             if (message.getMagicCode() == MessageConst.MagicCode.BLANK) {
                 // 空白消息, 该读取下一个文件的消息了
                 // MARK: 被除数 = 除数 x 商 + 余数 ==> 除数 x 商 = 被除数 - 余数
                 // MARK: N * mappedFileSize = offset - offset % mappedFileSize
-                offset = offset + commitLog.getFileSize() - offset % commitLog.getFileSize();
+                offset = offset + this.commitLog.getFileSize() - offset % this.commitLog.getFileSize();
                 break;
             } else {
                 offset += message.getMessageLength();
                 position += message.getMessageLength();
-                for (MessageDispatcher dispatcher : dispatchers) {
+                for (MessageDispatcher dispatcher : this.dispatchers) {
                     try {
                         log.debug("{}: offset={}, topic={}", dispatcher.getClass().getSimpleName(), offset, message.getTopic());
                         dispatcher.dispatch(message);

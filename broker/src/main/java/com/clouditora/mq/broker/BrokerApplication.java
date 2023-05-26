@@ -3,6 +3,7 @@ package com.clouditora.mq.broker;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetworkConfig;
+import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -14,7 +15,8 @@ public class BrokerApplication {
         BrokerConfig brokerConfig = getBrokerConfig();
         ServerNetworkConfig serverNetworkConfig = getServerNetworkConfig();
         ClientNetworkConfig clientNetworkConfig = getClientNetworkConfig();
-        BrokerController controller = buildController(brokerConfig, serverNetworkConfig, clientNetworkConfig);
+        MessageStoreConfig messageStoreConfig = getMessageStoreConfig();
+        BrokerController controller = buildController(brokerConfig, serverNetworkConfig, clientNetworkConfig, messageStoreConfig);
         addShutdownHook(controller);
         controller.startup();
         System.out.printf("broker startup success: %s@%s%n", brokerConfig.getBrokerName(), serverNetworkConfig.getListenPort());
@@ -39,8 +41,12 @@ public class BrokerApplication {
         return new ClientNetworkConfig();
     }
 
-    private static BrokerController buildController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig) {
-        return new BrokerController(brokerConfig, serverNetworkConfig, clientNetworkConfig);
+    private static MessageStoreConfig getMessageStoreConfig() {
+        return new MessageStoreConfig();
+    }
+
+    private static BrokerController buildController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig, MessageStoreConfig messageStoreConfig) {
+        return new BrokerController(brokerConfig, serverNetworkConfig, clientNetworkConfig, messageStoreConfig);
     }
 
     private static void addShutdownHook(BrokerController controller) {
