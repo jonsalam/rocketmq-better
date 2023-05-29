@@ -9,8 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public abstract class AbstractLaterService extends AbstractLoopedService {
-    private static final long JOIN_TIME = 90 * 1000;
-
     protected final ScheduledExecutorService scheduledExecutor;
     @Setter
     protected TimeUnit timeUnit = TimeUnit.MILLISECONDS;
@@ -30,7 +28,7 @@ public abstract class AbstractLaterService extends AbstractLoopedService {
     public void later(TimeUnit timeUnit, long delay, Runnable runnable) {
         if (this.timeUnit == null) {
             log.error("{} time unit is null", getServiceName());
-            throw new RuntimeException("time uint is null");
+            throw new RuntimeException("time unit is null");
         }
         this.scheduledExecutor.schedule(runnable, this.delay, this.timeUnit);
     }

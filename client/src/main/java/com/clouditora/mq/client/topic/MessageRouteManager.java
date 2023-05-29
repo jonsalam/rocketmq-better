@@ -2,6 +2,7 @@ package com.clouditora.mq.client.topic;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -13,6 +14,10 @@ public class MessageRouteManager {
      * @link org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl#topicPublishInfoTable
      */
     private final ConcurrentMap<String, MessageRoute> map = new ConcurrentHashMap<>();
+
+    public Set<String> getTopics() {
+        return this.map.keySet();
+    }
 
     /**
      * @link org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl#updateTopicPublishInfo

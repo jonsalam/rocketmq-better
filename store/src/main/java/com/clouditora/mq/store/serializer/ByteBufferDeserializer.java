@@ -5,10 +5,10 @@ import com.clouditora.mq.store.MessageEntity;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class ByteBufferDeserializer extends AbstractSerializer<DeserializerChain> {
+public class ByteBufferDeserializer extends AbstractSerializer<DeserializerChainContext> {
     @Override
-    protected DeserializerChain init(List<Serializer> serializers) {
-        return new DeserializerChain(serializers);
+    protected DeserializerChainContext init(List<Serializer> serializers) {
+        return new DeserializerChainContext(serializers);
     }
 
     public MessageEntity deserialize(ByteBuffer byteBuffer) {

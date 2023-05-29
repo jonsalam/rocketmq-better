@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 @Getter
-public abstract class AbstractChain {
+public abstract class AbstractChainContext {
     protected int index;
     protected List<Serializer> serializers;
     @Setter
@@ -16,7 +16,7 @@ public abstract class AbstractChain {
     @Setter
     protected MessageEntity message;
 
-    public AbstractChain(List<Serializer> serializers) {
+    public AbstractChainContext(List<Serializer> serializers) {
         this.index = 0;
         this.serializers = serializers;
     }

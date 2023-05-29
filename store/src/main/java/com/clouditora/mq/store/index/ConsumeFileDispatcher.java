@@ -12,17 +12,17 @@ import java.nio.ByteBuffer;
 
 @Slf4j
 public class ConsumeFileDispatcher implements MessageDispatcher {
-    private final ConsumeFileMap map;
+    private final ConsumeFileMap files;
     private final ByteBuffer byteBuffer;
 
-    public ConsumeFileDispatcher(ConsumeFileMap map) {
-        this.map = map;
+    public ConsumeFileDispatcher(ConsumeFileMap files) {
+        this.files = files;
         this.byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
     }
 
     @Override
     public void dispatch(MessageEntity message) throws Exception {
-        ConsumeFileQueue queue = map.findConsumeQueue(message.getTopic(), message.getQueueId());
+        ConsumeFileQueue queue = this.files.findConsumeQueue(message.getTopic(), message.getQueueId());
         ConsumeFile file = queue.getCurrentWritingFile(message.getQueueOffset());
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
@@ -30,11 +30,11 @@ public class ConsumeFileDispatcher implements MessageDispatcher {
         }
 
         int tagsCode = getTagsCode(message);
-        byteBuffer.flip().limit(ConsumeFile.UNIT_SIZE);
-        byteBuffer.putLong(message.getLogOffset());
-        byteBuffer.putInt(message.getMessageLength());
-        byteBuffer.putLong(tagsCode);
-        file.append(byteBuffer);
+        this.byteBuffer.flip().limit(ConsumeFile.UNIT_SIZE);
+        this.byteBuffer.putLong(message.getLogOffset());
+        this.byteBuffer.putInt(message.getMessageLength());
+        this.byteBuffer.putLong(tagsCode);
+        file.append(this.byteBuffer);
     }
 
     private int getTagsCode(MessageEntity message) {

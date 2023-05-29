@@ -18,17 +18,17 @@ public class MappedFileHolder {
         this.slices = new ArrayList<>();
     }
 
-    public void addMappedFile(MappedFile file) {
-        slices.add(file);
+    public void add(MappedFile file) {
+        this.slices.add(file);
     }
 
     public byte[] covert2bytes() {
-        if (CollectionUtils.isEmpty(slices)) {
+        if (CollectionUtils.isEmpty(this.slices)) {
             return new byte[0];
         }
-        long size = slices.stream().map(MappedFile::getByteBuffer).mapToLong(Buffer::limit).sum();
+        long size = this.slices.stream().map(MappedFile::getByteBuffer).mapToLong(Buffer::limit).sum();
         ByteBuffer byteBuffer = ByteBuffer.allocate((int) size);
-        slices.stream().map(MappedFile::getByteBuffer).forEach(byteBuffer::put);
+        this.slices.stream().map(MappedFile::getByteBuffer).forEach(byteBuffer::put);
         return byteBuffer.array();
     }
 }

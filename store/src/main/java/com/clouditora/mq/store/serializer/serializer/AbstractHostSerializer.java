@@ -1,10 +1,10 @@
 package com.clouditora.mq.store.serializer.serializer;
 
 import com.clouditora.mq.store.MessageEntity;
-import com.clouditora.mq.store.serializer.DeserializerChain;
+import com.clouditora.mq.store.serializer.DeserializerChainContext;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.Serializer;
-import com.clouditora.mq.store.serializer.SerializerChain;
+import com.clouditora.mq.store.serializer.SerializerChainContext;
 import com.clouditora.mq.store.util.StoreUtil;
 
 import java.net.InetAddress;
@@ -16,24 +16,24 @@ public abstract class AbstractHostSerializer implements Serializer {
     private ByteBuffer host;
 
     @Override
-    public void preSerializer(SerializerChain chain) {
-        MessageEntity message = chain.getMessage();
+    public void preSerializer(SerializerChainContext context) {
+        MessageEntity message = context.getMessage();
         InetSocketAddress address = getAddress(message);
         host = StoreUtil.socketAddress2ByteBuffer(address);
-        chain.addMessageLength(host.limit());
+        context.addMessageLength(host.limit());
     }
 
     @Override
-    public void serialize(SerializerChain chain) throws SerializeException {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
+    public void serialize(SerializerChainContext context) throws SerializeException {
+        ByteBuffer byteBuffer = context.getByteBuffer();
         byteBuffer.put(host);
-        chain.next();
+        context.next();
     }
 
     @Override
-    public void deserialize(DeserializerChain chain) {
-        MessageEntity message = chain.getMessage();
-        ByteBuffer byteBuffer = chain.getByteBuffer();
+    public void deserialize(DeserializerChainContext context) {
+        MessageEntity message = context.getMessage();
+        ByteBuffer byteBuffer = context.getByteBuffer();
 
         int sysFlag = message.getSysFlag();
         int length = getHostLength(sysFlag);
@@ -43,7 +43,7 @@ public abstract class AbstractHostSerializer implements Serializer {
         try {
             InetSocketAddress address = new InetSocketAddress(InetAddress.getByAddress(bytes), port);
             setAddress(message, address);
-            chain.next();
+            context.next();
         } catch (UnknownHostException e) {
             throw new RuntimeException(String.format("读取Host失败, sysFlag=%s, pos=%s", sysFlag, byteBuffer.position() - length));
         }

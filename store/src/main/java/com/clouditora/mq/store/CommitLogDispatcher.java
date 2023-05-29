@@ -42,11 +42,11 @@ public class CommitLogDispatcher implements Runnable {
     }
 
     private void dispatch() {
-        MappedFile file = this.commitLog.slice(offset);
+        MappedFile file = this.commitLog.slice(this.offset);
         if (file == null) {
             return;
         }
-        offset = file.getFileOffset();
+        this.offset = file.getFileOffset();
         ByteBuffer byteBuffer = file.getByteBuffer();
         for (long position = 0; position < file.getWritePosition(); ) {
             // TODO 消息可能反序列化失败

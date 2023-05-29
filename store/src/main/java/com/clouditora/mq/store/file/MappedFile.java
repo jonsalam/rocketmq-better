@@ -67,7 +67,7 @@ public class MappedFile {
      * 写的位置 >= 文件大小
      */
     public boolean isFull() {
-        return this.writePosition.get() >= fileSize;
+        return this.writePosition.get() >= this.fileSize;
     }
 
     public int getWritePosition() {
@@ -95,7 +95,7 @@ public class MappedFile {
             limit = writePosition - position;
         }
         // mappedByteBuffer的position不会变, 所以需要2次slice
-        ByteBuffer byteBuffer = mappedByteBuffer
+        ByteBuffer byteBuffer = this.mappedByteBuffer
                 .slice().position(position)
                 .slice().limit(limit);
         return new MappedFile(this, position, limit, byteBuffer);

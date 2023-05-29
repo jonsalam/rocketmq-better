@@ -14,14 +14,15 @@ import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetwork;
 import com.clouditora.mq.network.ServerNetworkConfig;
-import com.clouditora.mq.store.MessageEntity;
 import com.clouditora.mq.store.MessageStore;
 import com.clouditora.mq.store.MessageStoreConfig;
-import com.clouditora.mq.store.file.PutResult;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @link org.apache.rocketmq.broker.BrokerController
@@ -120,7 +121,7 @@ public class BrokerController extends AbstractScheduledService {
         ClientCommandDispatcher clientDispatcher = new ClientCommandDispatcher(this);
         this.serverNetwork.registerDispatcher(RequestCode.REGISTER_CLIENT, clientDispatcher, clientHeartbeatExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.UNREGISTER_CLIENT, clientDispatcher, clientManageExecutor);
-        SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher();
+        SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher(this.brokerConfig, this.messageStore);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE, sendMessageDispatcher, sendMessageExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
     }
@@ -159,27 +160,24 @@ public class BrokerController extends AbstractScheduledService {
      * @link org.apache.rocketmq.broker.processor.ClientManageProcessor#heartBeat
      */
     public void registerClient(ClientChannel channel, Set<ProducerGroup> producers, Set<ConsumerSubscriptions> consumers) {
-        producerManager.register(channel, producers);
-        consumerManager.register(channel, consumers);
+        this.producerManager.register(channel, producers);
+        this.consumerManager.register(channel, consumers);
     }
 
     /**
      * @link org.apache.rocketmq.broker.processor.ClientManageProcessor#unregisterClient
      */
     public void unregisterClient(ClientChannel channel, String producer, String consumer) {
-        producerManager.unregister(channel, producer);
-        consumerManager.unregister(channel, consumer);
+        this.producerManager.unregister(channel, producer);
+        this.consumerManager.unregister(channel, consumer);
     }
 
     /**
      * @link org.apache.rocketmq.broker.client.ClientHousekeepingService#scanExceptionChannel
      */
     private void cleanExpiredClient() {
-        producerManager.cleanExpiredClient();
-        consumerManager.cleanExpiredClient();
+        this.producerManager.cleanExpiredClient();
+        this.consumerManager.cleanExpiredClient();
     }
 
-    public CompletableFuture<PutResult> asyncPutMessage(MessageEntity message) {
-        return this.messageStore.asyncPut(message);
-    }
 }

@@ -36,11 +36,11 @@ public class MessageStore {
      * org.apache.rocketmq.store.DefaultMessageStore#asyncPutMessage
      */
     public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
-        return commitLog.asyncPut(message);
+        return this.commitLog.asyncPut(message);
     }
 
     public MappedFileHolder get(String topic, int queueId, long offset, int maxNum) {
-        ConsumeFileQueue queue = consumeFileMap.findConsumeQueue(topic, queueId);
+        ConsumeFileQueue queue = this.consumeFileMap.findConsumeQueue(topic, queueId);
         if (queue == null) {
             return null;
         }
@@ -49,17 +49,16 @@ public class MessageStore {
             return null;
         }
         MappedFileHolder result = new MappedFileHolder();
-        for (int position = 0; position < consumeFile.getWritePosition() && position < maxNum * ConsumeFile.UNIT_SIZE; position += ConsumeFile.UNIT_SIZE) {
+        for (int p = 0; p < consumeFile.getWritePosition() && p < maxNum * ConsumeFile.UNIT_SIZE; p += ConsumeFile.UNIT_SIZE) {
             ByteBuffer byteBuffer = consumeFile.getByteBuffer();
             long logOffset = byteBuffer.getLong();
             int messageSize = byteBuffer.getInt();
 
-            MappedFile logFile = commitLog.slice(logOffset, messageSize);
-            if (logFile == null) {
+            MappedFile file = this.commitLog.slice(logOffset, messageSize);
+            if (file == null) {
                 continue;
             }
-            result.addMappedFile(logFile);
-
+            result.add(file);
         }
         return result;
     }

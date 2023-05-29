@@ -7,6 +7,7 @@ import com.clouditora.mq.common.network.CommandHeader;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.util.JsonUtil;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @link org.apache.rocketmq.remoting.protocol.RemotingCommand
  */
 @Slf4j
+@ToString(exclude = "body")
 @Data
 public class Command {
     private int code;
@@ -139,7 +141,9 @@ public class Command {
             try {
                 field.setAccessible(true);
                 Object fieldValue = ClassCanonical.parseValue(field.getType().getCanonicalName(), value);
-                field.set(instance, fieldValue);
+                if (fieldValue != null) {
+                    field.set(instance, fieldValue);
+                }
             } catch (IllegalAccessException e) {
                 log.error("decode header field exception", e);
             }

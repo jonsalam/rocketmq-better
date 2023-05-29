@@ -2,10 +2,10 @@ package com.clouditora.mq.store.serializer.serializer;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.store.MessageEntity;
-import com.clouditora.mq.store.serializer.DeserializerChain;
+import com.clouditora.mq.store.serializer.DeserializerChainContext;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.Serializer;
-import com.clouditora.mq.store.serializer.SerializerChain;
+import com.clouditora.mq.store.serializer.SerializerChainContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -16,33 +16,33 @@ public class TopicSerializer implements Serializer {
     private byte[] bytes;
 
     @Override
-    public void preSerializer(SerializerChain chain) {
-        MessageEntity message = chain.getMessage();
+    public void preSerializer(SerializerChainContext context) {
+        MessageEntity message = context.getMessage();
         bytes = message.getTopic().getBytes(StandardCharsets.UTF_8);
-        chain.addMessageLength(1);
-        chain.addMessageLength(bytes.length);
+        context.addMessageLength(1);
+        context.addMessageLength(bytes.length);
     }
 
     @Override
-    public void serialize(SerializerChain chain) throws SerializeException {
-        MessageEntity message = chain.getMessage();
+    public void serialize(SerializerChainContext context) throws SerializeException {
+        MessageEntity message = context.getMessage();
         if (message.getTopic().length() > MessageConst.Maximum.TOPIC_LENGTH) {
             log.warn("topic length too long: topic={}, length={}", message.getTopic(), message.getTopic().length());
             throw new SerializeException();
         }
-        ByteBuffer byteBuffer = chain.getByteBuffer();
+        ByteBuffer byteBuffer = context.getByteBuffer();
         byteBuffer.put((byte) bytes.length);
         byteBuffer.put(bytes);
-        chain.next();
+        context.next();
     }
 
     @Override
-    public void deserialize(DeserializerChain chain) {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
+    public void deserialize(DeserializerChainContext context) {
+        ByteBuffer byteBuffer = context.getByteBuffer();
         byte length = byteBuffer.get();
         bytes = new byte[length];
         byteBuffer.get(bytes);
-        chain.getMessage().setTopic(new String(bytes, StandardCharsets.UTF_8));
-        chain.next();
+        context.getMessage().setTopic(new String(bytes, StandardCharsets.UTF_8));
+        context.next();
     }
 }

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,8 +21,8 @@ public class ConsumerManager {
         return this.consumerMap.keySet();
     }
 
-    public List<String> getTopics() {
-        return this.consumerMap.values().stream().map(Consumer::getTopics).flatMap(Collection::stream).distinct().collect(Collectors.toList());
+    public Set<String> getTopics() {
+        return this.consumerMap.values().stream().map(Consumer::getTopics).flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     public void register(Consumer consumer) {

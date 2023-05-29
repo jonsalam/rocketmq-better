@@ -1,34 +1,33 @@
 package com.clouditora.mq.store.serializer.serializer;
 
 import com.clouditora.mq.store.MessageEntity;
-import com.clouditora.mq.store.serializer.DeserializerChain;
+import com.clouditora.mq.store.serializer.DeserializerChainContext;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.Serializer;
-import com.clouditora.mq.store.serializer.SerializerChain;
+import com.clouditora.mq.store.serializer.SerializerChainContext;
 import com.clouditora.mq.store.util.StoreUtil;
 
 import java.nio.ByteBuffer;
 
 public class MessageIdSerializer implements Serializer {
     @Override
-    public void preSerializer(SerializerChain chain) {
-
-    }
-
-    @Override
-    public void serialize(SerializerChain chain) throws SerializeException {
-        MessageEntity message = chain.getMessage();
+    public void preSerializer(SerializerChainContext context) {
+        MessageEntity message = context.getMessage();
         String messageId = createMessageId(message);
         message.setMessageId(messageId);
-        chain.next();
     }
 
     @Override
-    public void deserialize(DeserializerChain chain) {
-        MessageEntity message = chain.getMessage();
+    public void serialize(SerializerChainContext context) throws SerializeException {
+        context.next();
+    }
+
+    @Override
+    public void deserialize(DeserializerChainContext context) {
+        MessageEntity message = context.getMessage();
         String msgId = createMessageId(message);
         message.setMessageId(msgId);
-        chain.next();
+        context.next();
     }
 
     private String createMessageId(MessageEntity message) {

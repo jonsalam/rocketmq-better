@@ -23,12 +23,12 @@ public class CommitLog {
     private final int fileSize;
     @Getter
     private final MappedFileQueue<MappedFile> commitLogQueue;
-    private final ThreadLocal<ByteBufferSerializer> serializerThreadLocal;
+    private final ThreadLocal<ByteBufferSerializer> tlSerializer;
 
     public CommitLog(MessageStoreConfig config) {
         this.fileSize = config.getCommitLogFileSize();
         this.commitLogQueue = new MappedFileQueue<>(config.getCommitLogPath(), config.getCommitLogFileSize());
-        this.serializerThreadLocal = ThreadLocal.withInitial(ByteBufferSerializer::new);
+        this.tlSerializer = ThreadLocal.withInitial(ByteBufferSerializer::new);
     }
 
     /**
@@ -41,15 +41,17 @@ public class CommitLog {
             return PutResult.buildAsync(PutStatus.CREATE_MAPPED_FILE_FAILED);
         }
         try {
+            Long queueOffset = 0L;
+            message.setQueueOffset(queueOffset);
             // 当前文件写指针
             int writePosition = file.getWritePosition();
             // 物理偏移量
             long physicalOffset = file.getFileOffset() + writePosition;
             // 当前文件剩余空间
             int remainLength = file.getFileSize() - writePosition;
-            ByteBuffer byteBuffer = this.serializerThreadLocal.get().serialize(physicalOffset, remainLength, message);
+            ByteBuffer byteBuffer = this.tlSerializer.get().serialize(physicalOffset, remainLength, message);
             file.append(byteBuffer);
-            return PutResult.buildAsync(PutStatus.SUCCESS);
+            return PutResult.buildAsync(PutStatus.SUCCESS, message.getMessageId(), queueOffset);
         } catch (EndOfFileException e) {
             log.debug("end of file: file={}, messageLength={}", file, e.getMessageLength());
             // 剩余空间不够, 当前文件写满, 消息写入下一个文件

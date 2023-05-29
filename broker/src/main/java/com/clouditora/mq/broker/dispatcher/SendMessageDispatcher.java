@@ -1,7 +1,6 @@
 package com.clouditora.mq.broker.dispatcher;
 
 import com.clouditora.mq.broker.BrokerConfig;
-import com.clouditora.mq.broker.BrokerController;
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.MessageSendCommand;
@@ -14,6 +13,7 @@ import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.network.util.NetworkUtil;
 import com.clouditora.mq.store.MessageEntity;
+import com.clouditora.mq.store.MessageStore;
 import com.clouditora.mq.store.file.PutResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +27,13 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDispatcher {
-    protected final BrokerController brokerController;
     protected final BrokerConfig brokerConfig;
+    protected final MessageStore messageStore;
     protected final InetSocketAddress storeHost;
 
-    public SendMessageDispatcher(BrokerController brokerController, BrokerConfig brokerConfig) {
-        this.brokerController = brokerController;
+    public SendMessageDispatcher(BrokerConfig brokerConfig, MessageStore messageStore) {
         this.brokerConfig = brokerConfig;
+        this.messageStore = messageStore;
         this.storeHost = new InetSocketAddress(brokerConfig.getBrokerIp(), brokerConfig.getBrokerPort());
     }
 
@@ -81,7 +81,7 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
         message.setStoreHost(this.storeHost);
         message.setReConsumeTimes(Optional.ofNullable(requestHeader.getReConsumeTimes()).orElse(0));
         message.putProperty(MessageConst.Property.CLUSTER, brokerConfig.getBrokerClusterName());
-        CompletableFuture<PutResult> result = this.brokerController.asyncPutMessage(message);
+        CompletableFuture<PutResult> result = this.messageStore.asyncPut(message);
         result.thenApply(e -> {
             if (e == null) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
@@ -109,7 +109,7 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
             }
             responseHeader.setMsgId(e.getMessageId());
             responseHeader.setQueueId(requestHeader.getQueueId());
-            responseHeader.setQueueOffset(e.getLogicsOffset());
+            responseHeader.setQueueOffset(e.getQueueOffset());
             return response;
         });
         return response;

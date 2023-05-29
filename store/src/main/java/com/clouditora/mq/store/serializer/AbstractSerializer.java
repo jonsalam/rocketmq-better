@@ -5,7 +5,7 @@ import com.clouditora.mq.store.serializer.serializer.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractSerializer<T extends AbstractChain> {
+public abstract class AbstractSerializer<T extends AbstractChainContext> {
     protected final T chain;
 
     public AbstractSerializer() {

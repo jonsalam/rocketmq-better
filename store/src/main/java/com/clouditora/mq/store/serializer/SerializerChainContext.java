@@ -9,7 +9,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Setter
 @Getter
-public class SerializerChain extends AbstractChain {
+public class SerializerChainContext extends AbstractChainContext {
     /**
      * remain length of mapped file
      */
@@ -23,28 +23,28 @@ public class SerializerChain extends AbstractChain {
      */
     private long logOffset;
 
-    public SerializerChain(List<Serializer> serializers) {
+    public SerializerChainContext(List<Serializer> serializers) {
         super(serializers);
         this.messageLength = 0;
     }
 
     public int calcMessageLength() {
-        for (Serializer serializer : serializers) {
+        for (Serializer serializer : this.serializers) {
             serializer.preSerializer(this);
         }
-        return messageLength;
+        return this.messageLength;
     }
 
     public void next() throws SerializeException {
-        if (index >= serializers.size()) {
-            index = 0;
+        if (this.index >= this.serializers.size()) {
+            this.index = 0;
             return;
         }
-        Serializer serializer = serializers.get(index++);
+        Serializer serializer = this.serializers.get(index++);
         serializer.serialize(this);
     }
 
     public void addMessageLength(int length) {
-        messageLength += length;
+        this.messageLength += length;
     }
 }

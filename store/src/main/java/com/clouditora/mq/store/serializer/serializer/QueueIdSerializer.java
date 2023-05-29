@@ -1,30 +1,30 @@
 package com.clouditora.mq.store.serializer.serializer;
 
-import com.clouditora.mq.store.serializer.DeserializerChain;
+import com.clouditora.mq.store.serializer.DeserializerChainContext;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.Serializer;
-import com.clouditora.mq.store.serializer.SerializerChain;
+import com.clouditora.mq.store.serializer.SerializerChainContext;
 
 import java.nio.ByteBuffer;
 
 public class QueueIdSerializer implements Serializer {
 
     @Override
-    public void preSerializer(SerializerChain chain) {
-        chain.addMessageLength(4);
+    public void preSerializer(SerializerChainContext context) {
+        context.addMessageLength(4);
     }
 
     @Override
-    public void serialize(SerializerChain chain) throws SerializeException {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
-        byteBuffer.putInt(chain.getMessage().getQueueId());
-        chain.next();
+    public void serialize(SerializerChainContext context) throws SerializeException {
+        ByteBuffer byteBuffer = context.getByteBuffer();
+        byteBuffer.putInt(context.getMessage().getQueueId());
+        context.next();
     }
 
     @Override
-    public void deserialize(DeserializerChain chain) {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
-        chain.getMessage().setQueueId(byteBuffer.getInt());
-        chain.next();
+    public void deserialize(DeserializerChainContext context) {
+        ByteBuffer byteBuffer = context.getByteBuffer();
+        context.getMessage().setQueueId(byteBuffer.getInt());
+        context.next();
     }
 }

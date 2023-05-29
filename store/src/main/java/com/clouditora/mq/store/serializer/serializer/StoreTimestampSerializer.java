@@ -1,32 +1,32 @@
 package com.clouditora.mq.store.serializer.serializer;
 
-import com.clouditora.mq.store.serializer.DeserializerChain;
+import com.clouditora.mq.store.serializer.DeserializerChainContext;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.Serializer;
-import com.clouditora.mq.store.serializer.SerializerChain;
+import com.clouditora.mq.store.serializer.SerializerChainContext;
 
 import java.nio.ByteBuffer;
 
 public class StoreTimestampSerializer implements Serializer {
 
     @Override
-    public void preSerializer(SerializerChain chain) {
-        chain.addMessageLength(8);
+    public void preSerializer(SerializerChainContext context) {
+        context.addMessageLength(8);
     }
 
     @Override
-    public void serialize(SerializerChain chain) throws SerializeException {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
+    public void serialize(SerializerChainContext context) throws SerializeException {
+        ByteBuffer byteBuffer = context.getByteBuffer();
         long millis = System.currentTimeMillis();
-        chain.getMessage().setStoreTimestamp(millis);
+        context.getMessage().setStoreTimestamp(millis);
         byteBuffer.putLong(millis);
-        chain.next();
+        context.next();
     }
 
     @Override
-    public void deserialize(DeserializerChain chain) {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
-        chain.getMessage().setStoreTimestamp(byteBuffer.getLong());
-        chain.next();
+    public void deserialize(DeserializerChainContext context) {
+        ByteBuffer byteBuffer = context.getByteBuffer();
+        context.getMessage().setStoreTimestamp(byteBuffer.getLong());
+        context.next();
     }
 }

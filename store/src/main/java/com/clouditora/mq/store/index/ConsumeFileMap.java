@@ -16,10 +16,10 @@ public class ConsumeFileMap {
     }
 
     public ConsumeFileQueue findConsumeQueue(String topic, int queueId) {
-        ConcurrentMap<Integer, ConsumeFileQueue> queueMap = consumeMap.computeIfAbsent(topic, e -> new ConcurrentHashMap<>(128));
+        ConcurrentMap<Integer, ConsumeFileQueue> queueMap = this.consumeMap.computeIfAbsent(topic, e -> new ConcurrentHashMap<>(128));
         return queueMap.computeIfAbsent(queueId, e -> {
-            String path = config.getConsumeQueuePath() + File.separator + topic + File.separator + queueId;
-            return new ConsumeFileQueue(path, config.getConsumeQueueFileSize());
+            String path = this.config.getConsumeQueuePath() + File.separator + topic + File.separator + queueId;
+            return new ConsumeFileQueue(path, this.config.getConsumeQueueFileSize());
         });
     }
 }

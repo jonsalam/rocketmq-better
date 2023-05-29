@@ -9,11 +9,17 @@ import java.util.concurrent.CompletableFuture;
 public class PutResult {
     private PutStatus status;
     private String messageId;
-    private Long logicsOffset;
+    private Long queueOffset;
 
-    public static CompletableFuture<PutResult> buildAsync(PutStatus status) {
+    public static CompletableFuture<PutResult> buildAsync(PutStatus status, String messageId, Long queueOffset) {
         PutResult result = new PutResult();
         result.setStatus(status);
+        result.setMessageId(messageId);
+        result.setQueueOffset(queueOffset);
         return CompletableFuture.completedFuture(result);
+    }
+
+    public static CompletableFuture<PutResult> buildAsync(PutStatus status) {
+        return buildAsync(status, null, null);
     }
 }

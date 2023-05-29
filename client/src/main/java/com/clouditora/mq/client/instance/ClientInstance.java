@@ -30,7 +30,6 @@ import com.clouditora.mq.network.exception.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -165,8 +164,8 @@ public class ClientInstance extends AbstractScheduledService {
      * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#updateTopicRouteInfoFromNameServer
      */
     protected void updateTopicRoute() {
-        List<String> consumerTopics = this.consumerManager.getTopics();
-        List<String> producerTopics = this.producerManager.getTopics();
+        Set<String> consumerTopics = this.consumerManager.getTopics();
+        Set<String> producerTopics = this.messageRouteManager.getTopics();
         Set<String> topics = Stream.of(consumerTopics, producerTopics)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)

@@ -8,7 +8,6 @@ import java.io.IOException;
 
 @Slf4j
 public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
-
     public ConsumeFileQueue(String path, int fileSize) {
         super(path, fileSize);
     }

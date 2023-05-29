@@ -2,9 +2,9 @@ package com.clouditora.mq.store.serializer;
 
 import java.util.List;
 
-public class DeserializerChain extends AbstractChain {
+public class DeserializerChainContext extends AbstractChainContext {
 
-    public DeserializerChain(List<Serializer> serializers) {
+    public DeserializerChainContext(List<Serializer> serializers) {
         super(serializers);
     }
 

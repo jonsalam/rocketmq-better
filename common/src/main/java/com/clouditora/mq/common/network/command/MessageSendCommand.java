@@ -29,8 +29,6 @@ public class MessageSendCommand {
         private String properties;
         @JSONField(name = "reconsumeTimes")
         private Integer reConsumeTimes;
-        private boolean unitMode = false;
-        private boolean batch = false;
         @JSONField(name = "maxReconsumeTimes")
         private Integer maxReConsumeTimes;
     }
@@ -58,10 +56,6 @@ public class MessageSendCommand {
         private String properties;
         @JSONField(name = "j")
         private Integer reConsumeTimes;
-        @JSONField(name = "k")
-        private boolean unitMode = false;
-        @JSONField(name = "l")
-        private boolean batch = false;
         @JSONField(name = "m")
         private Integer maxReConsumeTimes;
     }

@@ -2,10 +2,10 @@ package com.clouditora.mq.store.serializer.serializer;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.store.MessageEntity;
-import com.clouditora.mq.store.serializer.DeserializerChain;
+import com.clouditora.mq.store.serializer.DeserializerChainContext;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.Serializer;
-import com.clouditora.mq.store.serializer.SerializerChain;
+import com.clouditora.mq.store.serializer.SerializerChainContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -14,19 +14,19 @@ import java.nio.ByteBuffer;
 public class PropertiesSerializer implements Serializer {
 
     @Override
-    public void preSerializer(SerializerChain chain) {
-        MessageEntity message = chain.getMessage();
-        chain.addMessageLength(2);
+    public void preSerializer(SerializerChainContext context) {
+        MessageEntity message = context.getMessage();
+        context.addMessageLength(2);
         byte[] propertyBytes = message.getPropertyBytes();
         if (propertyBytes != null) {
-            chain.addMessageLength(propertyBytes.length);
+            context.addMessageLength(propertyBytes.length);
         }
     }
 
     @Override
-    public void serialize(SerializerChain chain) throws SerializeException {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
-        byte[] propertyBytes = chain.getMessage().getPropertyBytes();
+    public void serialize(SerializerChainContext context) throws SerializeException {
+        ByteBuffer byteBuffer = context.getByteBuffer();
+        byte[] propertyBytes = context.getMessage().getPropertyBytes();
         if (propertyBytes == null) {
             byteBuffer.putShort((short) 0);
         } else {
@@ -37,19 +37,19 @@ public class PropertiesSerializer implements Serializer {
             byteBuffer.putShort((short) length);
             byteBuffer.put(propertyBytes);
         }
-        chain.next();
+        context.next();
     }
 
     @Override
-    public void deserialize(DeserializerChain chain) {
-        ByteBuffer byteBuffer = chain.getByteBuffer();
+    public void deserialize(DeserializerChainContext context) {
+        ByteBuffer byteBuffer = context.getByteBuffer();
         short length = byteBuffer.getShort();
         if (length == 0) {
             return;
         }
         byte[] bytes = new byte[length];
         byteBuffer.get(bytes);
-        chain.getMessage().setPropertyBytes(bytes);
-        chain.next();
+        context.getMessage().setPropertyBytes(bytes);
+        context.next();
     }
 }
