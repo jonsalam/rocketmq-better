@@ -1,5 +1,8 @@
 package com.clouditora.mq.client.consumer;
 
+import com.clouditora.mq.client.consumer.listener.MessageListener;
+import com.clouditora.mq.client.consumer.listener.MessageListenerConcurrently;
+import com.clouditora.mq.client.consumer.listener.MessageListenerOrderly;
 import com.clouditora.mq.client.instance.ClientConfig;
 import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.MessageModel;
@@ -28,6 +31,8 @@ public class Consumer extends AbstractNothingService {
     private MessageModel messageModel = MessageModel.CLUSTERING;
     private final ConcurrentMap<String, ConsumerSubscriptions> subscriptionMap = new ConcurrentHashMap<>();
 
+    private MessageListener messageListener;
+
     public Consumer(String group) {
         this.group = group;
     }
@@ -54,6 +59,20 @@ public class Consumer extends AbstractNothingService {
                 .map(ConsumerSubscriptions::getSubscriptions)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.consumer.DefaultMQPushConsumer#registerMessageListener
+     */
+    public void registerListener(MessageListenerConcurrently messageListener) {
+        this.messageListener = messageListener;
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.consumer.DefaultMQPushConsumer#registerMessageListener
+     */
+    public void registerListener(MessageListenerOrderly messageListener) {
+        this.messageListener = messageListener;
     }
 
     public static void main(String[] args) throws Exception {
