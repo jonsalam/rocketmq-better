@@ -4,6 +4,7 @@ import com.clouditora.mq.store.enums.PutStatus;
 import com.clouditora.mq.store.exception.PutException;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileQueue;
+import com.clouditora.mq.store.file.PutResult;
 import com.clouditora.mq.store.serializer.ByteBufferSerializer;
 import com.clouditora.mq.store.serializer.SerializeException;
 import com.clouditora.mq.store.serializer.serializer.EndOfFileException;
@@ -11,7 +12,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 
+/**
+ * @link org.apache.rocketmq.store.CommitLog
+ */
 @Slf4j
 public class CommitLog {
     @Getter
@@ -29,11 +34,11 @@ public class CommitLog {
     /**
      * org.apache.rocketmq.store.CommitLog#asyncPutMessage
      */
-    public void putMessage(MessageEntity message) throws PutException {
+    public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
         MappedFile file = this.commitLogQueue.getCurrentWritingFile();
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
-            throw new PutException(PutStatus.CREATE_MAPPED_FILE_FAILED);
+            return PutResult.buildAsync(PutStatus.CREATE_MAPPED_FILE_FAILED);
         }
         try {
             // 当前文件写指针
@@ -43,22 +48,31 @@ public class CommitLog {
             // 当前文件剩余空间
             int remainLength = file.getFileSize() - writePosition;
             ByteBuffer byteBuffer = this.serializerThreadLocal.get().serialize(physicalOffset, remainLength, message);
-            file.write(byteBuffer);
+            file.append(byteBuffer);
+            return PutResult.buildAsync(PutStatus.SUCCESS);
         } catch (EndOfFileException e) {
             log.debug("end of file: file={}, messageLength={}", file, e.getMessageLength());
             // 剩余空间不够, 当前文件写满, 消息写入下一个文件
-            file.write(e.getByteBuffer(), e.getRemainLength());
-            this.putMessage(message);
+            fillCurrentFile(file, e);
+            return asyncPut(message);
         } catch (SerializeException e) {
-            throw new PutException(PutStatus.MESSAGE_ILLEGAL);
+            return PutResult.buildAsync(PutStatus.MESSAGE_ILLEGAL);
         } catch (Exception e) {
             log.error("unknown error", e);
-            throw new PutException(PutStatus.UNKNOWN_ERROR);
+        }
+        return PutResult.buildAsync(PutStatus.UNKNOWN_ERROR);
+    }
+
+    private static void fillCurrentFile(MappedFile file, EndOfFileException e) {
+        try {
+            file.append(e.getByteBuffer(), e.getRemainLength());
+        } catch (PutException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
     public MappedFile slice(long logOffset, int length) {
-        MappedFile file = commitLogQueue.slice(logOffset);
+        MappedFile file = this.commitLogQueue.slice(logOffset);
         if (file == null) {
             return null;
         }

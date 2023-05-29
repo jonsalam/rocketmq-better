@@ -34,7 +34,7 @@ public class ConsumeFileDispatcher implements MessageDispatcher {
         byteBuffer.putLong(message.getLogOffset());
         byteBuffer.putInt(message.getMessageLength());
         byteBuffer.putLong(tagsCode);
-        file.write(byteBuffer);
+        file.append(byteBuffer);
     }
 
     private int getTagsCode(MessageEntity message) {

@@ -15,7 +15,7 @@ public class MappedFileQueueTest extends AbstractFileTest {
     public void getCurrentWritingFile() throws PutException {
         MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(path, 180);
         MappedFile mappedFile1 = mappedFileQueue.getCurrentWritingFile();
-        mappedFile1.write(ByteBuffer.allocate(180));
+        mappedFile1.append(ByteBuffer.allocate(180));
         assertTrue(mappedFile1.isFull());
 
         MappedFile mappedFile2 = mappedFileQueue.getCurrentWritingFile();

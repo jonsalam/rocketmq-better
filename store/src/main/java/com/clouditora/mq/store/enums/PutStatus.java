@@ -1,7 +1,7 @@
 package com.clouditora.mq.store.enums;
 
 public enum PutStatus {
-    OK,
+    SUCCESS,
     UNKNOWN_ERROR,
     FLUSH_DISK_TIMEOUT,
     FLUSH_SLAVE_TIMEOUT,

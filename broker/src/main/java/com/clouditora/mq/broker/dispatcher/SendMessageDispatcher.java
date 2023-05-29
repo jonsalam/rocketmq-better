@@ -11,13 +11,16 @@ import com.clouditora.mq.network.command.AsyncCommandDispatcher;
 import com.clouditora.mq.network.command.CommandCallback;
 import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
+import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.network.util.NetworkUtil;
 import com.clouditora.mq.store.MessageEntity;
+import com.clouditora.mq.store.file.PutResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @link org.apache.rocketmq.broker.processor.SendMessageProcessor
@@ -62,7 +65,9 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
      * @link org.apache.rocketmq.broker.processor.SendMessageProcessor#asyncSendMessage
      */
     private Command receiveMessage(ChannelHandlerContext context, Command request, MessageSendCommand.RequestHeader requestHeader) {
+        MessageSendCommand.ResponseHeader responseHeader = new MessageSendCommand.ResponseHeader();
         Command response = Command.buildResponse();
+        response.setHeader(responseHeader);
         response.setOpaque(request.getOpaque());
 
         MessageEntity message = new MessageEntity();
@@ -76,7 +81,37 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
         message.setStoreHost(this.storeHost);
         message.setReConsumeTimes(Optional.ofNullable(requestHeader.getReConsumeTimes()).orElse(0));
         message.putProperty(MessageConst.Property.CLUSTER, brokerConfig.getBrokerClusterName());
-        this.brokerController.putMessage(message);
+        CompletableFuture<PutResult> result = this.brokerController.asyncPutMessage(message);
+        result.thenApply(e -> {
+            if (e == null) {
+                response.setCode(ResponseCode.SYSTEM_ERROR);
+                response.setRemark("store message return null");
+                return response;
+            }
+            switch (e.getStatus()) {
+                case SUCCESS -> response.setCode(ResponseCode.SUCCESS);
+                case CREATE_MAPPED_FILE_FAILED -> {
+                    response.setCode(ResponseCode.SYSTEM_ERROR);
+                    response.setRemark("create mapped file failed, server is busy or broken.");
+                }
+                case MESSAGE_ILLEGAL -> {
+                    response.setCode(ResponseCode.MESSAGE_ILLEGAL);
+                    response.setRemark("the message is illegal, maybe msg body or properties length not matched.");
+                }
+                case UNKNOWN_ERROR -> {
+                    response.setCode(ResponseCode.SYSTEM_ERROR);
+                    response.setRemark("UNKNOWN_ERROR");
+                }
+                default -> {
+                    response.setCode(ResponseCode.SYSTEM_ERROR);
+                    response.setRemark("UNKNOWN_ERROR DEFAULT");
+                }
+            }
+            responseHeader.setMsgId(e.getMessageId());
+            responseHeader.setQueueId(requestHeader.getQueueId());
+            responseHeader.setQueueOffset(e.getLogicsOffset());
+            return response;
+        });
         return response;
     }
 

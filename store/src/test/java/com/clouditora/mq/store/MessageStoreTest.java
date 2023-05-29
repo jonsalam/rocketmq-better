@@ -19,11 +19,11 @@ public class MessageStoreTest extends AbstractFileTest {
         messageStore.start();
 
         MessageEntity message = TestUtil.buildMessage();
-        messageStore.putMessage(message);
+        messageStore.asyncPut(message);
 
         FutureTask<MappedFileHolder> task = new FutureTask<>(() -> {
             TestUtil.sleep(1);
-            return messageStore.getMessage(message.getTopic(), 0, 0, 16);
+            return messageStore.get(message.getTopic(), 0, 0, 16);
         });
         new Thread(task).start();
 

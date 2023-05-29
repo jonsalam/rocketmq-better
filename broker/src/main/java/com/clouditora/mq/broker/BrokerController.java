@@ -17,13 +17,11 @@ import com.clouditora.mq.network.ServerNetworkConfig;
 import com.clouditora.mq.store.MessageEntity;
 import com.clouditora.mq.store.MessageStore;
 import com.clouditora.mq.store.MessageStoreConfig;
+import com.clouditora.mq.store.file.PutResult;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @link org.apache.rocketmq.broker.BrokerController
@@ -181,7 +179,7 @@ public class BrokerController extends AbstractScheduledService {
         consumerManager.cleanExpiredClient();
     }
 
-    public void putMessage(MessageEntity message) {
-        this.messageStore.putMessage(message);
+    public CompletableFuture<PutResult> asyncPutMessage(MessageEntity message) {
+        return this.messageStore.asyncPut(message);
     }
 }

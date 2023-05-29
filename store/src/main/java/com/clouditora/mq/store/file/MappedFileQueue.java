@@ -128,7 +128,7 @@ public class MappedFileQueue<T extends MappedFile> {
         }
         try {
             T file = files.get(index);
-            if (offsetInMappedFile(offset, file)) {
+            if (calcOffset(offset, file)) {
                 return file;
             }
         } catch (Exception ignored) {
@@ -138,7 +138,7 @@ public class MappedFileQueue<T extends MappedFile> {
 
     private T sliceWithIterator(long offset) {
         for (T file : files) {
-            if (offsetInMappedFile(offset, file)) {
+            if (calcOffset(offset, file)) {
                 return file;
             }
         }
@@ -148,7 +148,7 @@ public class MappedFileQueue<T extends MappedFile> {
     /**
      * 在文件偏移量范围之内
      */
-    protected boolean offsetInMappedFile(long offset, T file) {
+    protected boolean calcOffset(long offset, T file) {
         return offset >= file.getFileOffset() && offset < file.getFileOffset() + fileSize;
     }
 }

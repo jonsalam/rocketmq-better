@@ -1,14 +1,15 @@
 package com.clouditora.mq.store;
 
-import com.clouditora.mq.store.exception.PutException;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileHolder;
+import com.clouditora.mq.store.file.PutResult;
 import com.clouditora.mq.store.index.ConsumeFile;
 import com.clouditora.mq.store.index.ConsumeFileMap;
 import com.clouditora.mq.store.index.ConsumeFileQueue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @link org.apache.rocketmq.store.DefaultMessageStore
@@ -34,11 +35,11 @@ public class MessageStore {
     /**
      * org.apache.rocketmq.store.DefaultMessageStore#asyncPutMessage
      */
-    public void putMessage(MessageEntity message) throws PutException {
-        commitLog.putMessage(message);
+    public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
+        return commitLog.asyncPut(message);
     }
 
-    public MappedFileHolder getMessage(String topic, int queueId, long offset, int maxNum) {
+    public MappedFileHolder get(String topic, int queueId, long offset, int maxNum) {
         ConsumeFileQueue queue = consumeFileMap.findConsumeQueue(topic, queueId);
         if (queue == null) {
             return null;

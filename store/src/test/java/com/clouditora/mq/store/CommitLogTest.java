@@ -18,7 +18,7 @@ public class CommitLogTest extends AbstractFileTest {
         MessageEntity message = TestUtil.buildMessage();
         // 一个message的大小是157, 2个会超过一个mappedFile
         for (int i = 0; i < 2; i++) {
-            commitLog.putMessage(message);
+            commitLog.asyncPut(message);
         }
         MappedFileQueue mappedFileQueue = commitLog.getCommitLogQueue();
         MappedFile mappedFile = mappedFileQueue.getCurrentWritingFile();

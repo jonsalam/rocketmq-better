@@ -101,7 +101,7 @@ public class MappedFile {
         return new MappedFile(this, position, limit, byteBuffer);
     }
 
-    public void write(int position, ByteBuffer byteBuffer, int length) throws PutException {
+    public void append(int position, ByteBuffer byteBuffer, int length) throws PutException {
         if (isFull()) {
             // MappedFileQueue#getCurrentWritingFile 已经保证写位置不会超过文件大小
             log.error("file is full: file={}, wrotePosition={} fileSize={}", this.file, this.writePosition.get(), fileSize);
@@ -111,24 +111,24 @@ public class MappedFile {
         this.writePosition.addAndGet(length);
     }
 
-    public void write(ByteBuffer byteBuffer) throws PutException {
-        write(0, byteBuffer, byteBuffer.limit());
+    public void append(ByteBuffer byteBuffer) throws PutException {
+        append(0, byteBuffer, byteBuffer.limit());
     }
 
-    public void write(ByteBuffer byteBuffer, int length) throws PutException {
-        write(0, byteBuffer, length);
+    public void append(ByteBuffer byteBuffer, int length) throws PutException {
+        append(0, byteBuffer, length);
     }
 
-    public void write(int position, ByteBuffer byteBuffer) throws PutException {
-        write(position, byteBuffer, byteBuffer.limit());
+    public void append(int position, ByteBuffer byteBuffer) throws PutException {
+        append(position, byteBuffer, byteBuffer.limit());
     }
 
-    public void write(int position, int value) {
+    public void append(int position, int value) {
         this.mappedByteBuffer.slice().putInt(position, value);
         this.writePosition.addAndGet(4);
     }
 
-    public void write(int position, long value) {
+    public void append(int position, long value) {
         this.mappedByteBuffer.slice().putLong(position, value);
         this.writePosition.addAndGet(8);
     }

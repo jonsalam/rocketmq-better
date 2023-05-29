@@ -18,7 +18,7 @@ public class MappedFileTest extends AbstractFileTest {
         MappedFile mappedFile = new MappedFile(path, 1024 * 100);
         MessageEntity message = TestUtil.buildMessage();
         ByteBuffer byteBuffer = new ByteBufferSerializer().serialize(0, 1024 * 100, message);
-        mappedFile.write(byteBuffer);
+        mappedFile.append(byteBuffer);
         return message;
     }
 
