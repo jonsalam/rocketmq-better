@@ -1,4 +1,4 @@
-package com.clouditora.mq.store;
+package com.clouditora.mq.common.message;
 
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;

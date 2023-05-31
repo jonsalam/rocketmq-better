@@ -8,6 +8,7 @@ import com.clouditora.mq.common.network.command.ClientUnregisterCommand;
 import com.clouditora.mq.common.util.EnumUtil;
 import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
+import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.network.util.NetworkUtil;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class ClientCommandDispatcher implements CommandDispatcher {
         clientChannel.setLanguage(request.getLanguage());
         clientChannel.setUpdateTime(System.currentTimeMillis());
         brokerController.registerClient(clientChannel, requestBody.getProducers(), requestBody.getConsumers());
-        return Command.buildResponse();
+        return Command.buildResponse(ResponseCode.SUCCESS);
     }
 
     private Command unregisterClient(ChannelHandlerContext context, Command request) {
@@ -57,7 +58,7 @@ public class ClientCommandDispatcher implements CommandDispatcher {
         clientChannel.setUpdateTime(System.currentTimeMillis());
 
         brokerController.unregisterClient(clientChannel, requestHeader.getProducerGroup(), requestHeader.getConsumerGroup());
-        return Command.buildResponse();
+        return Command.buildResponse(ResponseCode.SUCCESS);
     }
 
 }

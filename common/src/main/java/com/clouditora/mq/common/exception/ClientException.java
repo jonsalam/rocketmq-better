@@ -14,8 +14,10 @@ public class ClientException extends Exception {
     }
 
     public ClientException(int code, String msg) {
-        super(msg);
-        this.code = code;
-        this.msg = msg;
+        this(code, msg, null);
+    }
+
+    public ClientException(String msg, Throwable cause) {
+        this(-1, msg, cause);
     }
 }

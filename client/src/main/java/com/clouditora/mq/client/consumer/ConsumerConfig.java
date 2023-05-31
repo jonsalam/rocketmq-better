@@ -1,6 +1,7 @@
 package com.clouditora.mq.client.consumer;
 
 import com.clouditora.mq.common.constant.ConsumePositionStrategy;
+import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.MessageModel;
 import com.clouditora.mq.common.util.TimeUtil;
 import lombok.Data;
@@ -10,22 +11,14 @@ import lombok.Data;
  */
 @Data
 public class ConsumerConfig {
-    /**
-     * Flow control interval when message cache is full
-     */
-    public static final long PULL_TIME_DELAY_MILLS_WHEN_CACHE_FLOW_CONTROL = 50;
-    /**
-     * Flow control interval when broker return flow control
-     */
-    public static final long PULL_TIME_DELAY_MILLS_WHEN_BROKER_FLOW_CONTROL = 20;
-    /**
-     * Delay some time when suspend pull service
-     */
-    public static final long PULL_TIME_DELAY_MILLS_WHEN_SUSPEND = 1000;
+    public final static String LOCAL_OFFSET_STORE_DIR = System.getProperty("rocketmq.client.localOffsetStoreDir", System.getProperty(GlobalConstant.USER_HOME) + "/.rocketmq_offsets");
+
     /**
      * Delay some time when exception occur
+     *
+     * @link org.apache.rocketmq.client.ClientConfig#pullTimeDelayMillsWhenException
      */
-    private long pullTimeDelayMillsWhenException = 3000;
+    private long pullTimeDelayMillsWhenException = 1000;
 
     /**
      * Consumers of the same role is required to have exactly same subscriptions and consumerGroup to correctly achieve

@@ -1,5 +1,7 @@
 package com.clouditora.mq.store;
 
+import com.clouditora.mq.common.message.MessageEntity;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;

@@ -2,6 +2,7 @@ package com.clouditora.mq.broker.dispatcher;
 
 import com.clouditora.mq.broker.BrokerConfig;
 import com.clouditora.mq.common.MessageConst;
+import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.MessageSendCommand;
 import com.clouditora.mq.common.util.EnumUtil;
@@ -12,7 +13,6 @@ import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.network.util.NetworkUtil;
-import com.clouditora.mq.store.MessageEntity;
 import com.clouditora.mq.store.MessageStore;
 import com.clouditora.mq.store.file.PutResult;
 import io.netty.channel.ChannelHandlerContext;
@@ -66,7 +66,7 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
      */
     private Command receiveMessage(ChannelHandlerContext context, Command request, MessageSendCommand.RequestHeader requestHeader) {
         MessageSendCommand.ResponseHeader responseHeader = new MessageSendCommand.ResponseHeader();
-        Command response = Command.buildResponse();
+        Command response = Command.buildResponse(ResponseCode.SUCCESS);
         response.setHeader(responseHeader);
         response.setOpaque(request.getOpaque());
 
@@ -107,7 +107,7 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
                     response.setRemark("UNKNOWN_ERROR DEFAULT");
                 }
             }
-            responseHeader.setMsgId(e.getMessageId());
+            responseHeader.setMessageId(e.getMessageId());
             responseHeader.setQueueId(requestHeader.getQueueId());
             responseHeader.setQueueOffset(e.getQueueOffset());
             return response;

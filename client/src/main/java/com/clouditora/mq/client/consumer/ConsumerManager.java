@@ -25,6 +25,10 @@ public class ConsumerManager {
         return this.consumerMap.values().stream().map(Consumer::getTopics).flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
+    public Consumer get(String group) {
+        return this.consumerMap.get(group);
+    }
+
     public void register(Consumer consumer) {
         try {
             try {

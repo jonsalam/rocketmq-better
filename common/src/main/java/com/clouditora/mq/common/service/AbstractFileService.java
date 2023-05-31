@@ -8,21 +8,21 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
-public abstract class AbstractPersistentService extends AbstractNothingService {
+public abstract class AbstractFileService extends AbstractNothingService {
     private final String path;
 
-    public AbstractPersistentService(String path) {
+    public AbstractFileService(String path) {
         this.path = path;
     }
 
     @Override
     public void startup() {
-        String content = readFile();
-        load(content);
+        String content = read();
+        decode(content);
         super.startup();
     }
 
-    private String readFile() {
+    private String read() {
         String path = this.path;
         try {
             String content = FileUtil.file2String(path);
@@ -39,23 +39,22 @@ public abstract class AbstractPersistentService extends AbstractNothingService {
 
     @Override
     public void shutdown() {
-        persist();
+        save();
     }
 
-    protected void persist() {
-        String content = unload();
-        if (StringUtils.isNoneBlank(content)) {
-            String path = this.path;
+    public void save() {
+        String content = encode();
+        if (StringUtils.isNotBlank(content)) {
             try {
-                FileUtil.overwriteFile(content.getBytes(StandardCharsets.UTF_8), path);
+                FileUtil.overwriteFile(content.getBytes(StandardCharsets.UTF_8), this.path);
             } catch (IOException e) {
-                log.error("persist file {} exception", path, e);
+                log.error("persist file {} exception", this.path, e);
             }
         }
         super.shutdown();
     }
 
-    protected abstract void load(String content);
+    protected abstract void decode(String content);
 
-    protected abstract String unload();
+    protected abstract String encode();
 }

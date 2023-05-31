@@ -20,7 +20,7 @@ public class NameserverApplication {
 
     private static NameserverConfig getNameserverConfig() {
         NameserverConfig nameserverConfig = new NameserverConfig();
-        if (nameserverConfig.getRocketmqHome() == null) {
+        if (nameserverConfig.getHome() == null) {
             System.out.printf("Please set the %s variable in your environment to match the location of the RocketMQ installation%n", GlobalConstant.ROCKETMQ_HOME_ENV);
             System.exit(-2);
         }

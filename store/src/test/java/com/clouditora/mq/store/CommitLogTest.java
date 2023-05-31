@@ -1,5 +1,6 @@
 package com.clouditora.mq.store;
 
+import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileQueue;
 import com.clouditora.mq.store.util.StoreUtil;

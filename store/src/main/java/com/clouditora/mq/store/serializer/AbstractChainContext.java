@@ -1,6 +1,6 @@
 package com.clouditora.mq.store.serializer;
 
-import com.clouditora.mq.store.MessageEntity;
+import com.clouditora.mq.common.message.MessageEntity;
 import lombok.Getter;
 import lombok.Setter;
 

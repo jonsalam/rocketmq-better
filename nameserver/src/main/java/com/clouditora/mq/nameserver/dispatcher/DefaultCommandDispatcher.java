@@ -59,7 +59,7 @@ public class DefaultCommandDispatcher implements CommandDispatcher {
                 requestBody.getTopicMap(),
                 context.channel()
         );
-        return Command.buildResponse();
+        return Command.buildResponse(ResponseCode.SUCCESS);
     }
 
     /**
@@ -73,7 +73,7 @@ public class DefaultCommandDispatcher implements CommandDispatcher {
                 requestHeader.getBrokerEndpoint(),
                 requestHeader.getBrokerId()
         );
-        return Command.buildResponse();
+        return Command.buildResponse(ResponseCode.SUCCESS);
     }
 
     /**
@@ -83,7 +83,7 @@ public class DefaultCommandDispatcher implements CommandDispatcher {
         TopicRouteCommand.RequestHeader requestHeader = request.decodeHeader(TopicRouteCommand.RequestHeader.class);
         TopicRoute topicRoute = this.topicRouteManager.getTopicRoute(requestHeader.getTopic());
 
-        Command response = Command.buildResponse();
+        Command response = Command.buildResponse(ResponseCode.SUCCESS);
         if (topicRoute == null || topicRoute.isEmpty()) {
             response.setCode(ResponseCode.TOPIC_NOT_EXIST);
             response.setRemark("No topic route info in name server for the topic: %s".formatted(requestHeader.getTopic()));

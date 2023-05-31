@@ -1,8 +1,8 @@
 package com.clouditora.mq.store.index;
 
 import com.clouditora.mq.common.MessageConst;
+import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.MessageDispatcher;
-import com.clouditora.mq.store.MessageEntity;
 import com.clouditora.mq.store.MessageStoreConfig;
 import com.clouditora.mq.store.enums.PutStatus;
 import com.clouditora.mq.store.exception.PutException;

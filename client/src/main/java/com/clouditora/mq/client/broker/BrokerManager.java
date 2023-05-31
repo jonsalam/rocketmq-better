@@ -1,13 +1,15 @@
 package com.clouditora.mq.client.broker;
 
+import com.clouditora.mq.client.consumer.pull.PullMessageRequest;
 import com.clouditora.mq.client.instance.ClientConfig;
+import com.clouditora.mq.client.producer.SendResult;
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.broker.BrokerEndpoints;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.message.MessageQueue;
-import com.clouditora.mq.common.message.SendResult;
+import com.clouditora.mq.common.topic.ConsumerSubscription;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.network.exception.ConnectException;
@@ -17,6 +19,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -85,17 +88,43 @@ public class BrokerManager {
         }
     }
 
-    public SendResult send(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws BrokerException, InterruptedException, TimeoutException, ConnectException {
+    public SendResult sendMessage(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
         BrokerEndpoints endpoints = this.endpointMap.get(queue.getBrokerName());
         String endpoint = endpoints.getEndpointMap().get(GlobalConstant.MASTER_ID);
         return this.brokerApiFacade.sendMessage(
                 rpcModel,
-                endpoint,
+                queue.getBrokerName(), endpoint,
                 group,
                 message,
                 queue.getQueueId(),
-                queue.getBrokerName(),
                 timeout
+        );
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#findBrokerAddressInSubscribe
+     */
+    public String findEndpoint(String brokerName, long brokerId, boolean onlyThisBroker) {
+        BrokerEndpoints endpoints = this.endpointMap.get(brokerName);
+        if (endpoints == null || endpoints.isEmpty()) {
+            return null;
+        }
+        String endpoint = endpoints.get(brokerId);
+        if (endpoint == null && brokerId != GlobalConstant.MASTER_ID) {
+            endpoint = endpoints.get(brokerId + 1);
+        }
+        if (endpoint == null && !onlyThisBroker) {
+            Map.Entry<Long, String> entry = endpoints.getEndpointMap().entrySet().iterator().next();
+            endpoint = entry.getValue();
+        }
+        return endpoint;
+    }
+
+    public void pullMessage(PullMessageRequest request, ConsumerSubscription subscription, long offset, int pullBatchSize) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        String endpoint = findEndpoint(brokerName, brokerId, false);
+        this.brokerApiFacade.pullMessage(
+                RpcModel.ASYNC,
+                endpoint
         );
     }
 }

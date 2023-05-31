@@ -200,8 +200,4 @@ public class Command {
     public static Command buildResponse(ResponseCode code) {
         return buildResponse(code.getCode(), null);
     }
-
-    public static Command buildResponse() {
-        return buildResponse(ResponseCode.SUCCESS);
-    }
 }

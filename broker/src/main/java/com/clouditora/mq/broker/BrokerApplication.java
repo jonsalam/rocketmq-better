@@ -24,7 +24,7 @@ public class BrokerApplication {
 
     private static BrokerConfig getBrokerConfig() {
         BrokerConfig brokerConfig = new BrokerConfig();
-        if (brokerConfig.getRocketmqHome() == null) {
+        if (brokerConfig.getHome() == null) {
             System.out.printf("Please set the %s variable in your environment to match the location of the RocketMQ installation%n", GlobalConstant.ROCKETMQ_HOME_ENV);
             System.exit(-2);
         }

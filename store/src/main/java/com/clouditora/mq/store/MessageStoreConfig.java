@@ -8,8 +8,8 @@ import java.io.File;
 
 @Data
 public class MessageStoreConfig {
-    private String rocketmqHome = System.getProperty(GlobalConstant.ROCKETMQ_HOME_PROPERTY, System.getenv(GlobalConstant.ROCKETMQ_HOME_ENV));
-    private String rootPath = "%s/store".formatted(rocketmqHome);
+    private String home = System.getProperty(GlobalConstant.ROCKETMQ_HOME_PROPERTY, System.getenv(GlobalConstant.ROCKETMQ_HOME_ENV));
+    private String rootPath = "%s/store".formatted(home);
     // CommitLog file size, default is 1G
     private int commitLogFileSize = 1024 * 1024 * 1024;
     // ConsumeQueue file size,default is 30W

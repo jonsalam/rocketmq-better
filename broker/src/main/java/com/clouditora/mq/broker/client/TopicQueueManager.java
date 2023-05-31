@@ -4,9 +4,9 @@ import com.clouditora.mq.broker.BrokerConfig;
 import com.clouditora.mq.broker.BrokerController;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.constant.SystemTopic;
-import com.clouditora.mq.common.service.AbstractPersistentService;
+import com.clouditora.mq.common.service.AbstractFileService;
 import com.clouditora.mq.common.topic.TopicQueue;
-import com.clouditora.mq.common.topic.TopicQueueWrapper;
+import com.clouditora.mq.common.topic.TopicQueueFile;
 import com.clouditora.mq.common.util.JsonUtil;
 import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.Getter;
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentMap;
  * @link org.apache.rocketmq.broker.topic.TopicConfigManager
  */
 @Slf4j
-public class TopicQueueManager extends AbstractPersistentService {
+public class TopicQueueManager extends AbstractFileService {
     private final BrokerController brokerController;
     @Getter
     private final ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>(1024);
@@ -62,8 +62,8 @@ public class TopicQueueManager extends AbstractPersistentService {
     }
 
     @Override
-    protected void load(String content) {
-        TopicQueueWrapper config = JsonUtil.toJsonObject(content, TopicQueueWrapper.class);
+    protected void decode(String content) {
+        TopicQueueFile config = JsonUtil.toJsonObject(content, TopicQueueFile.class);
         if (config != null) {
             this.topicMap.putAll(config.getTopicMap());
             print();
@@ -77,8 +77,8 @@ public class TopicQueueManager extends AbstractPersistentService {
     }
 
     @Override
-    protected String unload() {
-        TopicQueueWrapper config = new TopicQueueWrapper();
+    protected String encode() {
+        TopicQueueFile config = new TopicQueueFile();
         config.setTopicMap(this.topicMap);
         return JsonUtil.toJsonStringPretty(config);
     }
@@ -92,7 +92,7 @@ public class TopicQueueManager extends AbstractPersistentService {
             topicQueue.setTopic(topic);
             topicQueue.setReadQueueNum(readQueueNum);
             topicQueue.setWriteQueueNum(writeQueueNum);
-            super.persist();
+            super.save();
             log.info("register topic {}: {}", topic, topicQueue);
             brokerController.registerBroker(RpcModel.ONEWAY);
             return topicQueue;

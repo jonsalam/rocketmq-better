@@ -1,5 +1,6 @@
 package com.clouditora.mq.store;
 
+import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.enums.PutStatus;
 import com.clouditora.mq.store.exception.PutException;
 import com.clouditora.mq.store.file.MappedFile;

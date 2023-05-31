@@ -26,14 +26,14 @@ public abstract class AbstractLaterService extends AbstractLoopedService {
     }
 
     public void later(TimeUnit timeUnit, long delay, Runnable runnable) {
+        this.scheduledExecutor.schedule(runnable, delay, timeUnit);
+    }
+
+    public void later(long delay, Runnable runnable) {
         if (this.timeUnit == null) {
             log.error("{} time unit is null", getServiceName());
             throw new RuntimeException("time unit is null");
         }
-        this.scheduledExecutor.schedule(runnable, this.delay, this.timeUnit);
-    }
-
-    public void later(long delay, Runnable runnable) {
         later(this.timeUnit, delay, runnable);
     }
 

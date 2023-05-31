@@ -74,7 +74,8 @@ public class MessageSendCommand {
      */
     @Data
     public static class ResponseHeader implements CommandHeader {
-        private String msgId;
+        @JSONField(name = "msgId")
+        private String messageId;
         private Integer queueId;
         private Long queueOffset;
     }

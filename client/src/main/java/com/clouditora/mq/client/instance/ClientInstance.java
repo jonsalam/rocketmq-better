@@ -4,9 +4,11 @@ import com.clouditora.mq.client.broker.BrokerApiFacade;
 import com.clouditora.mq.client.broker.BrokerManager;
 import com.clouditora.mq.client.consumer.Consumer;
 import com.clouditora.mq.client.consumer.ConsumerManager;
+import com.clouditora.mq.client.consumer.pull.PullMessageRequest;
 import com.clouditora.mq.client.nameserver.NameserverApiFacade;
 import com.clouditora.mq.client.producer.Producer;
 import com.clouditora.mq.client.producer.ProducerManager;
+import com.clouditora.mq.client.producer.SendResult;
 import com.clouditora.mq.client.topic.MessageRoute;
 import com.clouditora.mq.client.topic.MessageRouteManager;
 import com.clouditora.mq.client.topic.TopicRouteManager;
@@ -17,8 +19,8 @@ import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.message.MessageQueue;
-import com.clouditora.mq.common.message.SendResult;
 import com.clouditora.mq.common.service.AbstractScheduledService;
+import com.clouditora.mq.common.topic.ConsumerSubscription;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.common.topic.TopicRoute;
@@ -27,6 +29,7 @@ import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.exception.ConnectException;
 import com.clouditora.mq.network.exception.TimeoutException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
@@ -48,6 +51,7 @@ public class ClientInstance extends AbstractScheduledService {
      */
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
 
+    @Getter
     private final String clientId;
     private final ClientConfig clientConfig;
     private final ClientNetwork clientNetwork;
@@ -146,6 +150,7 @@ public class ClientInstance extends AbstractScheduledService {
      */
     public void registerConsumer(Consumer consumer) {
         this.consumerManager.register(consumer);
+        consumer.setClientInstance(this);
     }
 
     /**
@@ -158,6 +163,13 @@ public class ClientInstance extends AbstractScheduledService {
 
     private void unregisterConsumers() {
         this.consumerManager.getGroups().forEach(this::unregisterConsumer);
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#selectConsumer
+     */
+    public Consumer selectConsumer(String group) {
+        return this.consumerManager.get(group);
     }
 
     /**
@@ -240,7 +252,11 @@ public class ClientInstance extends AbstractScheduledService {
         return this.messageRouteManager.get(topic);
     }
 
-    public SendResult send(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
-        return this.brokerManager.send(rpcModel, group, queue, message, timeout);
+    public SendResult sendMessage(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
+        return this.brokerManager.sendMessage(rpcModel, group, queue, message, timeout);
+    }
+
+    public void pullMessage(PullMessageRequest request, ConsumerSubscription subscription, long offset, int pullBatchSize) {
+        this.brokerManager.pullMessage(request, subscription, offset, pullBatchSize);
     }
 }

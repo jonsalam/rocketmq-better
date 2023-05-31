@@ -1,16 +1,19 @@
 package com.clouditora.mq.client.broker;
 
+import com.clouditora.mq.client.consumer.pull.PullResult;
+import com.clouditora.mq.client.consumer.pull.PullStatus;
 import com.clouditora.mq.client.instance.ClientConfig;
+import com.clouditora.mq.client.producer.SendResult;
+import com.clouditora.mq.client.producer.SendStatus;
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.constant.RpcModel;
-import com.clouditora.mq.common.constant.SendStatus;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.message.MessageQueue;
-import com.clouditora.mq.common.message.SendResult;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.ClientRegisterCommand;
 import com.clouditora.mq.common.network.command.ClientUnregisterCommand;
+import com.clouditora.mq.common.network.command.MessagePullCommand;
 import com.clouditora.mq.common.network.command.MessageSendCommand;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
@@ -28,6 +31,15 @@ import java.util.Set;
 @Slf4j
 @Getter
 public class BrokerApiFacade {
+    /**
+     * @link org.apache.rocketmq.client.impl.consumer.DefaultMQPushConsumerImpl#BROKER_SUSPEND_MAX_TIME_MILLIS
+     */
+    private static final long BROKER_SUSPEND_MAX_TIME_MILLIS = 1000 * 15;
+    /**
+     * @link org.apache.rocketmq.client.impl.consumer.DefaultMQPushConsumerImpl#CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND
+     */
+    private static final long CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND = 1000 * 30;
+
     private final ClientConfig clientConfig;
     private final ClientNetwork clientNetwork;
 
@@ -75,7 +87,7 @@ public class BrokerApiFacade {
         throw new BrokerException(response.getCode(), response.getRemark(), endpoint);
     }
 
-    public SendResult sendMessage(RpcModel rpcModel, String endpoint, String group, Message message, Integer queueId, String brokerName, long timeout) throws InterruptedException, ConnectException,  TimeoutException, BrokerException {
+    public SendResult sendMessage(RpcModel rpcModel, String brokerName, String brokerEndpoint, String group, Message message, Integer queueId, long timeout) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
         long startTime = System.currentTimeMillis();
         MessageSendCommand.RequestHeader requestHeader = new MessageSendCommand.RequestHeader();
         requestHeader.setGroup(group);
@@ -87,9 +99,8 @@ public class BrokerApiFacade {
         Command request = Command.buildRequest(RequestCode.SEND_MESSAGE, requestHeader);
 
         if (rpcModel == RpcModel.SYNC) {
-            Command response = this.clientNetwork.syncInvoke(endpoint, request, timeout);
-            ResponseCode responseCode = EnumUtil.ofCode(response.getCode(), ResponseCode.class);
-            SendStatus sendStatus = parseSendStatus(endpoint, response, responseCode);
+            Command response = this.clientNetwork.syncInvoke(brokerEndpoint, request, timeout);
+            SendStatus sendStatus = parseSendStatus(brokerEndpoint, response);
             MessageSendCommand.ResponseHeader responseHeader = response.decodeHeader(MessageSendCommand.ResponseHeader.class);
             MessageQueue messageQueue = new MessageQueue();
             messageQueue.setTopic(message.getTopic());
@@ -97,33 +108,86 @@ public class BrokerApiFacade {
             messageQueue.setQueueId(responseHeader.getQueueId());
 
             SendResult sendResult = new SendResult();
-            sendResult.setSendStatus(sendStatus);
-            sendResult.setMsgId(message.getProperty(MessageConst.Property.MESSAGE_ID));
+            sendResult.setStatus(sendStatus);
+            sendResult.setMessageId(message.getProperty(MessageConst.Property.MESSAGE_ID));
             sendResult.setMessageQueue(messageQueue);
             sendResult.setQueueOffset(responseHeader.getQueueOffset());
-            sendResult.setOffsetMsgId(responseHeader.getMsgId());
+            sendResult.setOffsetMessageId(responseHeader.getMessageId());
             return sendResult;
         } else if (rpcModel == RpcModel.ASYNC) {
             long elapsed = System.currentTimeMillis() - startTime;
             if (elapsed > timeout) {
-                throw new TimeoutException(endpoint);
+                throw new TimeoutException(brokerEndpoint);
             }
-            this.clientNetwork.asyncInvoke(endpoint, request, timeout - elapsed, null);
+            this.clientNetwork.asyncInvoke(brokerEndpoint, request, timeout - elapsed, null);
         } else if (rpcModel == RpcModel.ONEWAY) {
-            this.clientNetwork.onewayInvoke(endpoint, request, timeout);
+            this.clientNetwork.onewayInvoke(brokerEndpoint, request, timeout);
         }
         return null;
     }
 
-    private static SendStatus parseSendStatus(String endpoint, Command response, ResponseCode responseCode) throws BrokerException {
-        SendStatus sendStatus;
-        switch (responseCode) {
-            case SUCCESS -> sendStatus = SendStatus.SEND_OK;
-            case FLUSH_DISK_TIMEOUT -> sendStatus = SendStatus.FLUSH_DISK_TIMEOUT;
-            case FLUSH_SLAVE_TIMEOUT -> sendStatus = SendStatus.FLUSH_SLAVE_TIMEOUT;
-            case SLAVE_NOT_AVAILABLE -> sendStatus = SendStatus.SLAVE_NOT_AVAILABLE;
+    public PullResult pullMessage(RpcModel rpcModel, String endpoint) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+        long startTime = System.currentTimeMillis();
+        MessagePullCommand.RequestHeader requestHeader = new MessagePullCommand.RequestHeader();
+        requestHeader.setGroup();
+        requestHeader.setTopic();
+        requestHeader.setQueueId();
+        requestHeader.setQueueOffset();
+        requestHeader.setMaxNumber();
+        requestHeader.setSysFlag();
+        requestHeader.setCommitOffset();
+        requestHeader.setSuspendTimeout(BROKER_SUSPEND_MAX_TIME_MILLIS);
+        requestHeader.setSubscription();
+        requestHeader.setSubVersion();
+        requestHeader.setExpressionType();
+        Command request = Command.buildRequest(RequestCode.UNREGISTER_CLIENT, requestHeader);
+
+        if (rpcModel == RpcModel.SYNC) {
+            Command response = this.clientNetwork.syncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND);
+            PullStatus pullStatus = parsePullStatus(endpoint, response);
+            MessagePullCommand.ResponseHeader responseHeader = response.decodeHeader(MessagePullCommand.ResponseHeader.class);
+            PullResult pullResult = new PullResult();
+            pullResult.setStatus(pullStatus);
+            pullResult.setNextBeginOffset(responseHeader.getNextBeginOffset());
+            pullResult.setMinOffset(responseHeader.getMinOffset());
+            pullResult.setMaxOffset(responseHeader.getMaxOffset());
+            pullResult.setMessages(null);
+            pullResult.setSuggestWhichBrokerId(responseHeader.getSuggestWhichBrokerId());
+            pullResult.setMessageBinary(response.getBody());
+            return pullResult;
+        } else if (rpcModel == RpcModel.ASYNC) {
+            long elapsed = System.currentTimeMillis() - startTime;
+            if (elapsed > CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND) {
+                throw new TimeoutException(endpoint);
+            }
+            this.clientNetwork.asyncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND - elapsed, null);
+        } else if (rpcModel == RpcModel.ONEWAY) {
+            this.clientNetwork.onewayInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND);
+        }
+        return null;
+    }
+
+    private static SendStatus parseSendStatus(String endpoint, Command response) throws BrokerException {
+        SendStatus status;
+        switch (EnumUtil.ofCode(response.getCode(), ResponseCode.class)) {
+            case SUCCESS -> status = SendStatus.SEND_OK;
+            case FLUSH_DISK_TIMEOUT -> status = SendStatus.FLUSH_DISK_TIMEOUT;
+            case FLUSH_SLAVE_TIMEOUT -> status = SendStatus.FLUSH_SLAVE_TIMEOUT;
+            case SLAVE_NOT_AVAILABLE -> status = SendStatus.SLAVE_NOT_AVAILABLE;
             default -> throw new BrokerException(response.getCode(), response.getRemark(), endpoint);
         }
-        return sendStatus;
+        return status;
+    }
+
+    private static PullStatus parsePullStatus(String endpoint, Command response) throws BrokerException {
+        PullStatus status;
+        switch (EnumUtil.ofCode(response.getCode(), ResponseCode.class)) {
+            case SUCCESS -> status = PullStatus.FOUND;
+            case PULL_NOT_FOUND -> status = PullStatus.NO_NEW_MSG;
+            case PULL_RETRY_IMMEDIATELY -> status = PullStatus.NO_MATCHED_MSG;
+            case PULL_OFFSET_MOVED -> status = PullStatus.OFFSET_ILLEGAL;
+            default -> throw new BrokerException(response.getCode(), response.getRemark(), endpoint);
+        }
+        return status;
     }
 }

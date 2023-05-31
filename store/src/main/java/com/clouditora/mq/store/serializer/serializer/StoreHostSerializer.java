@@ -1,7 +1,7 @@
 package com.clouditora.mq.store.serializer.serializer;
 
 import com.clouditora.mq.common.MessageConst;
-import com.clouditora.mq.store.MessageEntity;
+import com.clouditora.mq.common.message.MessageEntity;
 
 import java.net.InetSocketAddress;
 

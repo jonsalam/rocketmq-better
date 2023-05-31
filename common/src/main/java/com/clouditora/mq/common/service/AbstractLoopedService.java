@@ -24,9 +24,9 @@ public abstract class AbstractLoopedService extends AbstractSimpleService {
         shutdown(true, JOIN_TIME);
     }
 
-    protected abstract void loop() throws Exception;
-
     protected void onShutdown() {
 
     }
+
+    protected abstract void loop() throws Exception;
 }
