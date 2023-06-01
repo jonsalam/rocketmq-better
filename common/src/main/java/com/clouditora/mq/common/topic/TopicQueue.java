@@ -1,23 +1,27 @@
 package com.clouditora.mq.common.topic;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
+import java.util.Comparator;
+
 /**
- * broker持久化topic用到的
- * 不同于 @link com.clouditora.mq.common.broker.BrokerQueue
- *
- * @link org.apache.rocketmq.common.TopicConfig
+ * @link org.apache.rocketmq.common.message.MessageQueue
  */
 @Data
-public class TopicQueue {
-    private static final String SEPARATOR = " ";
-
-    @JSONField(name = "topicName")
+public class TopicQueue implements Comparable<TopicQueue> {
+    private String brokerName;
     private String topic;
-    @JSONField(name = "readQueueNums")
-    private int readQueueNum = 16;
-    @JSONField(name = "writeQueueNums")
-    private int writeQueueNum = 16;
+    private int queueId;
 
+    /**
+     * @link org.apache.rocketmq.common.message.MessageQueue#compareTo
+     */
+    @Override
+    public int compareTo(TopicQueue topicQueue) {
+        return Comparator
+                .comparing(TopicQueue::getTopic)
+                .thenComparing(TopicQueue::getBrokerName)
+                .thenComparing(TopicQueue::getQueueId)
+                .compare(this, topicQueue);
+    }
 }

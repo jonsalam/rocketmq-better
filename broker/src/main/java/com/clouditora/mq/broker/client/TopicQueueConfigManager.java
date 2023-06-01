@@ -5,7 +5,7 @@ import com.clouditora.mq.broker.BrokerController;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.constant.SystemTopic;
 import com.clouditora.mq.common.service.AbstractFileService;
-import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicQueueConfig;
 import com.clouditora.mq.common.topic.TopicQueueFile;
 import com.clouditora.mq.common.util.JsonUtil;
 import com.clouditora.mq.store.MessageStoreConfig;
@@ -19,40 +19,40 @@ import java.util.concurrent.ConcurrentMap;
  * @link org.apache.rocketmq.broker.topic.TopicConfigManager
  */
 @Slf4j
-public class TopicQueueManager extends AbstractFileService {
+public class TopicQueueConfigManager extends AbstractFileService {
     private final BrokerController brokerController;
     @Getter
-    private final ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>(1024);
+    private final ConcurrentMap<String, TopicQueueConfig> topicMap = new ConcurrentHashMap<>(1024);
 
-    public TopicQueueManager(BrokerConfig brokerConfig, MessageStoreConfig messageStoreConfig, BrokerController brokerController) {
+    public TopicQueueConfigManager(BrokerConfig brokerConfig, MessageStoreConfig messageStoreConfig, BrokerController brokerController) {
         super("%s/config/topics.json".formatted(messageStoreConfig.getRootPath()));
         this.brokerController = brokerController;
 
         {
             String topic = SystemTopic.SELF_TEST_TOPIC.getTopic();
-            TopicQueue topicQueue = new TopicQueue();
-            topicQueue.setTopic(topic);
-            topicQueue.setReadQueueNum(1);
-            topicQueue.setWriteQueueNum(1);
-            this.topicMap.put(topic, topicQueue);
+            TopicQueueConfig topicQueueConfig = new TopicQueueConfig();
+            topicQueueConfig.setTopic(topic);
+            topicQueueConfig.setReadQueueNum(1);
+            topicQueueConfig.setWriteQueueNum(1);
+            this.topicMap.put(topic, topicQueueConfig);
         }
         {
             String topic = brokerConfig.getBrokerClusterName();
             SystemTopic.addSystemTopic(topic);
-            TopicQueue topicQueue = new TopicQueue();
-            topicQueue.setTopic(topic);
-            topicQueue.setReadQueueNum(16);
-            topicQueue.setWriteQueueNum(16);
-            this.topicMap.put(topic, topicQueue);
+            TopicQueueConfig topicQueueConfig = new TopicQueueConfig();
+            topicQueueConfig.setTopic(topic);
+            topicQueueConfig.setReadQueueNum(16);
+            topicQueueConfig.setWriteQueueNum(16);
+            this.topicMap.put(topic, topicQueueConfig);
         }
         {
             String topic = brokerConfig.getBrokerName();
             SystemTopic.addSystemTopic(topic);
-            TopicQueue topicQueue = new TopicQueue();
-            topicQueue.setTopic(topic);
-            topicQueue.setReadQueueNum(1);
-            topicQueue.setWriteQueueNum(1);
-            this.topicMap.put(topic, topicQueue);
+            TopicQueueConfig topicQueueConfig = new TopicQueueConfig();
+            topicQueueConfig.setTopic(topic);
+            topicQueueConfig.setReadQueueNum(1);
+            topicQueueConfig.setWriteQueueNum(1);
+            this.topicMap.put(topic, topicQueueConfig);
         }
     }
 
@@ -88,14 +88,14 @@ public class TopicQueueManager extends AbstractFileService {
      */
     public void registerTopic(String topic, int readQueueNum, int writeQueueNum) {
         this.topicMap.computeIfAbsent(topic, e -> {
-            TopicQueue topicQueue = new TopicQueue();
-            topicQueue.setTopic(topic);
-            topicQueue.setReadQueueNum(readQueueNum);
-            topicQueue.setWriteQueueNum(writeQueueNum);
+            TopicQueueConfig topicQueueConfig = new TopicQueueConfig();
+            topicQueueConfig.setTopic(topic);
+            topicQueueConfig.setReadQueueNum(readQueueNum);
+            topicQueueConfig.setWriteQueueNum(writeQueueNum);
             super.save();
-            log.info("register topic {}: {}", topic, topicQueue);
+            log.info("register topic {}: {}", topic, topicQueueConfig);
             brokerController.registerBroker(RpcModel.ONEWAY);
-            return topicQueue;
+            return topicQueueConfig;
         });
     }
 }

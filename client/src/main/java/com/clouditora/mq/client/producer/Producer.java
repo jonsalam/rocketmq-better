@@ -8,7 +8,7 @@ import com.clouditora.mq.common.constant.ClientErrorCode;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.exception.ClientException;
-import com.clouditora.mq.common.message.MessageQueue;
+import com.clouditora.mq.common.topic.TopicQueue;
 import com.clouditora.mq.network.exception.ConnectException;
 import com.clouditora.mq.network.exception.TimeoutException;
 import com.clouditora.mq.network.protocol.ResponseCode;
@@ -73,18 +73,18 @@ public class Producer {
     private SendResult syncSend(MessageRoute route, Message message) throws InterruptedException, BrokerException, ConnectException, TimeoutException {
         long startTime = System.currentTimeMillis();
         SendResult result = null;
-        MessageQueue messageQueue = null;
+        TopicQueue topicQueue = null;
         int count = this.producerConfig.isRetryAnotherBrokerWhenNotStoreOK() ? this.producerConfig.getRetryTimesWhenSendFailed() + 1 : 1;
         for (int i = 0; i < count; i++) {
-            String prevBrokerName = Optional.ofNullable(messageQueue).map(MessageQueue::getBrokerName).orElse(null);
-            messageQueue = route.findOne(prevBrokerName);
+            String prevBrokerName = Optional.ofNullable(topicQueue).map(TopicQueue::getBrokerName).orElse(null);
+            topicQueue = route.findOne(prevBrokerName);
             long elapsed = System.currentTimeMillis() - startTime;
             long timeout = this.producerConfig.getSendMsgTimeout() - elapsed;
             if (timeout < 0) {
                 throw new TimeoutException("timeout");
             }
             try {
-                result = this.clientInstance.sendMessage(RpcModel.SYNC, this.producerConfig.getProducerGroup(), messageQueue, message, timeout);
+                result = this.clientInstance.sendMessage(RpcModel.SYNC, this.producerConfig.getProducerGroup(), topicQueue, message, timeout);
                 if (result.getStatus() == SendStatus.SEND_OK) {
                     return result;
                 }
@@ -100,8 +100,8 @@ public class Producer {
     }
 
     private void asyncSend(RpcModel rpcModel, MessageRoute route, Message message) throws InterruptedException, BrokerException, ConnectException, TimeoutException {
-        MessageQueue messageQueue = route.findOne();
-        this.clientInstance.sendMessage(rpcModel, this.producerConfig.getProducerGroup(), messageQueue, message, this.producerConfig.getSendMsgTimeout());
+        TopicQueue topicQueue = route.findOne();
+        this.clientInstance.sendMessage(rpcModel, this.producerConfig.getProducerGroup(), topicQueue, message, this.producerConfig.getSendMsgTimeout());
     }
 
     public static void main(String[] args) throws InterruptedException {

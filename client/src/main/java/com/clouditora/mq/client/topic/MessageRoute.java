@@ -2,7 +2,7 @@ package com.clouditora.mq.client.topic;
 
 import com.clouditora.mq.common.broker.BrokerEndpoints;
 import com.clouditora.mq.common.constant.GlobalConstant;
-import com.clouditora.mq.common.message.MessageQueue;
+import com.clouditora.mq.common.topic.TopicQueue;
 import com.clouditora.mq.common.topic.TopicRoute;
 import lombok.Setter;
 import lombok.ToString;
@@ -22,7 +22,7 @@ import java.util.stream.IntStream;
 @ToString(exclude = "tlIndex")
 public class MessageRoute {
     @Setter
-    private List<MessageQueue> queues;
+    private List<TopicQueue> queues;
     private final ThreadLocal<Integer> tlIndex = ThreadLocal.withInitial(() -> Math.abs(new Random().nextInt()));
 
     public boolean isEmpty() {
@@ -38,12 +38,12 @@ public class MessageRoute {
     /**
      * @link org.apache.rocketmq.client.impl.producer.TopicPublishInfo#selectOneMessageQueue()
      */
-    public MessageQueue findOne(String lastBrokerName) {
+    public TopicQueue findOne(String lastBrokerName) {
         if (lastBrokerName == null || this.queues == null) {
             return findOne();
         }
-        for (MessageQueue ignored : this.queues) {
-            MessageQueue queue = findOne();
+        for (TopicQueue ignored : this.queues) {
+            TopicQueue queue = findOne();
             // 切换到别的broker
             if (!lastBrokerName.equals(queue.getBrokerName())) {
                 return queue;
@@ -52,7 +52,7 @@ public class MessageRoute {
         return findOne();
     }
 
-    public MessageQueue findOne() {
+    public TopicQueue findOne() {
         if (this.queues == null) {
             return null;
         }
@@ -65,7 +65,7 @@ public class MessageRoute {
      */
     public static MessageRoute build(String topic, TopicRoute topicRoute) {
         Map<String, BrokerEndpoints> endpointsMap = topicRoute.getBrokers().stream().collect(Collectors.toMap(BrokerEndpoints::getBrokerName, Function.identity()));
-        List<MessageQueue> messageQueues = topicRoute.getQueues().stream()
+        List<TopicQueue> topicQueues = topicRoute.getQueues().stream()
                 .filter(e -> {
                     BrokerEndpoints endpoints = endpointsMap.get(e.getBrokerName());
                     if (endpoints == null) {
@@ -77,18 +77,18 @@ public class MessageRoute {
                 .sorted()
                 .map(brokerQueue -> IntStream.range(0, brokerQueue.getWriteNum())
                         .mapToObj(id -> {
-                            MessageQueue messageQueue = new MessageQueue();
-                            messageQueue.setTopic(topic);
-                            messageQueue.setBrokerName(brokerQueue.getBrokerName());
-                            messageQueue.setQueueId(id);
-                            return messageQueue;
+                            TopicQueue topicQueue = new TopicQueue();
+                            topicQueue.setTopic(topic);
+                            topicQueue.setBrokerName(brokerQueue.getBrokerName());
+                            topicQueue.setQueueId(id);
+                            return topicQueue;
                         })
                         .collect(Collectors.toList())
                 )
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
         MessageRoute messageRoute = new MessageRoute();
-        messageRoute.setQueues(messageQueues);
+        messageRoute.setQueues(topicQueues);
         return messageRoute;
     }
 }

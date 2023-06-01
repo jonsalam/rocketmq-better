@@ -96,7 +96,7 @@ public class MessagePullService extends AbstractLaterService {
                 if (!request.isPreviouslyLocked()) {
                     long offset = -1L;
                     try {
-                        offset = consumer.getPullOffset(request.getMessageQueue());
+                        offset = consumer.getPullOffset(request.getTopicQueue());
                     } catch (Exception e) {
                         pullMessageLater(request, this.consumerConfig.getPullTimeDelayMillsWhenException());
                         log.warn("pull message later: failed get pull offset");
@@ -115,7 +115,7 @@ public class MessagePullService extends AbstractLaterService {
                 return;
             }
         }
-        ConsumerSubscription subscription = consumer.getSubscription(request.getMessageQueue().getTopic());
+        ConsumerSubscription subscription = consumer.getSubscription(request.getTopicQueue().getTopic());
         if (subscription == null) {
             pullMessageLater(request, this.consumerConfig.getPullTimeDelayMillsWhenException());
             log.warn("pull message later: consume subscription is null");
@@ -124,7 +124,7 @@ public class MessagePullService extends AbstractLaterService {
 
         long offset = 0L;
         if (consumer.getMessageModel() == MessageModel.CLUSTERING) {
-            offset = this.offsetManager.get(request.getMessageQueue(), ReadOffsetType.READ_FROM_MEMORY);
+            offset = this.offsetManager.get(request.getTopicQueue(), ReadOffsetType.READ_FROM_MEMORY);
         }
         try {
             this.clientInstance.pullMessage(request, subscription, offset, this.consumerConfig.getPullBatchSize());

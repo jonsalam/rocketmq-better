@@ -1,7 +1,7 @@
 package com.clouditora.mq.client.consumer.offset;
 
-import com.clouditora.mq.common.message.MessageQueue;
 import com.clouditora.mq.common.service.AbstractFileService;
+import com.clouditora.mq.common.topic.TopicQueue;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class AbstractOffsetManager extends AbstractFileService {
     protected final String group;
-    protected ConcurrentMap<MessageQueue, AtomicLong> offsetMap = new ConcurrentHashMap<>();
+    protected ConcurrentMap<TopicQueue, AtomicLong> offsetMap = new ConcurrentHashMap<>();
 
     public AbstractOffsetManager(String group, String path) {
         super(path);
@@ -23,7 +23,7 @@ public abstract class AbstractOffsetManager extends AbstractFileService {
     /**
      * @link org.apache.rocketmq.client.consumer.store.LocalFileOffsetStore#updateOffset
      */
-    public void update(MessageQueue queue, long offset) {
+    public void update(TopicQueue queue, long offset) {
         AtomicLong prev = this.offsetMap.computeIfAbsent(queue, e -> new AtomicLong(offset));
         prev.set(offset);
     }
@@ -31,7 +31,7 @@ public abstract class AbstractOffsetManager extends AbstractFileService {
     /**
      * @link org.apache.rocketmq.client.consumer.store.LocalFileOffsetStore#readOffset
      */
-    public long get(MessageQueue queue) {
+    public long get(TopicQueue queue) {
         return Optional.ofNullable(this.offsetMap.get(queue)).map(AtomicLong::get).orElse(-1L);
     }
 }

@@ -12,5 +12,5 @@ import java.util.concurrent.ConcurrentMap;
 @Data
 public class TopicQueueFile {
     @JSONField(name = "topicConfigTable")
-    private ConcurrentMap<String, TopicQueue> topicMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, TopicQueueConfig> topicMap = new ConcurrentHashMap<>();
 }

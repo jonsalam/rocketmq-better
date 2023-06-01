@@ -1,8 +1,8 @@
 package com.clouditora.mq.client.consumer;
 
-import com.clouditora.mq.client.consumer.consume.ConcurrentMessageConsumeService;
-import com.clouditora.mq.client.consumer.consume.MessageConsumeService;
-import com.clouditora.mq.client.consumer.consume.OrderMessageConsumeService;
+import com.clouditora.mq.client.consumer.consume.AbstractMessageConsumer;
+import com.clouditora.mq.client.consumer.consume.ConcurrentMessageConsumer;
+import com.clouditora.mq.client.consumer.consume.OrderMessageConsumer;
 import com.clouditora.mq.client.consumer.listener.ConcurrentMessageListener;
 import com.clouditora.mq.client.consumer.listener.MessageListener;
 import com.clouditora.mq.client.consumer.listener.OrderMessageListener;
@@ -46,7 +46,7 @@ public class Consumer extends AbstractNothingService {
 
     private AbstractOffsetManager offsetManager;
     private MessagePullService messagePullService;
-    private MessageConsumeService messageConsumeService;
+    private AbstractMessageConsumer messageConsumer;
     private MessageListener messageListener;
 
     public Consumer(String group) {
@@ -71,11 +71,11 @@ public class Consumer extends AbstractNothingService {
         this.messagePullService.startup();
 
         if (messageListener instanceof OrderMessageListener) {
-            this.messageConsumeService = new OrderMessageConsumeService();
+            this.messageConsumer = new OrderMessageConsumer();
         } else {
-            this.messageConsumeService = new ConcurrentMessageConsumeService();
+            this.messageConsumer = new ConcurrentMessageConsumer();
         }
-        this.messageConsumeService.startup();
+        this.messageConsumer.startup();
 
         super.startup();
     }
@@ -84,7 +84,7 @@ public class Consumer extends AbstractNothingService {
     public void shutdown() {
         this.offsetManager.shutdown();
         this.messagePullService.shutdown();
-        this.messageConsumeService.shutdown();
+        this.messageConsumer.shutdown();
         super.shutdown();
     }
 

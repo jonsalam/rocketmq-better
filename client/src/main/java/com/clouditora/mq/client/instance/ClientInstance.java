@@ -18,12 +18,8 @@ import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
-import com.clouditora.mq.common.message.MessageQueue;
 import com.clouditora.mq.common.service.AbstractScheduledService;
-import com.clouditora.mq.common.topic.ConsumerSubscription;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
-import com.clouditora.mq.common.topic.ProducerGroup;
-import com.clouditora.mq.common.topic.TopicRoute;
+import com.clouditora.mq.common.topic.*;
 import com.clouditora.mq.common.util.NetworkUtil;
 import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
@@ -252,7 +248,7 @@ public class ClientInstance extends AbstractScheduledService {
         return this.messageRouteManager.get(topic);
     }
 
-    public SendResult sendMessage(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
+    public SendResult sendMessage(RpcModel rpcModel, String group, TopicQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
         return this.brokerManager.sendMessage(rpcModel, group, queue, message, timeout);
     }
 

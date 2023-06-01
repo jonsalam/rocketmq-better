@@ -1,6 +1,6 @@
 package com.clouditora.mq.client.producer;
 
-import com.clouditora.mq.common.message.MessageQueue;
+import com.clouditora.mq.common.topic.TopicQueue;
 import lombok.Data;
 
 /**
@@ -10,7 +10,7 @@ import lombok.Data;
 public class SendResult {
     private SendStatus status;
     private String messageId;
-    private MessageQueue messageQueue;
+    private TopicQueue topicQueue;
     private long queueOffset;
     private String offsetMessageId;
 }

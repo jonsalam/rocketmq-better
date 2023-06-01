@@ -20,7 +20,7 @@ public class ConsumerManager {
     /**
      * @link org.apache.rocketmq.broker.topic.TopicConfigManager
      */
-    private final TopicQueueManager topicQueueManager;
+    private final TopicQueueConfigManager topicQueueConfigManager;
     /**
      * group:
      *
@@ -34,8 +34,8 @@ public class ConsumerManager {
      */
     private final ConcurrentMap<String, ConsumerSubscribeManager> subscriptionMap = new ConcurrentHashMap<>();
 
-    public ConsumerManager(TopicQueueManager topicQueueManager) {
-        this.topicQueueManager = topicQueueManager;
+    public ConsumerManager(TopicQueueConfigManager topicQueueConfigManager) {
+        this.topicQueueConfigManager = topicQueueConfigManager;
     }
 
     /**
@@ -50,7 +50,7 @@ public class ConsumerManager {
             // 注册重试topic
             {
                 String retryTopic = GlobalConstant.SystemGroup.wrapRetry(group);
-                topicQueueManager.registerTopic(retryTopic, 1, 1);
+                topicQueueConfigManager.registerTopic(retryTopic, 1, 1);
             }
             // 更新订阅
             {

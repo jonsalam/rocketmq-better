@@ -3,7 +3,7 @@ package com.clouditora.mq.common.network.command;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.network.CommandHeader;
 import com.clouditora.mq.common.network.CommandJsonBody;
-import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicQueueConfig;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -66,7 +66,7 @@ public class MessageSendCommand {
     @Data
     public static class RequestBody implements CommandJsonBody {
         @JSONField(name = "topicConfigSerializeWrapper")
-        private ConcurrentMap<String, TopicQueue> topicMap;
+        private ConcurrentMap<String, TopicQueueConfig> topicMap;
     }
 
     /**

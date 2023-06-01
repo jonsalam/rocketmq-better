@@ -8,10 +8,10 @@ import com.clouditora.mq.common.broker.BrokerEndpoints;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
-import com.clouditora.mq.common.message.MessageQueue;
 import com.clouditora.mq.common.topic.ConsumerSubscription;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
+import com.clouditora.mq.common.topic.TopicQueue;
 import com.clouditora.mq.network.exception.ConnectException;
 import com.clouditora.mq.network.exception.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +88,7 @@ public class BrokerManager {
         }
     }
 
-    public SendResult sendMessage(RpcModel rpcModel, String group, MessageQueue queue, Message message, long timeout) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+    public SendResult sendMessage(RpcModel rpcModel, String group, TopicQueue queue, Message message, long timeout) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
         BrokerEndpoints endpoints = this.endpointMap.get(queue.getBrokerName());
         String endpoint = endpoints.getEndpointMap().get(GlobalConstant.MASTER_ID);
         return this.brokerApiFacade.sendMessage(

@@ -6,7 +6,7 @@ import com.clouditora.mq.common.broker.BrokerQueue;
 import com.clouditora.mq.common.broker.BrokerQueues;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.service.AbstractScheduledService;
-import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicQueueConfig;
 import com.clouditora.mq.common.topic.TopicRoute;
 import com.clouditora.mq.nameserver.broker.BrokerAlive;
 import com.clouditora.mq.network.util.NetworkUtil;
@@ -66,7 +66,7 @@ public class TopicRouteManager extends AbstractScheduledService {
     /**
      * @link org.apache.rocketmq.namesrv.routeinfo.RouteInfoManager#registerBroker
      */
-    public void registerBroker(String cluster, String brokerName, String brokerEndpoint, long brokerId, ConcurrentMap<String, TopicQueue> topicMap, Channel channel) {
+    public void registerBroker(String cluster, String brokerName, String brokerEndpoint, long brokerId, ConcurrentMap<String, TopicQueueConfig> topicMap, Channel channel) {
         try {
             try {
                 this.lock.writeLock().lockInterruptibly();
@@ -188,7 +188,7 @@ public class TopicRouteManager extends AbstractScheduledService {
     /**
      * 同一个brokerName只有mater才能更新topicRoute
      */
-    private void registerTopicRoute(String brokerName, long brokerId, ConcurrentMap<String, TopicQueue> topicMap) {
+    private void registerTopicRoute(String brokerName, long brokerId, ConcurrentMap<String, TopicQueueConfig> topicMap) {
         if (brokerId != GlobalConstant.MASTER_ID) {
             return;
         }

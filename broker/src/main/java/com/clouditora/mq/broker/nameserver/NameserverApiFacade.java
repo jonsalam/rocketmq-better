@@ -4,7 +4,7 @@ import com.clouditora.mq.broker.BrokerConfig;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.network.command.BrokerRegisterCommand;
 import com.clouditora.mq.common.network.command.BrokerUnregisterCommand;
-import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicQueueConfig;
 import com.clouditora.mq.network.ClientNetwork;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,7 +32,7 @@ public class NameserverApiFacade {
     /**
      * @link org.apache.rocketmq.broker.out.BrokerOuterAPI#registerBrokerAll
      */
-    public void registerBroker(RpcModel rpcModel, String clusterName, String brokerName, String brokerEndpoint, Long brokerId, ConcurrentMap<String, TopicQueue> topicMap) {
+    public void registerBroker(RpcModel rpcModel, String clusterName, String brokerName, String brokerEndpoint, Long brokerId, ConcurrentMap<String, TopicQueueConfig> topicMap) {
         BrokerRegisterCommand.RequestHeader requestHeader = new BrokerRegisterCommand.RequestHeader();
         requestHeader.setClusterName(clusterName);
         requestHeader.setBrokerName(brokerName);

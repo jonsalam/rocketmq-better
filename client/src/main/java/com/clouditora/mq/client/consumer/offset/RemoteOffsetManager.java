@@ -2,7 +2,7 @@ package com.clouditora.mq.client.consumer.offset;
 
 import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.GlobalConstant;
-import com.clouditora.mq.common.message.MessageQueue;
+import com.clouditora.mq.common.topic.TopicQueue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
@@ -38,12 +38,12 @@ public class RemoteOffsetManager extends AbstractOffsetManager {
     }
 
     @Override
-    public void update(MessageQueue queue, long offset) {
+    public void update(TopicQueue queue, long offset) {
 
     }
 
     @Override
-    public long get(MessageQueue queue) {
+    public long get(TopicQueue queue) {
         long offset = super.get(queue);
         if (offset != -1) {
             return offset;
@@ -62,9 +62,9 @@ public class RemoteOffsetManager extends AbstractOffsetManager {
 
     @Override
     public void save() {
-        Set<MessageQueue> set = new HashSet<>();
-        for (Map.Entry<MessageQueue, AtomicLong> entry : super.offsetMap.entrySet()) {
-            MessageQueue queue = entry.getKey();
+        Set<TopicQueue> set = new HashSet<>();
+        for (Map.Entry<TopicQueue, AtomicLong> entry : super.offsetMap.entrySet()) {
+            TopicQueue queue = entry.getKey();
             long offset = entry.getValue().get();
             log.info("save local consumer offset to broker: group={}, {}={}", super.group, queue, offset);
             String endpoint = this.clientInstance.findEndpoint(queue.getBrokerName(), GlobalConstant.MASTER_ID, true);
