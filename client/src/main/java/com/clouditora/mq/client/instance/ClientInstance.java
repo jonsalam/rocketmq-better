@@ -1,7 +1,7 @@
 package com.clouditora.mq.client.instance;
 
 import com.clouditora.mq.client.broker.BrokerApiFacade;
-import com.clouditora.mq.client.broker.BrokerManager;
+import com.clouditora.mq.client.broker.BrokerController;
 import com.clouditora.mq.client.consumer.Consumer;
 import com.clouditora.mq.client.consumer.ConsumerManager;
 import com.clouditora.mq.client.consumer.pull.PullMessageRequest;
@@ -14,8 +14,8 @@ import com.clouditora.mq.client.topic.MessageRouteManager;
 import com.clouditora.mq.client.topic.TopicRouteManager;
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.concurrent.ConsumeStrategy;
-import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.GlobalConstant;
+import com.clouditora.mq.common.constant.PositionStrategy;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.service.AbstractScheduledService;
@@ -52,7 +52,7 @@ public class ClientInstance extends AbstractScheduledService {
     private final ClientConfig clientConfig;
     private final ClientNetwork clientNetwork;
     private final NameserverApiFacade nameserverApiFacade;
-    private final BrokerManager brokerManager;
+    private final BrokerController brokerController;
     private final ProducerManager producerManager;
     private final ConsumerManager consumerManager;
     private final TopicRouteManager topicRouteManager;
@@ -78,7 +78,7 @@ public class ClientInstance extends AbstractScheduledService {
         registerDispatchers();
         this.nameserverApiFacade = new NameserverApiFacade(clientConfig, this.clientNetwork);
         BrokerApiFacade brokerApiFacade = new BrokerApiFacade(clientConfig, this.clientNetwork);
-        this.brokerManager = new BrokerManager(brokerApiFacade);
+        this.brokerController = new BrokerController(brokerApiFacade);
         this.producerManager = new ProducerManager();
         this.consumerManager = new ConsumerManager();
         this.topicRouteManager = new TopicRouteManager();
@@ -134,7 +134,7 @@ public class ClientInstance extends AbstractScheduledService {
      */
     public void unregisterProducer(String group) {
         this.producerManager.unregister(group);
-        this.brokerManager.unregisterClient(this.clientId, group, null);
+        this.brokerController.unregisterClient(this.clientId, group, null);
     }
 
     private void unregisterProducers() {
@@ -154,7 +154,7 @@ public class ClientInstance extends AbstractScheduledService {
      */
     public void unregisterConsumer(String group) {
         this.consumerManager.unregister(group);
-        this.brokerManager.unregisterClient(this.clientId, null, group);
+        this.brokerController.unregisterClient(this.clientId, null, group);
     }
 
     private void unregisterConsumers() {
@@ -199,7 +199,7 @@ public class ClientInstance extends AbstractScheduledService {
                 // TODO 优化
                 if (!topicRoute.equals(prevTopicRoute)) {
                     log.debug("update topic route {}: {}", topic, topicRoute);
-                    this.brokerManager.addBrokers(topicRoute.getBrokers());
+                    this.brokerController.addEndpoints(topicRoute.getBrokers());
                     if (this.producerManager.isNotEmpty()) {
                         MessageRoute messageRoute = MessageRoute.build(topic, topicRoute);
                         this.messageRouteManager.put(topic, messageRoute);
@@ -235,13 +235,13 @@ public class ClientInstance extends AbstractScheduledService {
                     subscriptions.setGroup(group);
                     subscriptions.setConsumeStrategy(ConsumeStrategy.PUSH);
                     subscriptions.setMessageModel(consumer.getMessageModel());
-                    subscriptions.setPositionStrategy(ConsumePositionStrategy.FROM_FIRST_OFFSET);
+                    subscriptions.setPositionStrategy(PositionStrategy.CONSUME_FROM_FIRST_OFFSET);
                     subscriptions.setSubscriptions(consumer.getSubscriptions());
                     return subscriptions;
                 })
                 .collect(Collectors.toSet());
 
-        this.brokerManager.heartbeat(this.clientId, producers, consumers);
+        this.brokerController.heartbeat(this.clientId, producers, consumers);
     }
 
     public MessageRoute getMessageRoute(String topic) {
@@ -249,10 +249,10 @@ public class ClientInstance extends AbstractScheduledService {
     }
 
     public SendResult sendMessage(RpcModel rpcModel, String group, TopicQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
-        return this.brokerManager.sendMessage(rpcModel, group, queue, message, timeout);
+        return this.brokerController.sendMessage(rpcModel, group, queue, message, timeout);
     }
 
     public void pullMessage(PullMessageRequest request, ConsumerSubscription subscription, long offset, int pullBatchSize) {
-        this.brokerManager.pullMessage(request, subscription, offset, pullBatchSize);
+        this.brokerController.pullMessage(request, subscription, offset, pullBatchSize);
     }
 }

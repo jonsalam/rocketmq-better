@@ -1,7 +1,9 @@
 package com.clouditora.mq.broker;
 
 import com.clouditora.mq.broker.client.*;
-import com.clouditora.mq.broker.dispatcher.ClientCommandDispatcher;
+import com.clouditora.mq.broker.dispatcher.AdminBrokerDispatcher;
+import com.clouditora.mq.broker.dispatcher.ClientManageDispatcher;
+import com.clouditora.mq.broker.dispatcher.ConsumerManageDispatcher;
 import com.clouditora.mq.broker.dispatcher.SendMessageDispatcher;
 import com.clouditora.mq.broker.nameserver.NameserverApiFacade;
 import com.clouditora.mq.common.constant.RpcModel;
@@ -16,8 +18,11 @@ import com.clouditora.mq.network.ServerNetwork;
 import com.clouditora.mq.network.ServerNetworkConfig;
 import com.clouditora.mq.store.MessageStore;
 import com.clouditora.mq.store.MessageStoreConfig;
+import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -36,9 +41,10 @@ public class BrokerController extends AbstractScheduledService {
     private final NameserverApiFacade nameserverApiFacade;
     private final ProducerManager producerManager;
     private final ConsumerManager consumerManager;
+    private final ConsumerLockManager consumerLockManager;
     private final TopicQueueConfigManager topicQueueConfigManager;
-
     private final MessageStore messageStore;
+    private final List<ExecutorService> executors = new ArrayList<>();
 
     public BrokerController(
             BrokerConfig brokerConfig,
@@ -57,7 +63,8 @@ public class BrokerController extends AbstractScheduledService {
         this.topicQueueConfigManager = new TopicQueueConfigManager(brokerConfig, messageStoreConfig, this);
         this.producerManager = new ProducerManager();
         this.consumerManager = new ConsumerManager(topicQueueConfigManager);
-        this.serverNetwork = new ServerNetwork(serverNetworkConfig, new ClientChannelListener(producerManager, consumerManager));
+        this.consumerLockManager = new ConsumerLockManager();
+        this.serverNetwork = new ServerNetwork(serverNetworkConfig, new ClientChannelListener(this));
         this.clientNetwork = new ClientNetwork(clientNetworkConfig, null);
         this.clientNetwork.updateNameserverEndpoints(this.brokerConfig.getNameserverEndpoints());
         this.nameserverApiFacade = new NameserverApiFacade(brokerConfig, clientNetwork, nameserverApiExecutor);
@@ -89,6 +96,7 @@ public class BrokerController extends AbstractScheduledService {
         this.clientNetwork.shutdown();
         this.nameserverApiExecutor.shutdown();
         this.topicQueueConfigManager.shutdown();
+        this.executors.forEach(ExecutorService::shutdown);
         super.shutdown();
     }
 
@@ -101,29 +109,55 @@ public class BrokerController extends AbstractScheduledService {
                 BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT,
                 60, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.CLIENT_HEARTBEAT),
-                ThreadUtil.buildFactory("Heartbeat", BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT)
+                ThreadUtil.buildFactory("ClientHeartbeat", BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT)
         );
+        executors.add(clientHeartbeatExecutor);
         ExecutorService clientManageExecutor = new ThreadPoolExecutor(
                 BrokerConfig.TreadPoolSize.CLIENT_MANAGER,
                 BrokerConfig.TreadPoolSize.CLIENT_MANAGER,
                 60, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.CLIENT_MANAGE),
-                ThreadUtil.buildFactory("Client", BrokerConfig.TreadPoolSize.CLIENT_MANAGER)
+                ThreadUtil.buildFactory("ClientManager", BrokerConfig.TreadPoolSize.CLIENT_MANAGER)
         );
+        executors.add(clientManageExecutor);
         ExecutorService sendMessageExecutor = new ThreadPoolExecutor(
                 BrokerConfig.TreadPoolSize.SEND_MESSAGE,
                 BrokerConfig.TreadPoolSize.SEND_MESSAGE,
                 60, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
-                ThreadUtil.buildFactory("Message", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
+                ThreadUtil.buildFactory("SendMessage", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
         );
+        executors.add(sendMessageExecutor);
+        ExecutorService adminBrokerExecutor = new ThreadPoolExecutor(
+                BrokerConfig.TreadPoolSize.ADMIN_BROKER,
+                BrokerConfig.TreadPoolSize.ADMIN_BROKER,
+                60, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
+                ThreadUtil.buildFactory("AdminBroker", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
+        );
+        executors.add(adminBrokerExecutor);
+        ExecutorService consumerManageExecutor = new ThreadPoolExecutor(
+                BrokerConfig.TreadPoolSize.ADMIN_BROKER,
+                BrokerConfig.TreadPoolSize.ADMIN_BROKER,
+                60, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
+                ThreadUtil.buildFactory("AdminBroker", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
+        );
+        executors.add(consumerManageExecutor);
 
-        ClientCommandDispatcher clientDispatcher = new ClientCommandDispatcher(this);
-        this.serverNetwork.registerDispatcher(RequestCode.REGISTER_CLIENT, clientDispatcher, clientHeartbeatExecutor);
-        this.serverNetwork.registerDispatcher(RequestCode.UNREGISTER_CLIENT, clientDispatcher, clientManageExecutor);
+        ClientManageDispatcher clientManageDispatcher = new ClientManageDispatcher(this);
+        this.serverNetwork.registerDispatcher(RequestCode.REGISTER_CLIENT, clientManageDispatcher, clientHeartbeatExecutor);
+        this.serverNetwork.registerDispatcher(RequestCode.UNREGISTER_CLIENT, clientManageDispatcher, clientManageExecutor);
+
+        ConsumerManageDispatcher consumerManageDispatcher = new ConsumerManageDispatcher(consumerManager);
+        this.serverNetwork.registerDispatcher(RequestCode.GET_CONSUMER_LIST_BY_GROUP, consumerManageDispatcher, sendMessageExecutor);
+
         SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher(this.brokerConfig, this.messageStore);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE, sendMessageDispatcher, sendMessageExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
+
+        AdminBrokerDispatcher adminBrokerDispatcher = new AdminBrokerDispatcher(this.consumerLockManager);
+        this.serverNetwork.setDefaultDispatcher(adminBrokerDispatcher, adminBrokerExecutor);
     }
 
     public void registerBroker() {
@@ -172,6 +206,11 @@ public class BrokerController extends AbstractScheduledService {
         this.consumerManager.unregister(channel, consumer);
     }
 
+    public void unregisterClient(Channel channel) {
+        this.producerManager.unregister(channel);
+        this.consumerManager.unregister(channel);
+    }
+
     /**
      * @link org.apache.rocketmq.broker.client.ClientHousekeepingService#scanExceptionChannel
      */
@@ -179,5 +218,4 @@ public class BrokerController extends AbstractScheduledService {
         this.producerManager.cleanExpiredClient();
         this.consumerManager.cleanExpiredClient();
     }
-
 }

@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.constant.ClassCanonical;
 import com.clouditora.mq.common.constant.SerializeType;
 import com.clouditora.mq.common.network.CommandHeader;
+import com.clouditora.mq.common.network.CommandJsonBody;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.util.JsonUtil;
 import lombok.Data;
@@ -75,6 +76,14 @@ public class Command {
 
     public boolean isOneway() {
         return (this.flag & BIT_ONEWAY) == BIT_ONEWAY;
+    }
+
+    public void setBody(byte[] body) {
+        this.body = body;
+    }
+
+    public void setBody(CommandJsonBody body) {
+        this.body = body.encode();
     }
 
     private Field[] getClassFields(Class<? extends CommandHeader> clazz) {

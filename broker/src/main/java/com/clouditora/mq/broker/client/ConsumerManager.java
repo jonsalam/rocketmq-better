@@ -7,10 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * @link org.apache.rocketmq.broker.client.ConsumerManager
@@ -121,5 +123,17 @@ public class ConsumerManager {
      */
     public void cleanExpiredClient() {
         this.channelMap.forEach((group, manager) -> manager.cleanExpiredChannel());
+    }
+
+    /**
+     * @link org.apache.rocketmq.broker.client.ConsumerManager#getConsumerGroupInfo
+     * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#getAllClientId
+     */
+    public List<String> findConsumerIdsByGroup(String group) {
+        return this.channelMap.get(group)
+                .channels()
+                .stream()
+                .map(ClientChannel::getClientId)
+                .collect(Collectors.toList());
     }
 }

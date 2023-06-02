@@ -24,8 +24,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * @link org.apache.rocketmq.client.impl.factory.MQClientInstance
+ */
 @Slf4j
-public class BrokerManager {
+public class BrokerController {
     private ClientConfig clientConfig;
     /**
      * name: [id: endpoint]
@@ -35,17 +38,42 @@ public class BrokerManager {
     private final ConcurrentMap<String, BrokerEndpoints> endpointMap = new ConcurrentHashMap<>();
     private final BrokerApiFacade brokerApiFacade;
 
-    public BrokerManager(BrokerApiFacade brokerApiFacade) {
+    public BrokerController(BrokerApiFacade brokerApiFacade) {
         this.brokerApiFacade = brokerApiFacade;
     }
 
-    public void addBrokers(List<BrokerEndpoints> brokers) {
+    public void addEndpoints(List<BrokerEndpoints> brokers) {
         if (CollectionUtils.isEmpty(brokers)) {
             return;
         }
         for (BrokerEndpoints endpoint : brokers) {
             this.endpointMap.put(endpoint.getBrokerName(), endpoint);
         }
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#findBrokerAddressInSubscribe
+     */
+    public String findEndpoint(String brokerName, long brokerId, boolean onlyThisBroker) {
+        BrokerEndpoints endpoints = this.endpointMap.get(brokerName);
+        if (endpoints == null || endpoints.isEmpty()) {
+            return null;
+        }
+        String endpoint = endpoints.get(brokerId);
+        if (endpoint != null) {
+            return endpoint;
+        }
+        if (brokerId != GlobalConstant.MASTER_ID) {
+            endpoint = endpoints.get(brokerId + 1);
+            if (endpoint != null) {
+                return endpoint;
+            }
+        }
+        if (!onlyThisBroker) {
+            Map.Entry<Long, String> entry = endpoints.getEndpointMap().entrySet().iterator().next();
+            endpoint = entry.getValue();
+        }
+        return endpoint;
     }
 
     /**
@@ -88,6 +116,36 @@ public class BrokerManager {
         }
     }
 
+    public Set<TopicQueue> lockQueue(String group, String brokerName, Set<TopicQueue> queues, String clientId) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        String endpoint = findEndpoint(brokerName, GlobalConstant.MASTER_ID, true);
+        if (endpoint == null) {
+            log.warn("lock queue: broker not exists {}", brokerName);
+            return Set.of();
+        }
+        return this.brokerApiFacade.lockQueue(endpoint, group, queues, clientId);
+    }
+
+    public Set<TopicQueue> lockQueue(String group, TopicQueue queue, String clientId) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        return lockQueue(group, queue.getBrokerName(), Set.of(queue), clientId);
+    }
+
+    public void unlockQueue(boolean oneway, String group, String brokerName, Set<TopicQueue> queues, String clientId) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        String endpoint = findEndpoint(brokerName, GlobalConstant.MASTER_ID, true);
+        if (endpoint == null) {
+            log.warn("unlock queue: broker not exists {}", brokerName);
+            return;
+        }
+        this.brokerApiFacade.unlockQueue(oneway, endpoint, group, queues, clientId);
+    }
+
+    public void unlockQueue(boolean oneway, String group, TopicQueue queue, String clientId) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        unlockQueue(oneway, group, queue.getBrokerName(), Set.of(queue), clientId);
+    }
+
+    public List<String> findConsumerIdsByGroup(String endpoint, String group) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        return this.brokerApiFacade.findConsumerIdsByGroup(endpoint, group);
+    }
+
     public SendResult sendMessage(RpcModel rpcModel, String group, TopicQueue queue, Message message, long timeout) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
         BrokerEndpoints endpoints = this.endpointMap.get(queue.getBrokerName());
         String endpoint = endpoints.getEndpointMap().get(GlobalConstant.MASTER_ID);
@@ -99,25 +157,6 @@ public class BrokerManager {
                 queue.getQueueId(),
                 timeout
         );
-    }
-
-    /**
-     * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#findBrokerAddressInSubscribe
-     */
-    public String findEndpoint(String brokerName, long brokerId, boolean onlyThisBroker) {
-        BrokerEndpoints endpoints = this.endpointMap.get(brokerName);
-        if (endpoints == null || endpoints.isEmpty()) {
-            return null;
-        }
-        String endpoint = endpoints.get(brokerId);
-        if (endpoint == null && brokerId != GlobalConstant.MASTER_ID) {
-            endpoint = endpoints.get(brokerId + 1);
-        }
-        if (endpoint == null && !onlyThisBroker) {
-            Map.Entry<Long, String> entry = endpoints.getEndpointMap().entrySet().iterator().next();
-            endpoint = entry.getValue();
-        }
-        return endpoint;
     }
 
     public void pullMessage(PullMessageRequest request, ConsumerSubscription subscription, long offset, int pullBatchSize) throws BrokerException, InterruptedException, ConnectException, TimeoutException {

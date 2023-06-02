@@ -1,8 +1,8 @@
 package com.clouditora.mq.client.consumer;
 
-import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.MessageModel;
+import com.clouditora.mq.common.constant.PositionStrategy;
 import com.clouditora.mq.common.util.TimeUtil;
 import lombok.Data;
 
@@ -70,7 +70,7 @@ public class ConsumerConfig {
      * </li>
      * </ul>
      */
-    private ConsumePositionStrategy consumeFromWhere = ConsumePositionStrategy.FROM_LAST_OFFSET;
+    private PositionStrategy consumeFromWhere = PositionStrategy.CONSUME_FROM_LAST_OFFSET;
 
     /**
      * Backtracking consumption time with second precision. Time format is

@@ -42,7 +42,7 @@ public class MessageRoute {
         if (lastBrokerName == null || this.queues == null) {
             return findOne();
         }
-        for (TopicQueue ignored : this.queues) {
+        for (TopicQueue ignore : this.queues) {
             TopicQueue queue = findOne();
             // 切换到别的broker
             if (!lastBrokerName.equals(queue.getBrokerName())) {

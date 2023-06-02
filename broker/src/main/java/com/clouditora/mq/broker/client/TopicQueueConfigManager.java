@@ -6,7 +6,7 @@ import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.constant.SystemTopic;
 import com.clouditora.mq.common.service.AbstractFileService;
 import com.clouditora.mq.common.topic.TopicQueueConfig;
-import com.clouditora.mq.common.topic.TopicQueueFile;
+import com.clouditora.mq.common.topic.TopicQueueConfigFile;
 import com.clouditora.mq.common.util.JsonUtil;
 import com.clouditora.mq.store.MessageStoreConfig;
 import lombok.Getter;
@@ -63,9 +63,9 @@ public class TopicQueueConfigManager extends AbstractFileService {
 
     @Override
     protected void decode(String content) {
-        TopicQueueFile config = JsonUtil.toJsonObject(content, TopicQueueFile.class);
+        TopicQueueConfigFile config = JsonUtil.toJsonObject(content, TopicQueueConfigFile.class);
         if (config != null) {
-            this.topicMap.putAll(config.getTopicMap());
+            this.topicMap.putAll(config.getConfigMap());
             print();
         }
     }
@@ -78,8 +78,8 @@ public class TopicQueueConfigManager extends AbstractFileService {
 
     @Override
     protected String encode() {
-        TopicQueueFile config = new TopicQueueFile();
-        config.setTopicMap(this.topicMap);
+        TopicQueueConfigFile config = new TopicQueueConfigFile();
+        config.setConfigMap(this.topicMap);
         return JsonUtil.toJsonStringPretty(config);
     }
 

@@ -9,8 +9,8 @@ import java.util.Comparator;
  */
 @Data
 public class TopicQueue implements Comparable<TopicQueue> {
-    private String brokerName;
     private String topic;
+    private String brokerName;
     private int queueId;
 
     /**

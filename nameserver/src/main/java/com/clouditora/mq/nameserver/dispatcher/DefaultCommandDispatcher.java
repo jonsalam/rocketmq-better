@@ -92,7 +92,7 @@ public class DefaultCommandDispatcher implements CommandDispatcher {
             responseBody.setBrokers(topicRoute.getBrokers());
             responseBody.setQueues(topicRoute.getQueues());
             response.setCode(ResponseCode.SUCCESS);
-            response.setBody(responseBody.encode());
+            response.setBody(responseBody);
         }
         return response;
     }

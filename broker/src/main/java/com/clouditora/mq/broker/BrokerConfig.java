@@ -42,6 +42,10 @@ public class BrokerConfig {
          * @link org.apache.rocketmq.common.BrokerConfig#sendMessageThreadPoolNums
          */
         int SEND_MESSAGE = Math.min(Runtime.getRuntime().availableProcessors(), 4);
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#adminBrokerThreadPoolNums
+         */
+        int ADMIN_BROKER = Math.min(Runtime.getRuntime().availableProcessors(), 16);
     }
 
     interface QueueCapacity {

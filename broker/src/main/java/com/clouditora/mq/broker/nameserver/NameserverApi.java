@@ -25,13 +25,13 @@ public class NameserverApi {
      */
     public void registerBroker(RpcModel rpcModel, String endpoint, BrokerRegisterCommand.RequestHeader requestHeader, BrokerRegisterCommand.RequestBody requestBody, long timeout) throws InterruptedException, TimeoutException, ConnectException {
         Command request = Command.buildRequest(RequestCode.REGISTER_BROKER, requestHeader);
-        request.setBody(requestBody.encode());
+        request.setBody(requestBody);
         if (rpcModel == RpcModel.SYNC) {
             Command response = clientNetwork.syncInvoke(endpoint, request, timeout);
             log.info("register broker: response={}", response);
         } else if (rpcModel == RpcModel.ASYNC) {
-            clientNetwork.asyncInvoke(endpoint, request, timeout, commandFuture -> {
-                log.info("register broker: response={}", commandFuture.getCommand());
+            clientNetwork.asyncInvoke(endpoint, request, timeout, future -> {
+                log.info("register broker: response={}", future.getCommand());
             });
         } else if (rpcModel == RpcModel.ONEWAY) {
             clientNetwork.onewayInvoke(endpoint, request, timeout);

@@ -13,11 +13,14 @@ import com.clouditora.mq.network.util.NetworkUtil;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @link org.apache.rocketmq.broker.processor.ClientManageProcessor
+ */
 @Slf4j
-public class ClientCommandDispatcher implements CommandDispatcher {
+public class ClientManageDispatcher implements CommandDispatcher {
     private final BrokerController brokerController;
 
-    public ClientCommandDispatcher(BrokerController brokerController) {
+    public ClientManageDispatcher(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 

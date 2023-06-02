@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentMap;
  * @link org.apache.rocketmq.common.protocol.body.TopicConfigSerializeWrapper
  */
 @Data
-public class TopicQueueFile {
+public class TopicQueueConfigFile {
     @JSONField(name = "topicConfigTable")
-    private ConcurrentMap<String, TopicQueueConfig> topicMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, TopicQueueConfig> configMap = new ConcurrentHashMap<>();
 }

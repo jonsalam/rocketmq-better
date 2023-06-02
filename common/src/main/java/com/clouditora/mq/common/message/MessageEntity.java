@@ -3,7 +3,6 @@ package com.clouditora.mq.common.message;
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.util.MessageUtil;
-import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -18,7 +17,7 @@ import java.util.Map;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true )
+@ToString(callSuper = true)
 public class MessageEntity extends Message {
     private String brokerName;
     private int messageLength;

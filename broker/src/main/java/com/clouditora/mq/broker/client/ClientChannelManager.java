@@ -4,6 +4,7 @@ import com.clouditora.mq.network.util.NetworkUtil;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,10 @@ public class ClientChannelManager {
 
     public boolean isEmpty() {
         return this.channelMap.isEmpty();
+    }
+
+    public Collection<ClientChannel> channels(){
+        return this.channelMap.values();
     }
 
     /**

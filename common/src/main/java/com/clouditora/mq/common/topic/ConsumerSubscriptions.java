@@ -2,8 +2,8 @@ package com.clouditora.mq.common.topic;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.concurrent.ConsumeStrategy;
-import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.MessageModel;
+import com.clouditora.mq.common.constant.PositionStrategy;
 import lombok.Data;
 
 import java.util.HashSet;
@@ -23,7 +23,7 @@ public class ConsumerSubscriptions {
     private MessageModel messageModel;
 
     @JSONField(name = "consumeFromWhere")
-    private ConsumePositionStrategy positionStrategy;
+    private PositionStrategy positionStrategy;
 
     @JSONField(name = "subscriptionDataSet")
     private Set<ConsumerSubscription> subscriptions = new HashSet<>();

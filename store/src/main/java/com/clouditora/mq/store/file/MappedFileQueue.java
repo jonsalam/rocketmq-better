@@ -131,7 +131,8 @@ public class MappedFileQueue<T extends MappedFile> {
             if (calcOffset(offset, file)) {
                 return file;
             }
-        } catch (Exception ignored) {
+        } catch (Exception ignore) {
+
         }
         return null;
     }

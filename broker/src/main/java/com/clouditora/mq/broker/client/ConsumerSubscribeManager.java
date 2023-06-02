@@ -1,8 +1,8 @@
 package com.clouditora.mq.broker.client;
 
 import com.clouditora.mq.common.concurrent.ConsumeStrategy;
-import com.clouditora.mq.common.constant.ConsumePositionStrategy;
 import com.clouditora.mq.common.constant.MessageModel;
+import com.clouditora.mq.common.constant.PositionStrategy;
 import com.clouditora.mq.common.topic.ConsumerSubscription;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import lombok.ToString;
@@ -36,10 +36,10 @@ public class ConsumerSubscribeManager {
     /**
      * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#consumeFromWhere
      */
-    private volatile ConsumePositionStrategy positionStrategy;
+    private volatile PositionStrategy positionStrategy;
     private volatile long updateTime = System.currentTimeMillis();
 
-    public ConsumerSubscribeManager(String group, MessageModel messageModel, ConsumePositionStrategy positionStrategy) {
+    public ConsumerSubscribeManager(String group, MessageModel messageModel, PositionStrategy positionStrategy) {
         this.group = group;
         this.messageModel = messageModel;
         this.positionStrategy = positionStrategy;

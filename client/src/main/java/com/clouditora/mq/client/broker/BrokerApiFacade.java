@@ -10,10 +10,7 @@ import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.network.RequestCode;
-import com.clouditora.mq.common.network.command.ClientRegisterCommand;
-import com.clouditora.mq.common.network.command.ClientUnregisterCommand;
-import com.clouditora.mq.common.network.command.MessagePullCommand;
-import com.clouditora.mq.common.network.command.MessageSendCommand;
+import com.clouditora.mq.common.network.command.*;
 import com.clouditora.mq.common.topic.ConsumerSubscriptions;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.common.topic.TopicQueue;
@@ -26,6 +23,7 @@ import com.clouditora.mq.network.protocol.ResponseCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -57,7 +55,7 @@ public class BrokerApiFacade {
         requestBody.setProducers(producers);
         requestBody.setConsumers(consumers);
         Command request = Command.buildRequest(RequestCode.REGISTER_CLIENT, null);
-        request.setBody(requestBody.encode());
+        request.setBody(requestBody);
 
         Command response = this.clientNetwork.syncInvoke(endpoint, request, this.clientConfig.getMqClientApiTimeout());
         ResponseCode responseCode = EnumUtil.ofCode(response.getCode(), ResponseCode.class);
@@ -85,6 +83,66 @@ public class BrokerApiFacade {
             return;
         }
         throw new BrokerException(response.getCode(), response.getRemark(), endpoint);
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#lockBatchMQ
+     */
+    public Set<TopicQueue> lockQueue(String endpoint, String group, Set<TopicQueue> queues, String clientId) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+        LockQueueCommand.RequestBody requestBody = new LockQueueCommand.RequestBody();
+        requestBody.setGroup(group);
+        requestBody.setQueues(queues);
+        requestBody.setClientId(clientId);
+        Command request = Command.buildRequest(RequestCode.LOCK_BATCH_MQ, null);
+        request.setBody(requestBody);
+        Command response = this.clientNetwork.syncInvoke(endpoint, request, 1000);
+        ResponseCode responseCode = EnumUtil.ofCode(response.getCode(), ResponseCode.class);
+        if (responseCode == ResponseCode.SUCCESS) {
+            log.info("unlock queue to broker: {}", endpoint);
+            LockQueueCommand.ResponseBody responseBody = response.decodeBody(LockQueueCommand.ResponseBody.class);
+            return responseBody.getQueues();
+        }
+        throw new BrokerException(responseCode.getCode(), response.getRemark(), endpoint);
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#unlockBatchMQ
+     */
+    public void unlockQueue(boolean oneway, String endpoint, String group, Set<TopicQueue> queues, String clientId) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+        UnlockQueueCommand.RequestBody requestBody = new UnlockQueueCommand.RequestBody();
+        requestBody.setGroup(group);
+        requestBody.setQueues(queues);
+        requestBody.setClientId(clientId);
+        Command request = Command.buildRequest(RequestCode.UNLOCK_BATCH_MQ, null);
+        request.setBody(requestBody);
+        if (oneway) {
+            this.clientNetwork.onewayInvoke(endpoint, request, 1000);
+        } else {
+            Command response = this.clientNetwork.syncInvoke(endpoint, request, 1000);
+            ResponseCode responseCode = EnumUtil.ofCode(response.getCode(), ResponseCode.class);
+            if (responseCode == ResponseCode.SUCCESS) {
+                log.info("unlock queue to broker: {}", endpoint);
+                return;
+            }
+            throw new BrokerException(responseCode.getCode(), response.getRemark(), endpoint);
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#getConsumerIdListByGroup
+     */
+    public List<String> findConsumerIdsByGroup(String endpoint, String group) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+        ConsumerFindCommand.RequestHeader requestHeader = new ConsumerFindCommand.RequestHeader();
+        requestHeader.setGroup(group);
+        Command request = Command.buildRequest(RequestCode.GET_CONSUMER_LIST_BY_GROUP, requestHeader);
+        Command response = this.clientNetwork.syncInvoke(endpoint, request, this.clientConfig.getMqClientApiTimeout());
+        ResponseCode responseCode = EnumUtil.ofCode(response.getCode(), ResponseCode.class);
+        if (responseCode == ResponseCode.SUCCESS) {
+            ConsumerFindCommand.ResponseBody responseBody = response.decodeBody(ConsumerFindCommand.ResponseBody.class);
+            log.info("find consumers: {} {}", endpoint, responseBody.getConsumerIds());
+            return responseBody.getConsumerIds();
+        }
+        throw new BrokerException(responseCode.getCode(), response.getRemark(), endpoint);
     }
 
     public SendResult sendMessage(RpcModel rpcModel, String brokerName, String brokerEndpoint, String group, Message message, Integer queueId, long timeout) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
