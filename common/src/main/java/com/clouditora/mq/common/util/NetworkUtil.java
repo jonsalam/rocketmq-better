@@ -39,8 +39,7 @@ public class NetworkUtil {
             String interfaceName = networkInterface.getName();
             File file = new File("/sys/class/net/" + interfaceName + "/bridge");
             return file.exists();
-        } catch (SecurityException e) {
-            //Ignore
+        } catch (SecurityException ignored) {
         }
         return false;
     }

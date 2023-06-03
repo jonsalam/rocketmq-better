@@ -88,7 +88,7 @@ public class ClientChannelPool {
                 }
 
                 List<String> list = this.nameserverEndpoints.get();
-                for (String ignore : list) {
+                for (String ignored : list) {
                     int index = nextIndex(list);
                     String endpoint = list.get(index);
                     channel = this.channelCache.createChannel(endpoint);

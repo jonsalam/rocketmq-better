@@ -49,7 +49,7 @@ public class TestUtil {
     public static void sleep(int second) {
         try {
             TimeUnit.SECONDS.sleep(second);
-        } catch (InterruptedException ignore) {
+        } catch (InterruptedException ignored) {
         }
     }
 }

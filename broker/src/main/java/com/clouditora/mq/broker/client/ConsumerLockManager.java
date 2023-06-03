@@ -65,7 +65,7 @@ public class ConsumerLockManager {
             } finally {
                 this.lock.unlock();
             }
-        } catch (InterruptedException ignore) {
+        } catch (InterruptedException ignored) {
 
         }
         return lockedQueues;
@@ -97,8 +97,7 @@ public class ConsumerLockManager {
             } finally {
                 this.lock.unlock();
             }
-        } catch (InterruptedException ignore) {
-
+        } catch (InterruptedException ignored) {
         }
     }
 }

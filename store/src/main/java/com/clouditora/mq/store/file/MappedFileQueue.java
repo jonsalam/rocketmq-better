@@ -33,7 +33,7 @@ public class MappedFileQueue<T extends MappedFile> {
         }
         try {
             return this.files.get(0);
-        } catch (IndexOutOfBoundsException ignore) {
+        } catch (IndexOutOfBoundsException ignored) {
         } catch (Exception e) {
             log.error("getFirstMappedFile has exception.", e);
         }
@@ -131,8 +131,7 @@ public class MappedFileQueue<T extends MappedFile> {
             if (calcOffset(offset, file)) {
                 return file;
             }
-        } catch (Exception ignore) {
-
+        } catch (Exception ignored) {
         }
         return null;
     }

@@ -9,7 +9,7 @@ import com.clouditora.mq.client.consumer.listener.OrderMessageListener;
 import com.clouditora.mq.client.consumer.offset.AbstractOffsetManager;
 import com.clouditora.mq.client.consumer.offset.LocalOffsetManager;
 import com.clouditora.mq.client.consumer.offset.RemoteOffsetManager;
-import com.clouditora.mq.client.consumer.pull.MessagePullService;
+import com.clouditora.mq.client.consumer.pull.PullMessageService;
 import com.clouditora.mq.client.instance.ClientConfig;
 import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.MessageModel;
@@ -39,13 +39,15 @@ public class Consumer extends AbstractNothingService {
      */
     @Getter
     private MessageModel messageModel = MessageModel.CLUSTERING;
+    @Getter
+    private boolean orderly;
     /**
      * topic:
      */
     private final ConcurrentMap<String, ConsumerSubscriptions> subscriptionMap = new ConcurrentHashMap<>();
 
     private AbstractOffsetManager offsetManager;
-    private MessagePullService messagePullService;
+    private PullMessageService pullMessageService;
     private AbstractMessageConsumer messageConsumer;
     private MessageListener messageListener;
 
@@ -67,8 +69,8 @@ public class Consumer extends AbstractNothingService {
         }
         this.offsetManager.startup();
 
-        this.messagePullService = new MessagePullService();
-        this.messagePullService.startup();
+        this.pullMessageService = new PullMessageService();
+        this.pullMessageService.startup();
 
         if (messageListener instanceof OrderMessageListener) {
             this.messageConsumer = new OrderMessageConsumer();
@@ -83,7 +85,7 @@ public class Consumer extends AbstractNothingService {
     @Override
     public void shutdown() {
         this.offsetManager.shutdown();
-        this.messagePullService.shutdown();
+        this.pullMessageService.shutdown();
         this.messageConsumer.shutdown();
         super.shutdown();
     }

@@ -1,6 +1,7 @@
 package com.clouditora.mq.client.broker;
 
-import com.clouditora.mq.client.consumer.ProcessQueue;
+import com.clouditora.mq.client.consumer.ConsumerConfig;
+import com.clouditora.mq.client.consumer.consume.ConsumerQueue;
 import com.clouditora.mq.client.consumer.offset.AbstractOffsetManager;
 import com.clouditora.mq.client.topic.TopicRouteManager;
 import com.clouditora.mq.common.constant.GlobalConstant;
@@ -25,14 +26,16 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class BrokerQueueManager {
+    private final ConsumerConfig consumerConfig;
     private final BrokerController brokerController;
     private final String group;
     private final String clientId;
     private final AbstractOffsetManager offsetManager;
     private final TopicRouteManager topicRouteManager;
-    private final ConcurrentMap<TopicQueue, ProcessQueue> queueMessageMap = new ConcurrentHashMap<>(64);
+    private final ConcurrentMap<TopicQueue, ConsumerQueue> queueMessageMap = new ConcurrentHashMap<>(64);
 
-    public BrokerQueueManager(BrokerController brokerController, String clientId, String group, AbstractOffsetManager offsetManager, TopicRouteManager topicRouteManager) {
+    public BrokerQueueManager(ConsumerConfig consumerConfig, BrokerController brokerController, String clientId, String group, AbstractOffsetManager offsetManager, TopicRouteManager topicRouteManager) {
+        this.consumerConfig = consumerConfig;
         this.brokerController = brokerController;
         this.clientId = clientId;
         this.group = group;
@@ -44,10 +47,10 @@ public class BrokerQueueManager {
         try {
             Set<TopicQueue> lockedQueues = this.brokerController.lockQueue(this.group, queue, this.clientId);
             for (TopicQueue lockedQueue : lockedQueues) {
-                ProcessQueue processQueue = this.queueMessageMap.get(lockedQueue);
-                if (processQueue != null) {
-                    processQueue.setLocked(true);
-                    processQueue.setLastLockTimestamp(System.currentTimeMillis());
+                ConsumerQueue consumerQueue = this.queueMessageMap.get(lockedQueue);
+                if (consumerQueue != null) {
+                    consumerQueue.setLocked(true);
+                    consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
                 }
             }
             return lockedQueues.contains(queue);
@@ -69,19 +72,19 @@ public class BrokerQueueManager {
             try {
                 Set<TopicQueue> lockedQueues = this.brokerController.lockQueue(this.group, brokerName, queues, this.clientId);
                 for (TopicQueue lockedQueue : lockedQueues) {
-                    ProcessQueue processQueue = this.queueMessageMap.get(lockedQueue);
-                    if (processQueue != null) {
-                        processQueue.setLocked(true);
-                        processQueue.setLastLockTimestamp(System.currentTimeMillis());
-                        log.info("lock queue success: {} {}", this.group, processQueue);
+                    ConsumerQueue consumerQueue = this.queueMessageMap.get(lockedQueue);
+                    if (consumerQueue != null) {
+                        consumerQueue.setLocked(true);
+                        consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
+                        log.info("lock queue success: {} {}", this.group, consumerQueue);
                     }
                 }
                 for (TopicQueue queue : queues) {
                     if (!lockedQueues.contains(queue)) {
-                        ProcessQueue processQueue = this.queueMessageMap.get(queue);
-                        if (processQueue != null) {
-                            processQueue.setLocked(false);
-                            log.info("lock queue failed: {} {}", this.group, processQueue);
+                        ConsumerQueue consumerQueue = this.queueMessageMap.get(queue);
+                        if (consumerQueue != null) {
+                            consumerQueue.setLocked(false);
+                            log.info("lock queue failed: {} {}", this.group, consumerQueue);
                         }
                     }
                 }
@@ -110,10 +113,10 @@ public class BrokerQueueManager {
             try {
                 this.brokerController.unlockQueue(oneway, this.group, brokerName, queues, this.clientId);
                 for (TopicQueue queue : queues) {
-                    ProcessQueue processQueue = this.queueMessageMap.get(queue);
-                    if (processQueue != null) {
-                        processQueue.setLocked(false);
-                        log.info("unlock queue failed: {} {}", this.group, processQueue);
+                    ConsumerQueue consumerQueue = this.queueMessageMap.get(queue);
+                    if (consumerQueue != null) {
+                        consumerQueue.setLocked(false);
+                        log.info("unlock queue failed: {} {}", this.group, consumerQueue);
                     }
                 }
             } catch (Exception e) {
@@ -194,4 +197,47 @@ public class BrokerQueueManager {
         return result;
     }
 
+    /**
+     * @link org.apache.rocketmq.client.impl.consumer.RebalancePushImpl#computePullFromWhereWithException
+     */
+    public long getPullOffset(TopicQueue topicQueue) {
+        PositionStrategy positionStrategy = this.consumerConfig.getConsumeFromWhere();
+        if (positionStrategy == PositionStrategy.CONSUME_FROM_FIRST_OFFSET) {
+            long offset = this.offsetManager.get(topicQueue);
+            if (offset >= 0) {
+                return offset;
+            } else if (offset == -1) {
+                return 0;
+            } else {
+                return -1;
+            }
+        } else if (positionStrategy == PositionStrategy.CONSUME_FROM_LAST_OFFSET) {
+
+        } else if (positionStrategy == PositionStrategy.CONSUME_FROM_TIMESTAMP) {
+            long lastOffset = offsetManager.get(topicQueue);
+            if (lastOffset >= 0) {
+                return lastOffset;
+            } else if (lastOffset == -1) {
+                if (topicQueue.getTopic().startsWith(GlobalConstant.SystemGroup.RETRY_GROUP_TOPIC_PREFIX)) {
+                    try {
+                        return this.brokerController.getMaxOffset(topicQueue);
+                    } catch (ClientException e) {
+                        log.warn("get consume offset from broker exception, queue={}", topicQueue, e);
+                        throw e;
+                    }
+                } else {
+                    try {
+                        long timestamp = UtilAll.parseDate(this.defaultMQPushConsumerImpl.getDefaultMQPushConsumer().getConsumeTimestamp(), UtilAll.YYYYMMDDHHMMSS).getTime();
+                        return this.brokerController.searchOffset(topicQueue, timestamp);
+                    } catch (ClientException e) {
+                        log.warn("get consume offset from last offset exception, mq={}, exception={}", mq, e);
+                        throw e;
+                    }
+                }
+            } else {
+                return -1;
+            }
+        }
+        return 0;
+    }
 }

@@ -166,4 +166,18 @@ public class BrokerController {
                 endpoint
         );
     }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.MQAdminImpl#maxOffset
+     */
+    public long getMaxOffset(TopicQueue topicQueue) {
+        return 0;
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.MQAdminImpl#searchOffset
+     */
+    public long searchOffset(TopicQueue topicQueue, long timestamp) {
+        return 0;
+    }
 }
