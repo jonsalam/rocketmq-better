@@ -1,15 +1,12 @@
 package com.clouditora.mq.broker;
 
 import com.clouditora.mq.broker.client.*;
-import com.clouditora.mq.broker.dispatcher.AdminBrokerDispatcher;
-import com.clouditora.mq.broker.dispatcher.ClientManageDispatcher;
-import com.clouditora.mq.broker.dispatcher.ConsumerManageDispatcher;
-import com.clouditora.mq.broker.dispatcher.SendMessageDispatcher;
+import com.clouditora.mq.broker.dispatcher.*;
 import com.clouditora.mq.broker.nameserver.NameserverApiFacade;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.service.AbstractScheduledService;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.GroupSubscription;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.common.util.ThreadUtil;
 import com.clouditora.mq.network.ClientNetwork;
@@ -24,10 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @link org.apache.rocketmq.broker.BrokerController
@@ -107,7 +101,7 @@ public class BrokerController extends AbstractScheduledService {
         ExecutorService clientHeartbeatExecutor = new ThreadPoolExecutor(
                 BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT,
                 BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT,
-                60, TimeUnit.MINUTES,
+                1, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.CLIENT_HEARTBEAT),
                 ThreadUtil.buildFactory("ClientHeartbeat", BrokerConfig.TreadPoolSize.CLIENT_HEARTBEAT)
         );
@@ -115,7 +109,7 @@ public class BrokerController extends AbstractScheduledService {
         ExecutorService clientManageExecutor = new ThreadPoolExecutor(
                 BrokerConfig.TreadPoolSize.CLIENT_MANAGER,
                 BrokerConfig.TreadPoolSize.CLIENT_MANAGER,
-                60, TimeUnit.MINUTES,
+                1, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.CLIENT_MANAGE),
                 ThreadUtil.buildFactory("ClientManager", BrokerConfig.TreadPoolSize.CLIENT_MANAGER)
         );
@@ -123,25 +117,33 @@ public class BrokerController extends AbstractScheduledService {
         ExecutorService sendMessageExecutor = new ThreadPoolExecutor(
                 BrokerConfig.TreadPoolSize.SEND_MESSAGE,
                 BrokerConfig.TreadPoolSize.SEND_MESSAGE,
-                60, TimeUnit.MINUTES,
+                1, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
                 ThreadUtil.buildFactory("SendMessage", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
         );
         executors.add(sendMessageExecutor);
+        ExecutorService pullMessageExecutor = new ThreadPoolExecutor(
+                BrokerConfig.TreadPoolSize.PULL_MESSAGE,
+                BrokerConfig.TreadPoolSize.PULL_MESSAGE,
+                1, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.PULL_MESSAGE),
+                ThreadUtil.buildFactory("PullMessage", BrokerConfig.TreadPoolSize.PULL_MESSAGE)
+        );
+        executors.add(pullMessageExecutor);
         ExecutorService adminBrokerExecutor = new ThreadPoolExecutor(
                 BrokerConfig.TreadPoolSize.ADMIN_BROKER,
                 BrokerConfig.TreadPoolSize.ADMIN_BROKER,
-                60, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
-                ThreadUtil.buildFactory("AdminBroker", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
+                1, TimeUnit.MINUTES,
+                new LinkedBlockingQueue<>(),
+                ThreadUtil.buildFactory("AdminBroker", BrokerConfig.TreadPoolSize.ADMIN_BROKER)
         );
         executors.add(adminBrokerExecutor);
         ExecutorService consumerManageExecutor = new ThreadPoolExecutor(
-                BrokerConfig.TreadPoolSize.ADMIN_BROKER,
-                BrokerConfig.TreadPoolSize.ADMIN_BROKER,
-                60, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(BrokerConfig.QueueCapacity.SEND_MESSAGE),
-                ThreadUtil.buildFactory("AdminBroker", BrokerConfig.TreadPoolSize.SEND_MESSAGE)
+                BrokerConfig.TreadPoolSize.CONSUMER_MANAGE,
+                BrokerConfig.TreadPoolSize.CONSUMER_MANAGE,
+                1, TimeUnit.MINUTES,
+                new LinkedBlockingQueue<>(),
+                ThreadUtil.buildFactory("ConsumerMange", BrokerConfig.TreadPoolSize.CONSUMER_MANAGE)
         );
         executors.add(consumerManageExecutor);
 
@@ -155,6 +157,9 @@ public class BrokerController extends AbstractScheduledService {
         SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher(this.brokerConfig, this.messageStore);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE, sendMessageDispatcher, sendMessageExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
+
+        PullMessageDispatcher pullMessageDispatcher = new PullMessageDispatcher(this.brokerConfig);
+        this.serverNetwork.registerDispatcher(RequestCode.PULL_MESSAGE, pullMessageDispatcher, pull);
 
         AdminBrokerDispatcher adminBrokerDispatcher = new AdminBrokerDispatcher(this.consumerLockManager);
         this.serverNetwork.setDefaultDispatcher(adminBrokerDispatcher, adminBrokerExecutor);
@@ -193,7 +198,7 @@ public class BrokerController extends AbstractScheduledService {
     /**
      * @link org.apache.rocketmq.broker.processor.ClientManageProcessor#heartBeat
      */
-    public void registerClient(ClientChannel channel, Set<ProducerGroup> producers, Set<ConsumerSubscriptions> consumers) {
+    public void registerClient(ClientChannel channel, Set<ProducerGroup> producers, Set<GroupSubscription> consumers) {
         this.producerManager.register(channel, producers);
         this.consumerManager.register(channel, consumers);
     }

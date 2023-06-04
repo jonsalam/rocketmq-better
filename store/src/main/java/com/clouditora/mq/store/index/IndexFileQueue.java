@@ -15,7 +15,7 @@ public class IndexFileQueue extends MappedFileQueue<IndexFile> {
     }
 
     @Override
-    protected IndexFile createFile(long offset) throws IOException {
+    protected IndexFile create(long offset) throws IOException {
         String path = "%s/%s".formatted(super.path, StoreUtil.long2String(offset));
         return new IndexFile(path, config.getMaxSlotCount(), config.getMaxItemCount());
     }

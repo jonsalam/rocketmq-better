@@ -36,7 +36,7 @@ public class CommitLog {
      * org.apache.rocketmq.store.CommitLog#asyncPutMessage
      */
     public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
-        MappedFile file = this.commitLogQueue.getCurrentWritingFile();
+        MappedFile file = this.commitLogQueue.getOrCreate();
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
             return PutResult.buildAsync(PutStatus.CREATE_MAPPED_FILE_FAILED);
@@ -47,7 +47,7 @@ public class CommitLog {
             // 当前文件写指针
             int writePosition = file.getWritePosition();
             // 物理偏移量
-            long physicalOffset = file.getFileOffset() + writePosition;
+            long physicalOffset = file.getStartOffset() + writePosition;
             // 当前文件剩余空间
             int remainLength = file.getFileSize() - writePosition;
             ByteBuffer byteBuffer = this.tlSerializer.get().serialize(physicalOffset, remainLength, message);

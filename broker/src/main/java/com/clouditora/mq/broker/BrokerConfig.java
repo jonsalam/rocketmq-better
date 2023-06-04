@@ -33,19 +33,27 @@ public class BrokerConfig {
         /**
          * @link org.apache.rocketmq.common.BrokerConfig#clientManageThreadPoolNums
          */
-        int CLIENT_MANAGER = Math.min(32, Runtime.getRuntime().availableProcessors());
+        int CLIENT_MANAGER = Math.min(Runtime.getRuntime().availableProcessors(), 32);
         /**
          * @link org.apache.rocketmq.common.BrokerConfig#heartbeatThreadPoolNums
          */
-        int CLIENT_HEARTBEAT = Math.min(32, Runtime.getRuntime().availableProcessors());
+        int CLIENT_HEARTBEAT = Math.min(Runtime.getRuntime().availableProcessors(), 32);
         /**
          * @link org.apache.rocketmq.common.BrokerConfig#sendMessageThreadPoolNums
          */
         int SEND_MESSAGE = Math.min(Runtime.getRuntime().availableProcessors(), 4);
         /**
+         * @link org.apache.rocketmq.common.BrokerConfig#pullMessageThreadPoolNums
+         */
+        int PULL_MESSAGE = Math.min(Runtime.getRuntime().availableProcessors(), 16 + Runtime.getRuntime().availableProcessors() * 2);
+        /**
          * @link org.apache.rocketmq.common.BrokerConfig#adminBrokerThreadPoolNums
          */
         int ADMIN_BROKER = Math.min(Runtime.getRuntime().availableProcessors(), 16);
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#consumerManageThreadPoolNums
+         */
+        int CONSUMER_MANAGE = Math.min(Runtime.getRuntime().availableProcessors(), 16);
     }
 
     interface QueueCapacity {
@@ -61,6 +69,14 @@ public class BrokerConfig {
          * @link org.apache.rocketmq.common.BrokerConfig#sendThreadPoolQueueCapacity
          */
         int SEND_MESSAGE = 10000;
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#pullThreadPoolQueueCapacity
+         */
+        int PULL_MESSAGE = 100000;
+        /**
+         * @link org.apache.rocketmq.common.BrokerConfig#adminBrokerThreadPoolNums
+         */
+        int PULL_MESSAGE = 100000;
     }
 
     public List<String> getNameserverEndpoints() {

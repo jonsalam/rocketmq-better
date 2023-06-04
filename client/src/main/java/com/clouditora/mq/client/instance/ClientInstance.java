@@ -4,7 +4,7 @@ import com.clouditora.mq.client.broker.BrokerApiFacade;
 import com.clouditora.mq.client.broker.BrokerController;
 import com.clouditora.mq.client.consumer.Consumer;
 import com.clouditora.mq.client.consumer.ConsumerManager;
-import com.clouditora.mq.client.consumer.pull.PullMessageRequest;
+import com.clouditora.mq.client.consumer.pull.PullResult;
 import com.clouditora.mq.client.nameserver.NameserverApiFacade;
 import com.clouditora.mq.client.producer.Producer;
 import com.clouditora.mq.client.producer.ProducerManager;
@@ -226,12 +226,12 @@ public class ClientInstance extends AbstractScheduledService {
                     return producer;
                 })
                 .collect(Collectors.toSet());
-        Set<ConsumerSubscriptions> consumers = this.consumerManager.getConsumerMap().entrySet().stream()
+        Set<GroupSubscription> consumers = this.consumerManager.getConsumerMap().entrySet().stream()
                 .map(e -> {
                     String group = e.getKey();
                     Consumer consumer = e.getValue();
 
-                    ConsumerSubscriptions subscriptions = new ConsumerSubscriptions();
+                    GroupSubscription subscriptions = new GroupSubscription();
                     subscriptions.setGroup(group);
                     subscriptions.setConsumeStrategy(ConsumeStrategy.PUSH);
                     subscriptions.setMessageModel(consumer.getMessageModel());
@@ -246,13 +246,5 @@ public class ClientInstance extends AbstractScheduledService {
 
     public MessageRoute getMessageRoute(String topic) {
         return this.messageRouteManager.get(topic);
-    }
-
-    public SendResult sendMessage(RpcModel rpcModel, String group, TopicQueue queue, Message message, long timeout) throws InterruptedException, TimeoutException, ConnectException, BrokerException {
-        return this.brokerController.sendMessage(rpcModel, group, queue, message, timeout);
-    }
-
-    public void pullMessage(PullMessageRequest request, ConsumerSubscription subscription, long offset, int pullBatchSize) {
-        this.brokerController.pullMessage(request, subscription, offset, pullBatchSize);
     }
 }

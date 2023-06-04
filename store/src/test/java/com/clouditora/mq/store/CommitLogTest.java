@@ -22,7 +22,7 @@ public class CommitLogTest extends AbstractFileTest {
             commitLog.asyncPut(message);
         }
         MappedFileQueue mappedFileQueue = commitLog.getCommitLogQueue();
-        MappedFile mappedFile = mappedFileQueue.getCurrentWritingFile();
+        MappedFile mappedFile = mappedFileQueue.getOrCreate();
         String name = mappedFile.getFile().getName();
 
         assertEquals(StoreUtil.long2String(180), name);

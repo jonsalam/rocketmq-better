@@ -73,7 +73,7 @@ public class CommandInvoker implements CallbackExecutor {
                         commandFuture.putResponse(null);
                         log.warn("send request command failed: channel={}", channel);
                     });
-            Command response = commandFuture.waitCommand(timeout);
+            Command response = commandFuture.await(timeout);
             if (response != null) {
                 return response;
             }

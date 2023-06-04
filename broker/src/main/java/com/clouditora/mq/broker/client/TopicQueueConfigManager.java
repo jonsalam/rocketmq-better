@@ -98,4 +98,8 @@ public class TopicQueueConfigManager extends AbstractFileService {
             return topicQueueConfig;
         });
     }
+
+    public TopicQueueConfig get(String topic) {
+        return this.topicMap.get(topic);
+    }
 }

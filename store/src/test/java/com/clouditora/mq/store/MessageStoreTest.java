@@ -1,7 +1,7 @@
 package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.message.MessageEntity;
-import com.clouditora.mq.store.file.MappedFileHolder;
+import com.clouditora.mq.store.file.GetMessageResult;
 import com.clouditora.mq.store.serializer.ByteBufferDeserializer;
 import org.junit.jupiter.api.Test;
 
@@ -22,13 +22,13 @@ public class MessageStoreTest extends AbstractFileTest {
         MessageEntity message = TestUtil.buildMessage();
         messageStore.asyncPut(message);
 
-        FutureTask<MappedFileHolder> task = new FutureTask<>(() -> {
+        FutureTask<GetMessageResult> task = new FutureTask<>(() -> {
             TestUtil.sleep(1);
             return messageStore.get(message.getTopic(), 0, 0, 16);
         });
         new Thread(task).start();
 
-        MappedFileHolder result = task.get();
+        GetMessageResult result = task.get();
         ByteBuffer wrap = ByteBuffer.wrap(result.covert2bytes());
         MessageEntity deserialize = new ByteBufferDeserializer().deserialize(wrap);
         assertEquals(message, deserialize);

@@ -1,6 +1,7 @@
 package com.clouditora.mq.client.broker;
 
-import com.clouditora.mq.client.consumer.pull.PullMessageRequest;
+import com.clouditora.mq.client.consumer.pull.PullMessageCallback;
+import com.clouditora.mq.client.consumer.pull.PullResult;
 import com.clouditora.mq.client.instance.ClientConfig;
 import com.clouditora.mq.client.producer.SendResult;
 import com.clouditora.mq.common.Message;
@@ -8,10 +9,10 @@ import com.clouditora.mq.common.broker.BrokerEndpoints;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
-import com.clouditora.mq.common.topic.ConsumerSubscription;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.GroupSubscription;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicSubscription;
 import com.clouditora.mq.network.exception.ConnectException;
 import com.clouditora.mq.network.exception.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +81,7 @@ public class BrokerController {
      * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#sendHeartbeatToAllBrokerWithLock
      * @link org.apache.rocketmq.client.impl.factory.MQClientInstance#sendHeartbeatToAllBroker
      */
-    public void heartbeat(String clientId, Set<ProducerGroup> producers, Set<ConsumerSubscriptions> consumers) {
+    public void heartbeat(String clientId, Set<ProducerGroup> producers, Set<GroupSubscription> consumers) {
         if (MapUtils.isEmpty(this.endpointMap)) {
             log.warn("heartbeat: broker endpoint is empty");
             return;
@@ -159,11 +160,40 @@ public class BrokerController {
         );
     }
 
-    public void pullMessage(PullMessageRequest request, ConsumerSubscription subscription, long offset, int pullBatchSize) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
-        String endpoint = findEndpoint(brokerName, brokerId, false);
-        this.brokerApiFacade.pullMessage(
-                RpcModel.ASYNC,
-                endpoint
+    /**
+     * @link org.apache.rocketmq.client.impl.consumer.PullAPIWrapper#pullKernelImpl
+     */
+    public PullResult syncPullMessage(String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        // TODO 负载均衡
+        String endpoint = findEndpoint(topicQueue.getBrokerName(), GlobalConstant.MASTER_ID, false);
+        return this.brokerApiFacade.syncPullMessage(
+                endpoint,
+                group,
+                topicQueue,
+                subscription,
+                pullOffset,
+                commitOffset,
+                sysFlag,
+                pullNum
+        );
+    }
+
+    /**
+     * @link org.apache.rocketmq.client.impl.consumer.PullAPIWrapper#pullKernelImpl
+     */
+    public void asyncPullMessage(String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum, PullMessageCallback callback) throws BrokerException, InterruptedException, ConnectException, TimeoutException {
+        // TODO 负载均衡
+        String endpoint = findEndpoint(topicQueue.getBrokerName(), GlobalConstant.MASTER_ID, false);
+        this.brokerApiFacade.asyncPullMessage(
+                endpoint,
+                group,
+                topicQueue,
+                subscription,
+                pullOffset,
+                commitOffset,
+                sysFlag,
+                pullNum,
+                callback
         );
     }
 

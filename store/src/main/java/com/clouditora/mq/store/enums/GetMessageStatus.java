@@ -1,6 +1,6 @@
 package com.clouditora.mq.store.enums;
 
-public enum GetStatus {
+public enum GetMessageStatus {
     FOUND,
     NO_MATCHED_MESSAGE,
     MESSAGE_WAS_REMOVING,

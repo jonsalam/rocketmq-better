@@ -1,7 +1,7 @@
 package com.clouditora.mq.broker.client;
 
 import com.clouditora.mq.common.constant.GlobalConstant;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.GroupSubscription;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -43,11 +43,11 @@ public class ConsumerManager {
     /**
      * @link org.apache.rocketmq.broker.client.ConsumerManager#registerConsumer
      */
-    public void register(ClientChannel channel, Set<ConsumerSubscriptions> gourps) {
-        if (CollectionUtils.isEmpty(gourps)) {
+    public void register(ClientChannel channel, Set<GroupSubscription> groups) {
+        if (CollectionUtils.isEmpty(groups)) {
             return;
         }
-        for (ConsumerSubscriptions sub : gourps) {
+        for (GroupSubscription sub : groups) {
             String group = sub.getGroup();
             // 注册重试topic
             {
@@ -116,6 +116,10 @@ public class ConsumerManager {
                 log.info("unregister consumer channel: {}", channel);
             }
         }
+    }
+
+    public ConsumerSubscribeManager getConsumerSubscription(String group) {
+        return this.subscriptionMap.get(group);
     }
 
     /**

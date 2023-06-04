@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @ToString
 @Getter
 public class CommandFuture {
-    private volatile Command command;
+    private volatile Command response;
     private final int opaque;
     private final Channel channel;
     @Setter
@@ -37,13 +37,13 @@ public class CommandFuture {
     }
 
     public void putResponse(Command command) {
-        this.command = command;
+        this.response = command;
         this.countDownLatch.countDown();
     }
 
-    public Command waitCommand(long timeout) throws InterruptedException {
+    public Command await(long timeout) throws InterruptedException {
         countDownLatch.await(timeout, TimeUnit.MILLISECONDS);
-        return command;
+        return response;
     }
 
     public void invokeCallback() {
@@ -53,5 +53,10 @@ public class CommandFuture {
         if (callbackInvoked.compareAndSet(false, true)) {
             callback.callback(this);
         }
+    }
+
+    public boolean isTimeout() {
+        long diff = System.currentTimeMillis() - this.beginTime;
+        return diff > this.timeout;
     }
 }

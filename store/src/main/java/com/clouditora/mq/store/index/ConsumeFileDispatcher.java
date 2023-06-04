@@ -13,6 +13,9 @@ import java.nio.ByteBuffer;
 @Slf4j
 public class ConsumeFileDispatcher implements MessageDispatcher {
     private final ConsumeFileMap files;
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#byteBufferIndex
+     */
     private final ByteBuffer byteBuffer;
 
     public ConsumeFileDispatcher(ConsumeFileMap files) {
@@ -20,29 +23,32 @@ public class ConsumeFileDispatcher implements MessageDispatcher {
         this.byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
     }
 
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#putMessagePositionInfo
+     */
     @Override
     public void dispatch(MessageEntity message) throws Exception {
         ConsumeFileQueue queue = this.files.findConsumeQueue(message.getTopic(), message.getQueueId());
-        ConsumeFile file = queue.getCurrentWritingFile(message.getQueueOffset());
+        ConsumeFile file = queue.getOrCreate(message.getQueueOffset());
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
             throw new PutException(PutStatus.CREATE_MAPPED_FILE_FAILED);
         }
 
-        int tagsCode = getTagsCode(message);
+        int tagsCode = getMessageHashCode(message);
         this.byteBuffer.flip().limit(ConsumeFile.UNIT_SIZE);
         this.byteBuffer.putLong(message.getLogOffset());
         this.byteBuffer.putInt(message.getMessageLength());
         this.byteBuffer.putLong(tagsCode);
         file.append(this.byteBuffer);
+        queue.incrMaxOffset(message.getMessageLength());
     }
 
-    private int getTagsCode(MessageEntity message) {
+    private int getMessageHashCode(MessageEntity message) {
         String tags = message.getProperties().get(MessageConst.Property.TAGS);
-        int tagsCode = 0;
-        if (StringUtils.isNotBlank(tags)) {
-            tagsCode = tags.hashCode();
+        if (StringUtils.isBlank(tags)) {
+            return 0;
         }
-        return tagsCode;
+        return tags.hashCode();
     }
 }

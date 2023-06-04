@@ -3,8 +3,9 @@ package com.clouditora.mq.broker.client;
 import com.clouditora.mq.common.concurrent.ConsumeStrategy;
 import com.clouditora.mq.common.constant.MessageModel;
 import com.clouditora.mq.common.constant.PositionStrategy;
-import com.clouditora.mq.common.topic.ConsumerSubscription;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.TopicSubscription;
+import com.clouditora.mq.common.topic.GroupSubscription;
+import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,11 +28,12 @@ public class ConsumerSubscribeManager {
      *
      * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#subscriptionTable
      */
-    private final ConcurrentMap<String, ConsumerSubscription> subscriptionMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, TopicSubscription> subscriptionMap = new ConcurrentHashMap<>();
     /**
      * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#consumeType
      */
     private volatile ConsumeStrategy consumeStrategy = ConsumeStrategy.PUSH;
+    @Getter
     private volatile MessageModel messageModel;
     /**
      * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#consumeFromWhere
@@ -49,11 +51,11 @@ public class ConsumerSubscribeManager {
      * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#updateChannel
      * @link org.apache.rocketmq.broker.client.ConsumerGroupInfo#updateSubscription
      */
-    public void update(ConsumerSubscriptions group) {
+    public void update(GroupSubscription groupSubscription) {
         // 更新订阅
         {
-            for (ConsumerSubscription subscription : group.getSubscriptions()) {
-                ConsumerSubscription prev = this.subscriptionMap.computeIfAbsent(subscription.getTopic(), e -> {
+            for (TopicSubscription subscription : groupSubscription.getSubscriptions()) {
+                TopicSubscription prev = this.subscriptionMap.computeIfAbsent(subscription.getTopic(), e -> {
                     log.info("register consumer {}: {}", subscription.getTopic(), subscription);
                     return subscription;
                 });
@@ -64,21 +66,24 @@ public class ConsumerSubscribeManager {
         }
         // 移除无用订阅
         {
-            Set<String> topics = group.getSubscriptions().stream().map(ConsumerSubscription::getTopic).collect(Collectors.toSet());
-            Iterator<Map.Entry<String, ConsumerSubscription>> iterator = this.subscriptionMap.entrySet().iterator();
+            Set<String> topics = groupSubscription.getSubscriptions().stream().map(TopicSubscription::getTopic).collect(Collectors.toSet());
+            Iterator<Map.Entry<String, TopicSubscription>> iterator = this.subscriptionMap.entrySet().iterator();
             while (iterator.hasNext()) {
-                Map.Entry<String, ConsumerSubscription> next = iterator.next();
+                Map.Entry<String, TopicSubscription> next = iterator.next();
                 String topic = next.getKey();
-                ConsumerSubscription subscription = next.getValue();
+                TopicSubscription subscription = next.getValue();
                 if (!topics.contains(topic)) {
                     iterator.remove();
                     log.info("unregister consumer {}: {}", subscription.getTopic(), subscription);
                 }
             }
         }
-        this.messageModel = group.getMessageModel();
-        this.positionStrategy = group.getPositionStrategy();
+        this.messageModel = groupSubscription.getMessageModel();
+        this.positionStrategy = groupSubscription.getPositionStrategy();
         this.updateTime = System.currentTimeMillis();
     }
 
+    public TopicSubscription get(String topic) {
+        return this.subscriptionMap.get(topic);
+    }
 }

@@ -18,7 +18,7 @@ public class IndexFileDispatcher implements MessageDispatcher {
 
     @Override
     public void dispatch(MessageEntity message) throws Exception {
-        IndexFile file = indexFileQueue.getCurrentWritingFile();
+        IndexFile file = indexFileQueue.getOrCreate();
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
             throw new PutException(PutStatus.CREATE_MAPPED_FILE_FAILED);

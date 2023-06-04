@@ -1,8 +1,9 @@
 package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.message.MessageEntity;
+import com.clouditora.mq.store.enums.GetMessageStatus;
+import com.clouditora.mq.store.file.GetMessageResult;
 import com.clouditora.mq.store.file.MappedFile;
-import com.clouditora.mq.store.file.MappedFileHolder;
 import com.clouditora.mq.store.file.PutResult;
 import com.clouditora.mq.store.index.ConsumeFile;
 import com.clouditora.mq.store.index.ConsumeFileMap;
@@ -19,14 +20,14 @@ import java.util.concurrent.CompletableFuture;
 public class MessageStore {
     private final MessageStoreConfig storeConfig;
     private final CommitLog commitLog;
-    private final ConsumeFileMap consumeFileMap;
+    private final ConsumeFileMap consumeFileQueues;
     private final Thread dispatcher;
 
     public MessageStore(MessageStoreConfig storeConfig) {
         this.storeConfig = storeConfig;
         this.commitLog = new CommitLog(storeConfig);
-        this.consumeFileMap = new ConsumeFileMap(storeConfig);
-        this.dispatcher = new Thread(new CommitLogDispatcher(this.storeConfig, this.commitLog, this.consumeFileMap));
+        this.consumeFileQueues = new ConsumeFileMap(storeConfig);
+        this.dispatcher = new Thread(new CommitLogDispatcher(this.storeConfig, this.commitLog, this.consumeFileQueues));
     }
 
     public void start() {
@@ -40,16 +41,23 @@ public class MessageStore {
         return this.commitLog.asyncPut(message);
     }
 
-    public MappedFileHolder get(String topic, int queueId, long offset, int maxNum) {
-        ConsumeFileQueue queue = this.consumeFileMap.findConsumeQueue(topic, queueId);
+    /**
+     * @link org.apache.rocketmq.store.DefaultMessageStore#getMessage
+     */
+    public GetMessageResult get(String group, String topic, int queueId, long offset, int maxNum) {
+        GetMessageResult result = new GetMessageResult();
+        ConsumeFileQueue queue = this.consumeFileQueues.findConsumeQueue(topic, queueId);
         if (queue == null) {
-            return null;
+            result.setStatus(GetMessageStatus.NO_MATCHED_LOGIC_QUEUE);
+            result.setNextBeginOffset(0);
+            result.setMinOffset(0);
+            result.setMaxOffset(0);
+            return result;
         }
         ConsumeFile consumeFile = queue.slice(offset);
         if (consumeFile == null) {
             return null;
         }
-        MappedFileHolder result = new MappedFileHolder();
         for (int p = 0; p < consumeFile.getWritePosition() && p < maxNum * ConsumeFile.UNIT_SIZE; p += ConsumeFile.UNIT_SIZE) {
             ByteBuffer byteBuffer = consumeFile.getByteBuffer();
             long logOffset = byteBuffer.getLong();

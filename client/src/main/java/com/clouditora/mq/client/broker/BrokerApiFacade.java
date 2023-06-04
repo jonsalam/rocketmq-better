@@ -1,5 +1,6 @@
 package com.clouditora.mq.client.broker;
 
+import com.clouditora.mq.client.consumer.pull.PullMessageCallback;
 import com.clouditora.mq.client.consumer.pull.PullResult;
 import com.clouditora.mq.client.consumer.pull.PullStatus;
 import com.clouditora.mq.client.instance.ClientConfig;
@@ -9,11 +10,13 @@ import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
+import com.clouditora.mq.common.exception.ClientException;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.*;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.GroupSubscription;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.common.topic.TopicQueue;
+import com.clouditora.mq.common.topic.TopicSubscription;
 import com.clouditora.mq.common.util.EnumUtil;
 import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.exception.ConnectException;
@@ -49,7 +52,7 @@ public class BrokerApiFacade {
     /**
      * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#sendHeartbeat
      */
-    public void heartbeat(String endpoint, String clientId, Set<ProducerGroup> producers, Set<ConsumerSubscriptions> consumers) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+    public void heartbeat(String endpoint, String clientId, Set<ProducerGroup> producers, Set<GroupSubscription> consumers) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
         ClientRegisterCommand.RequestBody requestBody = new ClientRegisterCommand.RequestBody();
         requestBody.setClientId(clientId);
         requestBody.setProducers(producers);
@@ -184,45 +187,44 @@ public class BrokerApiFacade {
         return null;
     }
 
-    public PullResult pullMessage(RpcModel rpcModel, String endpoint) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
-        long startTime = System.currentTimeMillis();
-        MessagePullCommand.RequestHeader requestHeader = new MessagePullCommand.RequestHeader();
-        requestHeader.setGroup();
-        requestHeader.setTopic();
-        requestHeader.setQueueId();
-        requestHeader.setQueueOffset();
-        requestHeader.setMaxNumber();
-        requestHeader.setSysFlag();
-        requestHeader.setCommitOffset();
-        requestHeader.setSuspendTimeout(BROKER_SUSPEND_MAX_TIME_MILLIS);
-        requestHeader.setSubscription();
-        requestHeader.setSubVersion();
-        requestHeader.setExpressionType();
-        Command request = Command.buildRequest(RequestCode.UNREGISTER_CLIENT, requestHeader);
+    /**
+     * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#pullMessage
+     */
+    public PullResult syncPullMessage(String endpoint, String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+        Command request = buildPullRequestHeader(group, topicQueue, subscription, pullOffset, commitOffset, sysFlag, pullNum);
+        Command response = this.clientNetwork.syncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND);
+        return parsePullResponse(endpoint, response);
+    }
 
-        if (rpcModel == RpcModel.SYNC) {
-            Command response = this.clientNetwork.syncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND);
-            PullStatus pullStatus = parsePullStatus(endpoint, response);
-            MessagePullCommand.ResponseHeader responseHeader = response.decodeHeader(MessagePullCommand.ResponseHeader.class);
-            PullResult pullResult = new PullResult();
-            pullResult.setStatus(pullStatus);
-            pullResult.setNextBeginOffset(responseHeader.getNextBeginOffset());
-            pullResult.setMinOffset(responseHeader.getMinOffset());
-            pullResult.setMaxOffset(responseHeader.getMaxOffset());
-            pullResult.setMessages(null);
-            pullResult.setSuggestWhichBrokerId(responseHeader.getSuggestWhichBrokerId());
-            pullResult.setMessageBinary(response.getBody());
-            return pullResult;
-        } else if (rpcModel == RpcModel.ASYNC) {
-            long elapsed = System.currentTimeMillis() - startTime;
-            if (elapsed > CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND) {
-                throw new TimeoutException(endpoint);
-            }
-            this.clientNetwork.asyncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND - elapsed, null);
-        } else if (rpcModel == RpcModel.ONEWAY) {
-            this.clientNetwork.onewayInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND);
+    /**
+     * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#pullMessageAsync
+     */
+    public void asyncPullMessage(String endpoint, String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum, PullMessageCallback callback) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
+        long startTime = System.currentTimeMillis();
+        Command request = buildPullRequestHeader(group, topicQueue, subscription, pullOffset, commitOffset, sysFlag, pullNum);
+        long elapsed = System.currentTimeMillis() - startTime;
+        if (elapsed > CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND) {
+            throw new TimeoutException(endpoint);
         }
-        return null;
+        this.clientNetwork.asyncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND - elapsed, f -> {
+            Command response = f.getResponse();
+            if (response == null) {
+                if (!f.isSendOk()) {
+                    callback.onException(new ClientException("send request to %s".formatted(endpoint), f.getCause()));
+                } else if (f.isTimeout()) {
+                    callback.onException(new ClientException("wait response timeout from %s".formatted(endpoint), f.getCause()));
+                } else {
+                    callback.onException(new ClientException("unknown reason to %s".formatted(endpoint), f.getCause()));
+                }
+            } else {
+                try {
+                    PullResult result = parsePullResponse(endpoint, response);
+                    callback.onSuccess(result);
+                } catch (Exception e) {
+                    callback.onException(e);
+                }
+            }
+        });
     }
 
     private static SendStatus parseSendStatus(String endpoint, Command response) throws BrokerException {
@@ -237,7 +239,36 @@ public class BrokerApiFacade {
         return status;
     }
 
-    private static PullStatus parsePullStatus(String endpoint, Command response) throws BrokerException {
+    private static Command buildPullRequestHeader(String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum) {
+        MessagePullCommand.RequestHeader requestHeader = new MessagePullCommand.RequestHeader();
+        requestHeader.setGroup(group);
+        requestHeader.setTopic(topicQueue.getTopic());
+        requestHeader.setQueueId(topicQueue.getQueueId());
+        requestHeader.setQueueOffset(pullOffset);
+        requestHeader.setPullNum(pullNum);
+        requestHeader.setSysFlag(sysFlag);
+        requestHeader.setCommitOffset(commitOffset);
+        requestHeader.setSuspendTimeout(BROKER_SUSPEND_MAX_TIME_MILLIS);
+        requestHeader.setExpression(subscription.getExpression());
+        requestHeader.setVersion(subscription.getVersion());
+        requestHeader.setExpressionType(subscription.getExpressionType());
+        return Command.buildRequest(RequestCode.UNREGISTER_CLIENT, requestHeader);
+    }
+
+    private static PullResult parsePullResponse(String endpoint, Command response) throws BrokerException {
+        MessagePullCommand.ResponseHeader responseHeader = response.decodeHeader(MessagePullCommand.ResponseHeader.class);
+        PullResult pullResult = new PullResult();
+        pullResult.setStatus(parsePullResponseStatus(endpoint, response));
+        pullResult.setNextBeginOffset(responseHeader.getNextBeginOffset());
+        pullResult.setMinOffset(responseHeader.getMinOffset());
+        pullResult.setMaxOffset(responseHeader.getMaxOffset());
+        pullResult.setMessages(null);
+        pullResult.setSuggestWhichBrokerId(responseHeader.getSuggestWhichBrokerId());
+        pullResult.setMessageBinary(response.getBody());
+        return pullResult;
+    }
+
+    private static PullStatus parsePullResponseStatus(String endpoint, Command response) throws BrokerException {
         PullStatus status;
         switch (EnumUtil.ofCode(response.getCode(), ResponseCode.class)) {
             case SUCCESS -> status = PullStatus.FOUND;

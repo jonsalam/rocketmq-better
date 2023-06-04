@@ -2,7 +2,7 @@ package com.clouditora.mq.common.network.command;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.network.CommandJsonBody;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.GroupSubscription;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import lombok.Data;
 
@@ -21,7 +21,7 @@ public class ClientRegisterCommand {
         private Set<ProducerGroup> producers;
 
         @JSONField(name = "consumerDataSet")
-        private Set<ConsumerSubscriptions> consumers;
+        private Set<GroupSubscription> consumers;
     }
 
 }

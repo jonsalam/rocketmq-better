@@ -31,7 +31,7 @@ public class NameserverApi {
             log.info("register broker: response={}", response);
         } else if (rpcModel == RpcModel.ASYNC) {
             clientNetwork.asyncInvoke(endpoint, request, timeout, future -> {
-                log.info("register broker: response={}", future.getCommand());
+                log.info("register broker: response={}", future.getResponse());
             });
         } else if (rpcModel == RpcModel.ONEWAY) {
             clientNetwork.onewayInvoke(endpoint, request, timeout);

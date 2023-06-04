@@ -13,7 +13,7 @@ import java.util.Set;
  * @link org.apache.rocketmq.common.protocol.heartbeat.ConsumerData
  */
 @Data
-public class ConsumerSubscriptions {
+public class GroupSubscription {
     @JSONField(name = "groupName")
     private String group;
 
@@ -26,9 +26,9 @@ public class ConsumerSubscriptions {
     private PositionStrategy positionStrategy;
 
     @JSONField(name = "subscriptionDataSet")
-    private Set<ConsumerSubscription> subscriptions = new HashSet<>();
+    private Set<TopicSubscription> subscriptions = new HashSet<>();
 
-    public void add(ConsumerSubscription subscription) {
+    public void add(TopicSubscription subscription) {
         this.subscriptions.add(subscription);
     }
 }

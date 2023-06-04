@@ -15,8 +15,8 @@ import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.MessageModel;
 import com.clouditora.mq.common.constant.SystemTopic;
 import com.clouditora.mq.common.service.AbstractNothingService;
-import com.clouditora.mq.common.topic.ConsumerSubscription;
-import com.clouditora.mq.common.topic.ConsumerSubscriptions;
+import com.clouditora.mq.common.topic.TopicSubscription;
+import com.clouditora.mq.common.topic.GroupSubscription;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -44,7 +44,7 @@ public class Consumer extends AbstractNothingService {
     /**
      * topic:
      */
-    private final ConcurrentMap<String, ConsumerSubscriptions> subscriptionMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, GroupSubscription> subscriptionsMap = new ConcurrentHashMap<>();
 
     private AbstractOffsetManager offsetManager;
     private PullMessageService pullMessageService;
@@ -91,24 +91,24 @@ public class Consumer extends AbstractNothingService {
     }
 
     public Set<String> getTopics() {
-        return this.subscriptionMap.keySet();
+        return this.subscriptionsMap.keySet();
     }
 
-    public ConsumerSubscriptions getSubscriptions(String topic) {
-        return this.subscriptionMap.get(topic);
+    public GroupSubscription getSubscriptions(String topic) {
+        return this.subscriptionsMap.get(topic);
     }
 
     public void subscribe(String topic, String expression) {
-        ConsumerSubscriptions subscriptions = this.subscriptionMap.computeIfAbsent(topic, e -> new ConsumerSubscriptions());
-        ConsumerSubscription subscription = new ConsumerSubscription();
+        GroupSubscription subscriptions = this.subscriptionsMap.computeIfAbsent(topic, e -> new GroupSubscription());
+        TopicSubscription subscription = new TopicSubscription();
         subscription.setTopic(topic);
         subscription.setExpression(expression);
         subscriptions.add(subscription);
     }
 
-    public Set<ConsumerSubscription> getSubscriptions() {
-        return this.subscriptionMap.values().stream()
-                .map(ConsumerSubscriptions::getSubscriptions)
+    public Set<TopicSubscription> getSubscriptions() {
+        return this.subscriptionsMap.values().stream()
+                .map(GroupSubscription::getSubscriptions)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
     }

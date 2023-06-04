@@ -1,6 +1,6 @@
 package com.clouditora.mq.store.file;
 
-import com.clouditora.mq.store.enums.GetStatus;
+import com.clouditora.mq.store.enums.GetMessageStatus;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -9,12 +9,18 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @link org.apache.rocketmq.store.GetMessageResult
+ */
 @Data
-public class MappedFileHolder {
-    private GetStatus status;
+public class GetMessageResult {
+    private GetMessageStatus status;
     private List<MappedFile> slices;
+    private long nextBeginOffset;
+    private long minOffset;
+    private long maxOffset;
 
-    public MappedFileHolder() {
+    public GetMessageResult() {
         this.slices = new ArrayList<>();
     }
 

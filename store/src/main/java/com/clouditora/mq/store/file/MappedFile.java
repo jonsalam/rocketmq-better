@@ -32,7 +32,7 @@ public class MappedFile {
      * org.apache.rocketmq.store.MappedFile#fileFromOffset
      */
     @Getter
-    protected final long fileOffset;
+    protected final long startOffset;
     protected final FileChannel fileChannel;
     protected final ByteBuffer mappedByteBuffer;
 
@@ -40,7 +40,7 @@ public class MappedFile {
         this.writePosition = new AtomicInteger(0);
         this.fileSize = fileSize;
         this.file = new File(fileName);
-        this.fileOffset = StoreUtil.string2Long(this.file.getName());
+        this.startOffset = StoreUtil.string2Long(this.file.getName());
         FileUtil.mkdir(this.file.getParent());
         this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
         this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
@@ -52,7 +52,7 @@ public class MappedFile {
     public MappedFile(MappedFile mappedFile, long offset, int writePosition, ByteBuffer byteBuffer) {
         this.fileSize = mappedFile.fileSize;
         this.file = mappedFile.file;
-        this.fileOffset = mappedFile.fileOffset + offset;
+        this.startOffset = mappedFile.startOffset + offset;
         this.fileChannel = mappedFile.fileChannel;
         this.writePosition = new AtomicInteger(writePosition);
         this.mappedByteBuffer = byteBuffer;

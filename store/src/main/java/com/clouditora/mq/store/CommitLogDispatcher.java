@@ -47,7 +47,7 @@ public class CommitLogDispatcher implements Runnable {
         if (file == null) {
             return;
         }
-        this.offset = file.getFileOffset();
+        this.offset = file.getStartOffset();
         ByteBuffer byteBuffer = file.getByteBuffer();
         for (long position = 0; position < file.getWritePosition(); ) {
             // TODO 消息可能反序列化失败

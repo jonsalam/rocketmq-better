@@ -78,7 +78,7 @@ public class ConsumerConfig {
      * Implying Seventeen twelve and 01 seconds on December 23, 2013 year<br>
      * Default backtracking consumption time Half an hour ago.
      */
-    private String consumeTimestamp = TimeUtil.timeMillisToHumanString3(System.currentTimeMillis() - (1000 * 60 * 30));
+    private String consumeTimestamp = TimeUtil.timestampToHumanString3(System.currentTimeMillis() - (1000 * 60 * 30));
 
     /**
      * Minimum consumer thread number
