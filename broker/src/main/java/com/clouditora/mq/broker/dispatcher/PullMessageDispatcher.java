@@ -110,7 +110,7 @@ public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDis
         }
 
         MessageFilter messageFilter;
-            messageFilter = new ExpressionMessageFilter(subscription, consumerFilterData, this.brokerController.getConsumerFilterManager());
+        messageFilter = new ExpressionMessageFilter(subscription, consumerFilterData, this.brokerController.getConsumerFilterManager());
         GetMessageResult result = this.messageStore.get(requestHeader.getGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getQueueOffset(), requestHeader.getPullNum(), messageFilter);
         if (result == null) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
@@ -122,24 +122,6 @@ public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDis
             response.setRemark(result.getStatus().name());
 
             switch (result.getStatus()) {
-                case FOUND -> response.setCode(ResponseCode.SUCCESS);
-                case MESSAGE_WAS_REMOVING, NO_MATCHED_MESSAGE -> response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);
-                case NO_MATCHED_LOGIC_QUEUE, NO_MESSAGE_IN_QUEUE -> {
-                    if (requestHeader.getQueueOffset() == 0) {
-                        response.setCode(ResponseCode.PULL_NOT_FOUND);
-                    } else {
-                        response.setCode(ResponseCode.PULL_OFFSET_MOVED);
-                        // XXX: warn and notify me
-                        log.info("the broker store no queue data, fix the request offset {} to {}, Topic: {} QueueId: {} Consumer Group: {}",
-                                requestHeader.getQueueOffset(),
-                                result.getNextBeginOffset(),
-                                requestHeader.getTopic(),
-                                requestHeader.getQueueId(),
-                                requestHeader.getGroup()
-                        );
-                    }
-                }
-                case OFFSET_FOUND_NULL, OFFSET_OVERFLOW_ONE -> response.setCode(ResponseCode.PULL_NOT_FOUND);
                 case OFFSET_OVERFLOW_BADLY -> {
                     response.setCode(ResponseCode.PULL_OFFSET_MOVED);
                     // XXX: warn and notify me
@@ -151,77 +133,43 @@ public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDis
                             requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueOffset(),
                             result.getMinOffset(), channel.remoteAddress());
                 }
-                default->{}
+                default -> {
+                }
             }
 
-            switch (response.getCode()) {
-                case ResponseCode.SUCCESS:
-                    if (this.brokerController.getBrokerConfig().isTransferMsgByHeap()) {
-                        byte[] r = this.readGetMessageResult(result, requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId());
-                        response.setBody(r);
+            switch (result.getStatus()) {
+                case FOUND -> response = onSuccess(context, requestHeader, response, result);
+                case MESSAGE_WAS_REMOVING, NO_MATCHED_MESSAGE -> response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);
+                case NO_MATCHED_LOGIC_QUEUE, NO_MESSAGE_IN_QUEUE -> {
+                    if (requestHeader.getQueueOffset() == 0) {
+                        response = onNotFound(request, requestHeader, response, hasSuspendFlag, suspendTimeoutMillisLong, subscription, messageFilter);
                     } else {
-                        try {
-                            FileRegion fileRegion = new ManyMessageTransfer(response.encodeHeader(result.getBufferTotalSize()), result);
-                            context.channel().writeAndFlush(fileRegion).addListener(new ChannelFutureListener() {
-                                @Override
-                                public void operationComplete(ChannelFuture future) throws Exception {
-                                    result.release();
-                                    if (!future.isSuccess()) {
-                                        log.error("transfer many message by pagecache failed, {}", channel.remoteAddress(), future.cause());
-                                    }
-                                }
-                            });
-                        } catch (Throwable e) {
-                            log.error("transfer many message by pagecache exception", e);
-                            result.release();
-                        }
-
-                        response = null;
+                        // XXX: warn and notify me
+                        log.info("the broker store no queue data, fix the request offset {} to {}, Topic: {} QueueId: {} Consumer Group: {}",
+                                requestHeader.getQueueOffset(),
+                                result.getNextBeginOffset(),
+                                requestHeader.getTopic(),
+                                requestHeader.getQueueId(),
+                                requestHeader.getGroup()
+                        );
+                        response = onOffsetMoved(requestHeader, responseHeader, response, result);
                     }
-                    break;
-                case ResponseCode.PULL_NOT_FOUND:
-                    if (brokerAllowSuspend && hasSuspendFlag) {
-                        long pollingTimeMills = suspendTimeoutMillisLong;
-                        if (!this.brokerController.getBrokerConfig().isLongPollingEnable()) {
-                            pollingTimeMills = this.brokerController.getBrokerConfig().getShortPollingTimeMills();
-                        }
-
-                        String topic = requestHeader.getTopic();
-                        long offset = requestHeader.getQueueOffset();
-                        int queueId = requestHeader.getQueueId();
-                        PullRequest pullRequest = new PullRequest(request, channel, pollingTimeMills, this.brokerController.getMessageStore().now(), offset, subscription, messageFilter);
-                        this.brokerController.getPullRequestHoldService().suspendPullRequest(topic, queueId, pullRequest);
-                        response = null;
-                        break;
-                    }
-                case ResponseCode.PULL_OFFSET_MOVED:
-                    if (this.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE
-                            || this.brokerController.getMessageStoreConfig().isOffsetCheckInSlave()) {
-                        TopicQueue mq = new TopicQueue();
-                        mq.setTopic(requestHeader.getTopic());
-                        mq.setBrokerName(this.brokerConfig.getBrokerName());
-                        mq.setQueueId(requestHeader.getQueueId());
-
-                        OffsetMovedEvent event = new OffsetMovedEvent();
-                        event.setConsumerGroup(requestHeader.getConsumerGroup());
-                        event.setMessageQueue(mq);
-                        event.setOffsetRequest(requestHeader.getQueueOffset());
-                        event.setOffsetNew(result.getNextBeginOffset());
-                        this.generateOffsetMovedEvent(event);
-                        log.warn(
-                                "PULL_OFFSET_MOVED:correction offset. topic={}, groupId={}, requestOffset={}, newOffset={}, suggestBrokerId={}",
-                                requestHeader.getTopic(), requestHeader.getConsumerGroup(), event.getOffsetRequest(), event.getOffsetNew(),
-                                responseHeader.getSuggestWhichBrokerId());
-                    } else {
-                        responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getBrokerId());
-                        response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);
-                        log.warn("PULL_OFFSET_MOVED:none correction. topic={}, groupId={}, requestOffset={}, suggestBrokerId={}",
-                                requestHeader.getTopic(), requestHeader.getConsumerGroup(), requestHeader.getQueueOffset(),
-                                responseHeader.getSuggestWhichBrokerId());
-                    }
-
-                    break;
-                default:
+                }
+                case OFFSET_FOUND_NULL, OFFSET_OVERFLOW_ONE ->
+                        response = onNotFound(request, requestHeader, response, hasSuspendFlag, suspendTimeoutMillisLong, subscription, messageFilter);
+                case OFFSET_OVERFLOW_BADLY -> {
+                    // XXX: warn and notify me
+                    log.info("the request offset: {} over flow badly, broker max offset: {}, consumer: {}", requestHeader.getQueueOffset(), result.getMaxOffset(), channel.remoteAddress());
+                    response = onOffsetMoved(requestHeader, responseHeader, response, result);
+                }
+                case OFFSET_TOO_SMALL -> {
+                    log.info("the request offset too small. group={}, topic={}, requestOffset={}, brokerMinOffset={}, clientIp={}",
+                            requestHeader.getGroup(), requestHeader.getTopic(), requestHeader.getQueueOffset(),
+                            result.getMinOffset(), channel.remoteAddress());
+                    response = onOffsetMoved(requestHeader, responseHeader, response, result);
+                }
+                default -> {
+                }
             }
         }
 
@@ -232,5 +180,73 @@ public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDis
             this.brokerController.getConsumerOffsetManager().commitOffset(RemotingHelper.parseChannelRemoteAddr(channel), requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset());
         }
         return response;
+    }
+
+    private Command onSuccess(ChannelHandlerContext context, MessagePullCommand.RequestHeader requestHeader, Command response, GetMessageResult result) {
+        if (this.brokerController.getBrokerConfig().isTransferMsgByHeap()) {
+            byte[] r = this.readGetMessageResult(result, requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId());
+            response.setBody(r);
+        } else {
+            try {
+                FileRegion fileRegion = new ManyMessageTransfer(response.encodeHeader(result.getBufferTotalSize()), result);
+                context.channel().writeAndFlush(fileRegion).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        result.release();
+                        if (!future.isSuccess()) {
+                            log.error("transfer many message by pagecache failed, {}", channel.remoteAddress(), future.cause());
+                        }
+                    }
+                });
+            } catch (Throwable e) {
+                log.error("transfer many message by pagecache exception", e);
+                result.release();
+            }
+
+            response = null;
+        }
+        return response;
+    }
+
+    private Command onNotFound(Command request, MessagePullCommand.RequestHeader requestHeader, Command response, boolean hasSuspendFlag, long suspendTimeoutMillisLong, TopicSubscription subscription, MessageFilter messageFilter) {
+        if (hasSuspendFlag) {
+            long pollingTimeMills = suspendTimeoutMillisLong;
+            if (!this.brokerController.getBrokerConfig().isLongPollingEnable()) {
+                pollingTimeMills = this.brokerController.getBrokerConfig().getShortPollingTimeMills();
+            }
+
+            String topic = requestHeader.getTopic();
+            long offset = requestHeader.getQueueOffset();
+            int queueId = requestHeader.getQueueId();
+            PullRequest pullRequest = new PullRequest(request, channel, pollingTimeMills, this.brokerController.getMessageStore().now(), offset, subscription, messageFilter);
+            this.brokerController.getPullRequestHoldService().suspendPullRequest(topic, queueId, pullRequest);
+        }
+    }
+
+    private Command onOffsetMoved(MessagePullCommand.RequestHeader requestHeader, MessagePullCommand.ResponseHeader responseHeader, Command response, GetMessageResult result) {
+        if (this.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE
+                || this.brokerController.getMessageStoreConfig().isOffsetCheckInSlave()) {
+            TopicQueue mq = new TopicQueue();
+            mq.setTopic(requestHeader.getTopic());
+            mq.setBrokerName(this.brokerConfig.getBrokerName());
+            mq.setQueueId(requestHeader.getQueueId());
+
+            OffsetMovedEvent event = new OffsetMovedEvent();
+            event.setConsumerGroup(requestHeader.getConsumerGroup());
+            event.setMessageQueue(mq);
+            event.setOffsetRequest(requestHeader.getQueueOffset());
+            event.setOffsetNew(result.getNextBeginOffset());
+            this.generateOffsetMovedEvent(event);
+            log.warn(
+                    "PULL_OFFSET_MOVED:correction offset. topic={}, groupId={}, requestOffset={}, newOffset={}, suggestBrokerId={}",
+                    requestHeader.getTopic(), requestHeader.getConsumerGroup(), event.getOffsetRequest(), event.getOffsetNew(),
+                    responseHeader.getSuggestWhichBrokerId());
+        } else {
+            responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getBrokerId());
+            response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);
+            log.warn("PULL_OFFSET_MOVED:none correction. topic={}, groupId={}, requestOffset={}, suggestBrokerId={}",
+                    requestHeader.getTopic(), requestHeader.getConsumerGroup(), requestHeader.getQueueOffset(),
+                    responseHeader.getSuggestWhichBrokerId());
+        }
     }
 }

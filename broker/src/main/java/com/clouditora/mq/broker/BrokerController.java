@@ -159,7 +159,7 @@ public class BrokerController extends AbstractScheduledService {
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
 
         PullMessageDispatcher pullMessageDispatcher = new PullMessageDispatcher(this.brokerConfig);
-        this.serverNetwork.registerDispatcher(RequestCode.PULL_MESSAGE, pullMessageDispatcher, pull);
+        this.serverNetwork.registerDispatcher(RequestCode.PULL_MESSAGE, pullMessageDispatcher, pullMessageExecutor);
 
         AdminBrokerDispatcher adminBrokerDispatcher = new AdminBrokerDispatcher(this.consumerLockManager);
         this.serverNetwork.setDefaultDispatcher(adminBrokerDispatcher, adminBrokerExecutor);
