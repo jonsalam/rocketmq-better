@@ -1,6 +1,7 @@
-package com.clouditora.mq.store;
+package com.clouditora.mq.store.log;
 
 import com.clouditora.mq.common.message.MessageEntity;
+import com.clouditora.mq.store.MessageStoreConfig;
 import com.clouditora.mq.store.enums.PutStatus;
 import com.clouditora.mq.store.exception.PutException;
 import com.clouditora.mq.store.file.MappedFile;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @link org.apache.rocketmq.store.CommitLog
@@ -22,9 +24,9 @@ import java.util.concurrent.CompletableFuture;
 public class CommitLog {
     @Getter
     private final int fileSize;
-    @Getter
     private final MappedFileQueue<MappedFile> commitLogQueue;
     private final ThreadLocal<ByteBufferSerializer> tlSerializer;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public CommitLog(MessageStoreConfig config) {
         this.fileSize = config.getCommitLogFileSize();
@@ -36,37 +38,40 @@ public class CommitLog {
      * org.apache.rocketmq.store.CommitLog#asyncPutMessage
      */
     public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
-        MappedFile file = this.commitLogQueue.getOrCreate();
-        if (file == null) {
-            log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
+        MappedFile commitLog = this.commitLogQueue.getOrCreate();
+        if (commitLog == null) {
+            log.error("create commit log error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
             return PutResult.buildAsync(PutStatus.CREATE_MAPPED_FILE_FAILED);
         }
         try {
-            Long queueOffset = 0L;
+            this.lock.lock();
+            long queueOffset = 0L;
             message.setQueueOffset(queueOffset);
             // 当前文件写指针
-            int writePosition = file.getWritePosition();
+            int writePosition = commitLog.getWritePosition();
             // 物理偏移量
-            long physicalOffset = file.getStartOffset() + writePosition;
+            long physicalOffset = commitLog.getStartOffset() + writePosition;
             // 当前文件剩余空间
-            int remainLength = file.getFileSize() - writePosition;
+            int remainLength = commitLog.getFileSize() - writePosition;
             ByteBuffer byteBuffer = this.tlSerializer.get().serialize(physicalOffset, remainLength, message);
-            file.append(byteBuffer);
+            commitLog.append(byteBuffer);
             return PutResult.buildAsync(PutStatus.SUCCESS, message.getMessageId(), queueOffset);
         } catch (EndOfFileException e) {
-            log.debug("end of file: file={}, messageLength={}", file, e.getMessageLength());
-            // 剩余空间不够, 当前文件写满, 消息写入下一个文件
-            fillCurrentFile(file, e);
+            log.debug("end of file: file={}, messageLength={}", commitLog, e.getMessageLength());
+            // 剩余空间不够了: 1.当前文件写满; 2.消息写入下一个文件
+            fillBlank(commitLog, e);
             return asyncPut(message);
         } catch (SerializeException e) {
             return PutResult.buildAsync(PutStatus.MESSAGE_ILLEGAL);
         } catch (Exception e) {
             log.error("unknown error", e);
+            return PutResult.buildAsync(PutStatus.UNKNOWN_ERROR);
+        } finally {
+            this.lock.unlock();
         }
-        return PutResult.buildAsync(PutStatus.UNKNOWN_ERROR);
     }
 
-    private static void fillCurrentFile(MappedFile file, EndOfFileException e) {
+    private static void fillBlank(MappedFile file, EndOfFileException e) {
         try {
             file.append(e.getByteBuffer(), e.getRemainLength());
         } catch (PutException ex) {
@@ -74,16 +79,25 @@ public class CommitLog {
         }
     }
 
-    public MappedFile slice(long logOffset, int length) {
-        MappedFile file = this.commitLogQueue.slice(logOffset);
+    /**
+     * @link org.apache.rocketmq.store.CommitLog#getData
+     */
+    public MappedFile slice(long offset, int length) {
+        MappedFile file = this.commitLogQueue.slice(offset);
         if (file == null) {
+            if (offset == 0) {
+                return this.commitLogQueue.getFirstFile();
+            }
             return null;
         }
-        int offset = (int) (logOffset % fileSize);
-        return file.slice(offset, length);
+        int position = (int) (offset % this.fileSize);
+        return file.slice(position, length);
     }
 
-    public MappedFile slice(long logOffset) {
-        return slice(logOffset, 0);
+    /**
+     * @link org.apache.rocketmq.store.CommitLog#getData
+     */
+    public MappedFile slice(long offset) {
+        return slice(offset, 0);
     }
 }

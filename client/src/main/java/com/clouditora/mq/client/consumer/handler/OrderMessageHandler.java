@@ -1,11 +1,15 @@
-package com.clouditora.mq.client.consumer.consume;
+package com.clouditora.mq.client.consumer.handler;
 
-import com.clouditora.mq.common.service.AbstractScheduledService;
+import com.clouditora.mq.client.consumer.ConsumerConfig;
 
 /**
  * @link org.apache.rocketmq.client.impl.consumer.ConsumeMessageOrderlyService
  */
-public class OrderMessageConsumer extends AbstractScheduledService implements AbstractMessageConsumer {
+public class OrderMessageHandler extends AbstractMessageHandler {
+    public OrderMessageHandler(ConsumerConfig config) {
+        super(config);
+    }
+
     @Override
     public String getServiceName() {
         return "OrderMessageConsume";

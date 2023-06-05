@@ -1,4 +1,4 @@
-package com.clouditora.mq.client.broker.allocate;
+package com.clouditora.mq.client.broker.assignor;
 
 import com.clouditora.mq.common.topic.TopicQueue;
 
@@ -8,14 +8,14 @@ import java.util.List;
 /**
  * @link org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueAveragely
  */
-public class AllocateTopicQueueAveragely implements AllocateTopicQueueStrategy {
+public class TopicQueueAssignorAveragely implements TopicQueueAssignor {
     @Override
     public String name() {
         return "Averagely";
     }
 
     @Override
-    public List<TopicQueue> allocate(String group, List<TopicQueue> queues, List<String> customerIds, String clientId) {
+    public List<TopicQueue> assign(String group, List<TopicQueue> queues, List<String> customerIds, String clientId) {
         int index = customerIds.indexOf(clientId);
         if (index == -1) {
             return List.of();

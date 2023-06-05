@@ -1,7 +1,15 @@
 package com.clouditora.mq.broker;
 
-import com.clouditora.mq.broker.client.*;
-import com.clouditora.mq.broker.dispatcher.*;
+import com.clouditora.mq.broker.client.ClientChannel;
+import com.clouditora.mq.broker.client.ClientChannelListener;
+import com.clouditora.mq.broker.client.TopicQueueConfigManager;
+import com.clouditora.mq.broker.client.consumer.ConsumerLockManager;
+import com.clouditora.mq.broker.client.consumer.ConsumerManager;
+import com.clouditora.mq.broker.client.producer.ProducerManager;
+import com.clouditora.mq.broker.dispatcher.AdminBrokerDispatcher;
+import com.clouditora.mq.broker.dispatcher.ClientManageDispatcher;
+import com.clouditora.mq.broker.dispatcher.ConsumerManageDispatcher;
+import com.clouditora.mq.broker.dispatcher.SendMessageDispatcher;
 import com.clouditora.mq.broker.nameserver.NameserverApiFacade;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.network.RequestCode;
@@ -158,8 +166,8 @@ public class BrokerController extends AbstractScheduledService {
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE, sendMessageDispatcher, sendMessageExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
 
-        PullMessageDispatcher pullMessageDispatcher = new PullMessageDispatcher(this.brokerConfig);
-        this.serverNetwork.registerDispatcher(RequestCode.PULL_MESSAGE, pullMessageDispatcher, pullMessageExecutor);
+//        PullMessageDispatcher pullMessageDispatcher = new PullMessageDispatcher(this.brokerConfig);
+//        this.serverNetwork.registerDispatcher(RequestCode.PULL_MESSAGE, pullMessageDispatcher, pullMessageExecutor);
 
         AdminBrokerDispatcher adminBrokerDispatcher = new AdminBrokerDispatcher(this.consumerLockManager);
         this.serverNetwork.setDefaultDispatcher(adminBrokerDispatcher, adminBrokerExecutor);

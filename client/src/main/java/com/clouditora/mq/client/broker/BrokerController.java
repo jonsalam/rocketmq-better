@@ -9,6 +9,7 @@ import com.clouditora.mq.common.broker.BrokerEndpoints;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.RpcModel;
 import com.clouditora.mq.common.exception.BrokerException;
+import com.clouditora.mq.common.exception.ClientException;
 import com.clouditora.mq.common.topic.GroupSubscription;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import com.clouditora.mq.common.topic.TopicQueue;
@@ -200,14 +201,22 @@ public class BrokerController {
     /**
      * @link org.apache.rocketmq.client.impl.MQAdminImpl#maxOffset
      */
-    public long getMaxOffset(TopicQueue topicQueue) {
+    public long getMaxOffset(TopicQueue topicQueue) throws ClientException {
         return 0;
     }
 
     /**
      * @link org.apache.rocketmq.client.impl.MQAdminImpl#searchOffset
      */
-    public long searchOffset(TopicQueue topicQueue, long timestamp) {
+    public long searchOffset(TopicQueue topicQueue, long timestamp) throws ClientException {
         return 0;
+    }
+
+    public long getConsumerOffset() {
+        return 0;
+    }
+
+    public void uploadConsumerOffset() {
+
     }
 }

@@ -1,6 +1,6 @@
 package com.clouditora.mq.broker.dispatcher;
 
-import com.clouditora.mq.broker.client.ConsumerLockManager;
+import com.clouditora.mq.broker.client.consumer.ConsumerLockManager;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.LockQueueCommand;
 import com.clouditora.mq.common.network.command.UnlockQueueCommand;

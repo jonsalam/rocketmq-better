@@ -1,4 +1,4 @@
-package com.clouditora.mq.client.consumer.consume;
+package com.clouditora.mq.client.consumer.handler;
 
 import com.clouditora.mq.client.consumer.listener.ConcurrentMessageListener;
 

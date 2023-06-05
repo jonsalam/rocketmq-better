@@ -1,14 +1,12 @@
 package com.clouditora.mq.client.broker;
 
 import com.clouditora.mq.client.consumer.ConsumerConfig;
-import com.clouditora.mq.client.consumer.consume.ConsumerQueue;
+import com.clouditora.mq.client.consumer.handler.ConsumerQueue;
 import com.clouditora.mq.client.consumer.offset.AbstractOffsetManager;
 import com.clouditora.mq.client.topic.TopicRouteManager;
-import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.constant.PositionStrategy;
 import com.clouditora.mq.common.exception.BrokerException;
 import com.clouditora.mq.common.exception.ClientException;
-import com.clouditora.mq.common.topic.GroupSubscription;
 import com.clouditora.mq.common.topic.TopicQueue;
 import com.clouditora.mq.common.topic.TopicSubscription;
 import com.clouditora.mq.common.util.TimeUtil;
@@ -64,8 +62,8 @@ public class BrokerQueueManager {
             for (TopicQueue lockedQueue : lockedQueues) {
                 ConsumerQueue consumerQueue = this.queueMap.get(lockedQueue);
                 if (consumerQueue != null) {
-                    consumerQueue.setLocked(true);
-                    consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
+//                    consumerQueue.setLocked(true);
+//                    consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
                 }
             }
             return lockedQueues.contains(queue);
@@ -89,8 +87,8 @@ public class BrokerQueueManager {
                 for (TopicQueue lockedQueue : lockedQueues) {
                     ConsumerQueue consumerQueue = this.queueMap.get(lockedQueue);
                     if (consumerQueue != null) {
-                        consumerQueue.setLocked(true);
-                        consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
+//                        consumerQueue.setLocked(true);
+//                        consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
                         log.info("lock queue success: {} {}", this.group, consumerQueue);
                     }
                 }
@@ -98,7 +96,7 @@ public class BrokerQueueManager {
                     if (!lockedQueues.contains(queue)) {
                         ConsumerQueue consumerQueue = this.queueMap.get(queue);
                         if (consumerQueue != null) {
-                            consumerQueue.setLocked(false);
+//                            consumerQueue.setLocked(false);
                             log.info("lock queue failed: {} {}", this.group, consumerQueue);
                         }
                     }
@@ -130,7 +128,7 @@ public class BrokerQueueManager {
                 for (TopicQueue queue : queues) {
                     ConsumerQueue consumerQueue = this.queueMap.get(queue);
                     if (consumerQueue != null) {
-                        consumerQueue.setLocked(false);
+//                        consumerQueue.setLocked(false);
                         log.info("unlock queue failed: {} {}", this.group, consumerQueue);
                     }
                 }
@@ -145,77 +143,77 @@ public class BrokerQueueManager {
      */
     public long computePullFromWhereWithException(TopicQueue topicQueue) throws ClientException {
         long result = -1;
-        PositionStrategy consumeFromWhere = this.defaultMQPushConsumerImpl.getDefaultMQPushConsumer().getConsumeFromWhere();
-        AbstractOffsetManager offsetStore = this.defaultMQPushConsumerImpl.getOffsetStore();
-        switch (consumeFromWhere) {
-            case CONSUME_FROM_LAST_OFFSET -> {
-                // 如果broker上没有当前group的消费进度, 从maxOffset(最新的消息)处消费, 否则接着上次的消费进度
-                long lastOffset = offsetStore.get(topicQueue, ReadOffsetType.READ_FROM_STORE);
-                if (lastOffset >= 0) {
-                    result = lastOffset;
-                } else if (lastOffset == -1) {
-                    // 如果是重试队列，就从0开始消费
-                    if (topicQueue.getTopic().startsWith(GlobalConstant.SystemGroup.RETRY_GROUP_TOPIC_PREFIX)) {
-                        result = 0L;
-                    } else {
-                        try {
-                            // 从maxOffset(最新的消息)处消费
-                            result = this.mQClientFactory.getMQAdminImpl().maxOffset(topicQueue);
-                        } catch (ClientException e) {
-                            log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
-                            throw e;
-                        }
-                    }
-                } else {
-                    result = -1;
-                }
-            }
-            case CONSUME_FROM_FIRST_OFFSET -> {
-                // 如果broker上没有当前group的消费进度, 从0(第一条消息)处消费, 否则接着上次的消费进度
-                long lastOffset = offsetStore.get(topicQueue, ReadOffsetType.READ_FROM_STORE);
-                if (lastOffset >= 0) {
-                    result = lastOffset;
-                } else if (lastOffset == -1) {
-                    result = 0L;
-                } else {
-                    result = -1;
-                }
-            }
-            case CONSUME_FROM_TIMESTAMP -> {
-                long lastOffset = offsetStore.get(topicQueue, ReadOffsetType.READ_FROM_STORE);
-                if (lastOffset >= 0) {
-                    result = lastOffset;
-                } else if (lastOffset == -1) {
-                    if (topicQueue.getTopic().startsWith(GlobalConstant.SystemGroup.RETRY_GROUP_TOPIC_PREFIX)) {
-                        try {
-                            result = this.mQClientFactory.getMQAdminImpl().maxOffset(topicQueue);
-                        } catch (ClientException e) {
-                            log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
-                            throw e;
-                        }
-                    } else {
-                        try {
-                            long timestamp = TimeUtil.humanString3ToTimestamp(this.consumerConfig.getConsumeTimestamp());
-                            result = this.mQClientFactory.getMQAdminImpl().searchOffset(topicQueue, timestamp);
-                        } catch (ClientException e) {
-                            log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
-                            throw e;
-                        }
-                    }
-                } else {
-                    result = -1;
-                }
-            }
-            default -> {
-            }
-        }
+//        PositionStrategy consumeFromWhere = this.defaultMQPushConsumerImpl.getDefaultMQPushConsumer().getConsumeFromWhere();
+//        AbstractOffsetManager offsetStore = this.defaultMQPushConsumerImpl.getOffsetStore();
+//        switch (consumeFromWhere) {
+//            case CONSUME_FROM_LAST_OFFSET -> {
+//                // 如果broker上没有当前group的消费进度, 从maxOffset(最新的消息)处消费, 否则接着上次的消费进度
+//                long lastOffset = offsetStore.get(topicQueue, ReadOffsetType.READ_FROM_STORE);
+//                if (lastOffset >= 0) {
+//                    result = lastOffset;
+//                } else if (lastOffset == -1) {
+//                    // 如果是重试队列，就从0开始消费
+//                    if (topicQueue.getTopic().startsWith(GlobalConstant.SystemGroup.RETRY_GROUP_TOPIC_PREFIX)) {
+//                        result = 0L;
+//                    } else {
+//                        try {
+//                            // 从maxOffset(最新的消息)处消费
+//                            result = this.mQClientFactory.getMQAdminImpl().maxOffset(topicQueue);
+//                        } catch (ClientException e) {
+//                            log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
+//                            throw e;
+//                        }
+//                    }
+//                } else {
+//                    result = -1;
+//                }
+//            }
+//            case CONSUME_FROM_FIRST_OFFSET -> {
+//                // 如果broker上没有当前group的消费进度, 从0(第一条消息)处消费, 否则接着上次的消费进度
+//                long lastOffset = offsetStore.get(topicQueue, ReadOffsetType.READ_FROM_STORE);
+//                if (lastOffset >= 0) {
+//                    result = lastOffset;
+//                } else if (lastOffset == -1) {
+//                    result = 0L;
+//                } else {
+//                    result = -1;
+//                }
+//            }
+//            case CONSUME_FROM_TIMESTAMP -> {
+//                long lastOffset = offsetStore.get(topicQueue, ReadOffsetType.READ_FROM_STORE);
+//                if (lastOffset >= 0) {
+//                    result = lastOffset;
+//                } else if (lastOffset == -1) {
+//                    if (topicQueue.getTopic().startsWith(GlobalConstant.SystemGroup.RETRY_GROUP_TOPIC_PREFIX)) {
+//                        try {
+//                            result = this.mQClientFactory.getMQAdminImpl().maxOffset(topicQueue);
+//                        } catch (ClientException e) {
+//                            log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
+//                            throw e;
+//                        }
+//                    } else {
+//                        try {
+//                            long timestamp = TimeUtil.humanString3ToTimestamp(this.consumerConfig.getConsumeTimestamp());
+//                            result = this.mQClientFactory.getMQAdminImpl().searchOffset(topicQueue, timestamp);
+//                        } catch (ClientException e) {
+//                            log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
+//                            throw e;
+//                        }
+//                    }
+//                } else {
+//                    result = -1;
+//                }
+//            }
+//            default -> {
+//            }
+//        }
         return result;
     }
 
     /**
      * @link org.apache.rocketmq.client.impl.consumer.RebalancePushImpl#computePullFromWhereWithException
      */
-    public long getPullOffset(TopicQueue topicQueue) {
+    public long getPullOffset(TopicQueue topicQueue) throws ClientException {
         PositionStrategy positionStrategy = this.consumerConfig.getConsumeFromWhere();
         if (positionStrategy == PositionStrategy.CONSUME_FROM_FIRST_OFFSET) {
             long offset = this.offsetManager.get(topicQueue);
@@ -234,7 +232,7 @@ public class BrokerQueueManager {
                 try {
                     return this.brokerController.getMaxOffset(topicQueue);
                 } catch (ClientException e) {
-                    log.warn("Compute consume offset from last offset exception, mq={}, exception={}", mq, e);
+                    log.warn("Compute consume offset from last offset exception, mq={}, exception={}", topicQueue, e);
                     throw e;
                 }
             } else {

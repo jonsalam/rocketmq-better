@@ -34,7 +34,7 @@ public class MessageIdSerializer implements Serializer {
         ByteBuffer storeHost = StoreUtil.socketAddress2ByteBuffer(message.getStoreHost());
         ByteBuffer byteBuffer = ByteBuffer.allocate(storeHost.limit() + 8);
         byteBuffer.put(storeHost.array());
-        byteBuffer.putLong(message.getLogOffset());
+        byteBuffer.putLong(message.getCommitLogOffset());
         return StoreUtil.bytes2string(byteBuffer.array());
     }
 }

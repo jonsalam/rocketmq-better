@@ -1,4 +1,4 @@
-package com.clouditora.mq.client.consumer.consume;
+package com.clouditora.mq.client.consumer.handler;
 
 import com.clouditora.mq.client.consumer.ConsumerConfig;
 import com.clouditora.mq.common.service.AbstractScheduledService;
@@ -11,14 +11,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * @link org.apache.rocketmq.client.impl.consumer.ConsumeMessageService
  */
-public abstract class AbstractMessageConsumer extends AbstractScheduledService {
+public abstract class AbstractMessageHandler extends AbstractScheduledService {
     protected final ConsumerConfig config;
     /**
      * @link org.apache.rocketmq.client.impl.consumer.ConsumeMessageOrderlyService#consumeExecutor
      */
     private final ThreadPoolExecutor consumeExecutor;
 
-    public AbstractMessageConsumer(ConsumerConfig config) {
+    public AbstractMessageHandler(ConsumerConfig config) {
         this.config = config;
         this.consumeExecutor = new ThreadPoolExecutor(
                 config.getConsumeThreadMin(),

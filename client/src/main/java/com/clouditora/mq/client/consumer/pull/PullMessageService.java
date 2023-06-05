@@ -4,7 +4,7 @@ import com.clouditora.mq.client.broker.BrokerController;
 import com.clouditora.mq.client.broker.BrokerQueueManager;
 import com.clouditora.mq.client.consumer.Consumer;
 import com.clouditora.mq.client.consumer.ConsumerConfig;
-import com.clouditora.mq.client.consumer.consume.ConsumerQueue;
+import com.clouditora.mq.client.consumer.handler.ConsumerQueue;
 import com.clouditora.mq.client.consumer.offset.AbstractOffsetManager;
 import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.MessageModel;
@@ -140,7 +140,16 @@ public class PullMessageService extends AbstractLaterService {
             commitOffset = this.offsetManager.get(request.getTopicQueue());
         }
         try {
-            this.brokerController.asyncPullMessage(null, request.getTopicQueue(), subscription, request.getNextOffset(), commitOffset, 0, this.consumerConfig.getPullBatchSize(), null);
+            this.brokerController.asyncPullMessage(
+                    null,
+                    request.getTopicQueue(),
+                    subscription,
+                    request.getNextOffset(),
+                    commitOffset,
+                    0,
+                    this.consumerConfig.getPullBatchSize(),
+                    null
+            );
         } catch (Exception e) {
             pullMessageLater(request, this.consumerConfig.getPullTimeDelayMillsWhenException());
             log.error("pull message later: pull message exception", e);

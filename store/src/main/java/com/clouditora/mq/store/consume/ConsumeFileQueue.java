@@ -1,4 +1,4 @@
-package com.clouditora.mq.store.index;
+package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.store.MessageStoreConfig;
 import com.clouditora.mq.store.file.MappedFileQueue;
@@ -29,7 +29,7 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
         this.queueId = queueId;
     }
 
-    public void incrMaxOffset(int size) {
+    public void increaseMaxOffset(int size) {
         this.maxOffset += size;
     }
 
@@ -46,11 +46,15 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
         if (file == null) {
             return null;
         }
-        if (super.files.get(0) == file && file.getWritePosition() == 0 && offset != 0) {
+        if (file == super.files.get(0) && file.getWritePosition() == 0 && offset != 0) {
 //            this.mappedFileQueue.setFlushedWhere(expectLogicOffset);
 //            this.mappedFileQueue.setCommittedWhere(expectLogicOffset);
-            fillBlank(file, offset);
             this.minOffset = offset;
+            fillBlank(file, offset);
+        }
+        if (offset < file.getWritePosition() + file.getStartOffset()) {
+            log.warn("create consume file repeatedly: expectOffset={}, currentOffset={}", offset, file.getWritePosition() + file.getStartOffset());
+            return null;
         }
         return file;
     }
@@ -74,9 +78,19 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
         }
     }
 
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#getIndexBuffer
+     */
     @Override
-    public ConsumeFile slice(long logOffset) {
-        long offset = logOffset * ConsumeFile.UNIT_SIZE;
-        return super.slice(offset);
+    public ConsumeFile slice(long offset) {
+        return super.slice(offset * ConsumeFile.UNIT_SIZE);
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#rollNextFile
+     */
+    public long rollNextFile(long offset) {
+        int count = super.fileSize / ConsumeFile.UNIT_SIZE;
+        return offset + count - offset % count;
     }
 }

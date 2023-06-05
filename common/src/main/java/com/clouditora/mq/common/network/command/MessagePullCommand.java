@@ -18,14 +18,24 @@ public class MessagePullCommand {
 
         private Integer queueId;
 
-        private Long queueOffset;
-
+        /**
+         * 拉取的消息数量
+         */
         @JSONField(name = "maxMsgNums")
         private Integer pullNum;
 
-        private Integer sysFlag;
+        /**
+         * 拉取的消费位点
+         */
+        @JSONField(name = "queueOffset")
+        private Long pullOffset;
 
+        /**
+         * 上报的消费位点
+         */
         private Long commitOffset;
+
+        private Integer sysFlag;
 
         @JSONField(name = "suspendTimeoutMillis")
         private Long suspendTimeout;
@@ -33,10 +43,10 @@ public class MessagePullCommand {
         @JSONField(name = "subscription")
         private String expression;
 
+        private ExpressionType expressionType;
+
         @JSONField(name = "subVersion")
         private Long version;
-
-        private ExpressionType expressionType;
     }
 
     @Data

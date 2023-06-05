@@ -1,6 +1,6 @@
 package com.clouditora.mq.client.consumer.pull;
 
-import com.clouditora.mq.client.consumer.consume.ConsumerQueue;
+import com.clouditora.mq.client.consumer.handler.ConsumerQueue;
 import com.clouditora.mq.common.topic.TopicQueue;
 import lombok.Data;
 

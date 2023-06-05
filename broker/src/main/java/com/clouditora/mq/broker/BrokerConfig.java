@@ -73,10 +73,6 @@ public class BrokerConfig {
          * @link org.apache.rocketmq.common.BrokerConfig#pullThreadPoolQueueCapacity
          */
         int PULL_MESSAGE = 100000;
-        /**
-         * @link org.apache.rocketmq.common.BrokerConfig#adminBrokerThreadPoolNums
-         */
-        int PULL_MESSAGE = 100000;
     }
 
     public List<String> getNameserverEndpoints() {

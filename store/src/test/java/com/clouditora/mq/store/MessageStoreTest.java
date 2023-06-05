@@ -17,14 +17,14 @@ public class MessageStoreTest extends AbstractFileTest {
         MessageStoreConfig storeConfig = new MessageStoreConfig();
         storeConfig.setRootPath(path);
         MessageStore messageStore = new MessageStore(storeConfig);
-        messageStore.start();
+        messageStore.startup();
 
         MessageEntity message = TestUtil.buildMessage();
         messageStore.asyncPut(message);
 
         FutureTask<GetMessageResult> task = new FutureTask<>(() -> {
             TestUtil.sleep(1);
-            return messageStore.get(message.getTopic(), 0, 0, 16);
+            return messageStore.get(null, message.getTopic(), 0, 0, 16);
         });
         new Thread(task).start();
 

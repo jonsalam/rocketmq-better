@@ -1,5 +1,6 @@
 package com.clouditora.mq.store.util;
 
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -8,22 +9,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.zip.CRC32;
+import java.util.Arrays;
 
 public class StoreUtil {
-    public static int crc32(byte[] array) {
-        if (array != null) {
-            return crc32(array, 0, array.length);
-        }
-        return 0;
-    }
-
-    public static int crc32(byte[] array, int offset, int length) {
-        CRC32 crc32 = new CRC32();
-        crc32.update(array, offset, length);
-        return (int) (crc32.getValue() & 0x7FFFFFFF);
-    }
-
     public static ByteBuffer socketAddress2ByteBuffer(InetSocketAddress socketAddress) {
         InetAddress address = socketAddress.getAddress();
         byte[] bytes = address.getAddress();
@@ -62,5 +50,48 @@ public class StoreUtil {
         Instant instant = Instant.ofEpochMilli(timestamp);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
         return DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS").format(localDateTime);
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFile#clean
+     */
+    public static void clean(ByteBuffer buffer) {
+        if (buffer == null || buffer.capacity() == 0 || !buffer.isDirect()) {
+            return;
+        }
+        invoke(invoke(viewed(buffer), "cleaner"), "clean");
+    }
+
+    private static ByteBuffer viewed(ByteBuffer buffer) {
+        Method[] methods = buffer.getClass().getMethods();
+        String methodName = Arrays.stream(methods)
+                .map(Method::getName)
+                .filter("attachment"::equals)
+                .findFirst()
+                .orElse("viewedBuffer");
+        ByteBuffer viewedBuffer = (ByteBuffer) invoke(buffer, methodName);
+        if (viewedBuffer == null) {
+            return buffer;
+        } else {
+            return viewed(viewedBuffer);
+        }
+    }
+
+    private static Object invoke(Object target, String methodName, Class<?>... args) {
+        try {
+            Method method = getMethod(target, methodName, args);
+            method.setAccessible(true);
+            return method.invoke(target);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static Method getMethod(Object target, String methodName, Class<?>[] args) throws NoSuchMethodException {
+        try {
+            return target.getClass().getMethod(methodName, args);
+        } catch (NoSuchMethodException e) {
+            return target.getClass().getDeclaredMethod(methodName, args);
+        }
     }
 }

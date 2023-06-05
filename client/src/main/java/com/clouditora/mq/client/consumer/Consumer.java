@@ -1,8 +1,8 @@
 package com.clouditora.mq.client.consumer;
 
-import com.clouditora.mq.client.consumer.consume.AbstractMessageConsumer;
-import com.clouditora.mq.client.consumer.consume.ConcurrentMessageConsumer;
-import com.clouditora.mq.client.consumer.consume.OrderMessageConsumer;
+import com.clouditora.mq.client.consumer.handler.AbstractMessageHandler;
+import com.clouditora.mq.client.consumer.handler.ConcurrentMessageHandler;
+import com.clouditora.mq.client.consumer.handler.OrderMessageHandler;
 import com.clouditora.mq.client.consumer.listener.ConcurrentMessageListener;
 import com.clouditora.mq.client.consumer.listener.MessageListener;
 import com.clouditora.mq.client.consumer.listener.OrderMessageListener;
@@ -15,8 +15,8 @@ import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.MessageModel;
 import com.clouditora.mq.common.constant.SystemTopic;
 import com.clouditora.mq.common.service.AbstractNothingService;
-import com.clouditora.mq.common.topic.TopicSubscription;
 import com.clouditora.mq.common.topic.GroupSubscription;
+import com.clouditora.mq.common.topic.TopicSubscription;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -48,7 +48,7 @@ public class Consumer extends AbstractNothingService {
 
     private AbstractOffsetManager offsetManager;
     private PullMessageService pullMessageService;
-    private AbstractMessageConsumer messageConsumer;
+    private AbstractMessageHandler messageConsumer;
     private MessageListener messageListener;
 
     public Consumer(String group) {
@@ -65,17 +65,17 @@ public class Consumer extends AbstractNothingService {
         if (this.messageModel == MessageModel.BROADCASTING) {
             this.offsetManager = new LocalOffsetManager(this.clientInstance.getClientId(), this.group);
         } else {
-            this.offsetManager = new RemoteOffsetManager(this.group, this.clientInstance);
+            this.offsetManager = new RemoteOffsetManager(this.group, null);
         }
         this.offsetManager.startup();
 
-        this.pullMessageService = new PullMessageService();
+//        this.pullMessageService = new PullMessageService();
         this.pullMessageService.startup();
 
         if (messageListener instanceof OrderMessageListener) {
-            this.messageConsumer = new OrderMessageConsumer();
+            this.messageConsumer = new OrderMessageHandler(null);
         } else {
-            this.messageConsumer = new ConcurrentMessageConsumer();
+            this.messageConsumer = new ConcurrentMessageHandler(null, null);
         }
         this.messageConsumer.startup();
 

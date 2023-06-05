@@ -1,4 +1,4 @@
-package com.clouditora.mq.store.index;
+package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.store.file.MappedFile;
 

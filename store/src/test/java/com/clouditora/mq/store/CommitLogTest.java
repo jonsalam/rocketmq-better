@@ -2,7 +2,7 @@ package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.file.MappedFile;
-import com.clouditora.mq.store.file.MappedFileQueue;
+import com.clouditora.mq.store.log.CommitLog;
 import com.clouditora.mq.store.util.StoreUtil;
 import org.junit.jupiter.api.Test;
 
@@ -14,16 +14,17 @@ public class CommitLogTest extends AbstractFileTest {
     public void putMessage() throws Exception {
         MessageStoreConfig config = new MessageStoreConfig();
         config.setCommitLogFileSize(180);
-        config.setRootPath(path);
+        config.setRootPath(super.path);
         CommitLog commitLog = new CommitLog(config);
         MessageEntity message = TestUtil.buildMessage();
         // 一个message的大小是157, 2个会超过一个mappedFile
         for (int i = 0; i < 2; i++) {
             commitLog.asyncPut(message);
         }
-        MappedFileQueue mappedFileQueue = commitLog.getCommitLogQueue();
-        MappedFile mappedFile = mappedFileQueue.getOrCreate();
-        String name = mappedFile.getFile().getName();
+//        MappedFileQueue<MappedFile> commitLogQueue = commitLog.getCommitLogQueue();
+//        MappedFile mappedFile = commitLogQueue.getOrCreate();
+        MappedFile file = commitLog.slice(180);
+        String name = file.getFile().getName();
 
         assertEquals(StoreUtil.long2String(180), name);
     }

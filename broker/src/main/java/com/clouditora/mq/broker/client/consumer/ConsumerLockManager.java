@@ -1,5 +1,6 @@
-package com.clouditora.mq.broker.client;
+package com.clouditora.mq.broker.client.consumer;
 
+import com.clouditora.mq.broker.client.TopicQueueLockEntity;
 import com.clouditora.mq.common.topic.TopicQueue;
 import lombok.extern.slf4j.Slf4j;
 

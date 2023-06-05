@@ -1,5 +1,7 @@
-package com.clouditora.mq.broker.client;
+package com.clouditora.mq.broker.client.producer;
 
+import com.clouditora.mq.broker.client.ClientChannel;
+import com.clouditora.mq.broker.client.ClientChannelManager;
 import com.clouditora.mq.common.topic.ProducerGroup;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;

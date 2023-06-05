@@ -6,7 +6,6 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,14 +18,6 @@ public class GetMessageResult {
     private long nextBeginOffset;
     private long minOffset;
     private long maxOffset;
-
-    public GetMessageResult() {
-        this.slices = new ArrayList<>();
-    }
-
-    public void add(MappedFile file) {
-        this.slices.add(file);
-    }
 
     public byte[] covert2bytes() {
         if (CollectionUtils.isEmpty(this.slices)) {

@@ -11,7 +11,6 @@ import com.clouditora.mq.common.exception.ClientException;
 import com.clouditora.mq.common.topic.TopicQueue;
 import com.clouditora.mq.network.exception.ConnectException;
 import com.clouditora.mq.network.exception.TimeoutException;
-import com.clouditora.mq.network.protocol.ResponseCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -83,25 +82,25 @@ public class Producer {
             if (timeout < 0) {
                 throw new TimeoutException("timeout");
             }
-            try {
-                result = this.clientInstance.sendMessage(RpcModel.SYNC, this.producerConfig.getProducerGroup(), topicQueue, message, timeout);
-                if (result.getStatus() == SendStatus.SEND_OK) {
-                    return result;
-                }
-            } catch (BrokerException e) {
-                if (ResponseCode.RETRY_RESPONSE_CODES.contains(e.getCode())) {
-                    log.debug("broker exception: {}", e.getCode());
-                    continue;
-                }
-                throw e;
-            }
+//            try {
+//                result = this.clientInstance.sendMessage(RpcModel.SYNC, this.producerConfig.getProducerGroup(), topicQueue, message, timeout);
+//                if (result.getStatus() == SendStatus.SEND_OK) {
+//                    return result;
+//                }
+//            } catch (BrokerException e) {
+//                if (ResponseCode.RETRY_RESPONSE_CODES.contains(e.getCode())) {
+//                    log.debug("broker exception: {}", e.getCode());
+//                    continue;
+//                }
+//                throw e;
+//            }
         }
         return result;
     }
 
     private void asyncSend(RpcModel rpcModel, MessageRoute route, Message message) throws InterruptedException, BrokerException, ConnectException, TimeoutException {
         TopicQueue topicQueue = route.findOne();
-        this.clientInstance.sendMessage(rpcModel, this.producerConfig.getProducerGroup(), topicQueue, message, this.producerConfig.getSendMsgTimeout());
+//        this.clientInstance.sendMessage(rpcModel, this.producerConfig.getProducerGroup(), topicQueue, message, this.producerConfig.getSendMsgTimeout());
     }
 
     public static void main(String[] args) throws InterruptedException {

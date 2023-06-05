@@ -24,7 +24,7 @@ public class LogOffsetSerializer implements Serializer {
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setLogOffset(byteBuffer.getLong());
+        context.getMessage().setCommitLogOffset(byteBuffer.getLong());
         context.next();
     }
 }

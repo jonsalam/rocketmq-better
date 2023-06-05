@@ -1,24 +1,25 @@
-package com.clouditora.mq.store.index;
+package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.message.MessageEntity;
-import com.clouditora.mq.store.MessageDispatcher;
-import com.clouditora.mq.store.enums.PutStatus;
-import com.clouditora.mq.store.exception.PutException;
+import com.clouditora.mq.store.log.MessageDispatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.ByteBuffer;
 
+/**
+ * @link org.apache.rocketmq.store.DefaultMessageStore.CommitLogDispatcherBuildConsumeQueue
+ */
 @Slf4j
 public class ConsumeFileDispatcher implements MessageDispatcher {
-    private final ConsumeFileMap files;
+    private final ConsumeFileQueues files;
     /**
      * @link org.apache.rocketmq.store.ConsumeQueue#byteBufferIndex
      */
     private final ByteBuffer byteBuffer;
 
-    public ConsumeFileDispatcher(ConsumeFileMap files) {
+    public ConsumeFileDispatcher(ConsumeFileQueues files) {
         this.files = files;
         this.byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
     }
@@ -28,20 +29,19 @@ public class ConsumeFileDispatcher implements MessageDispatcher {
      */
     @Override
     public void dispatch(MessageEntity message) throws Exception {
-        ConsumeFileQueue queue = this.files.findConsumeQueue(message.getTopic(), message.getQueueId());
+        ConsumeFileQueue queue = this.files.get(message.getTopic(), message.getQueueId());
         ConsumeFile file = queue.getOrCreate(message.getQueueOffset());
         if (file == null) {
-            log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
-            throw new PutException(PutStatus.CREATE_MAPPED_FILE_FAILED);
+            return;
         }
 
         int tagsCode = getMessageHashCode(message);
         this.byteBuffer.flip().limit(ConsumeFile.UNIT_SIZE);
-        this.byteBuffer.putLong(message.getLogOffset());
+        this.byteBuffer.putLong(message.getCommitLogOffset());
         this.byteBuffer.putInt(message.getMessageLength());
         this.byteBuffer.putLong(tagsCode);
         file.append(this.byteBuffer);
-        queue.incrMaxOffset(message.getMessageLength());
+        queue.increaseMaxOffset(message.getMessageLength());
     }
 
     private int getMessageHashCode(MessageEntity message) {

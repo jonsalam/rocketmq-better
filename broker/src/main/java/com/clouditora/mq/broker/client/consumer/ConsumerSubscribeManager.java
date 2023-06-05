@@ -1,10 +1,10 @@
-package com.clouditora.mq.broker.client;
+package com.clouditora.mq.broker.client.consumer;
 
 import com.clouditora.mq.common.concurrent.ConsumeStrategy;
 import com.clouditora.mq.common.constant.MessageModel;
 import com.clouditora.mq.common.constant.PositionStrategy;
-import com.clouditora.mq.common.topic.TopicSubscription;
 import com.clouditora.mq.common.topic.GroupSubscription;
+import com.clouditora.mq.common.topic.TopicSubscription;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;

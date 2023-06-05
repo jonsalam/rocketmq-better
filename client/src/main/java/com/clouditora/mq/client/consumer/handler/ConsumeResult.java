@@ -1,4 +1,4 @@
-package com.clouditora.mq.client.consumer.consume;
+package com.clouditora.mq.client.consumer.handler;
 
 /**
  * @link org.apache.rocketmq.common.protocol.body.ConsumeMessageDirectlyResult

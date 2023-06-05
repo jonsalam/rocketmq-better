@@ -1,6 +1,6 @@
 package com.clouditora.mq.broker.dispatcher;
 
-import com.clouditora.mq.broker.client.ConsumerManager;
+import com.clouditora.mq.broker.client.consumer.ConsumerManager;
 import com.clouditora.mq.common.network.RequestCode;
 import com.clouditora.mq.common.network.command.ConsumerFindCommand;
 import com.clouditora.mq.common.util.EnumUtil;

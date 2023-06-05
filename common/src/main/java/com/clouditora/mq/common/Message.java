@@ -3,12 +3,14 @@ package com.clouditora.mq.common;
 import com.clouditora.mq.common.util.MessageUtil;
 import lombok.Data;
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @link org.apache.rocketmq.common.message.Message
+ */
 @Data
 @ToString(exclude = "body")
 public class Message {
@@ -26,10 +28,6 @@ public class Message {
         this.body = body;
         setTags(tags);
         setKeys(keys);
-    }
-
-    public Message(String topic, String tags, byte[] body) {
-        this(topic, tags, StringUtils.EMPTY, body);
     }
 
     public void putProperty(String name, String value) {

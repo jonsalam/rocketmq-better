@@ -191,7 +191,7 @@ public class BrokerApiFacade {
      * @link org.apache.rocketmq.client.impl.MQClientAPIImpl#pullMessage
      */
     public PullResult syncPullMessage(String endpoint, String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
-        Command request = buildPullRequestHeader(group, topicQueue, subscription, pullOffset, commitOffset, sysFlag, pullNum);
+        Command request = buildPullRequest(group, topicQueue, subscription, pullOffset, commitOffset, sysFlag, pullNum);
         Command response = this.clientNetwork.syncInvoke(endpoint, request, CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND);
         return parsePullResponse(endpoint, response);
     }
@@ -201,7 +201,7 @@ public class BrokerApiFacade {
      */
     public void asyncPullMessage(String endpoint, String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum, PullMessageCallback callback) throws InterruptedException, ConnectException, TimeoutException, BrokerException {
         long startTime = System.currentTimeMillis();
-        Command request = buildPullRequestHeader(group, topicQueue, subscription, pullOffset, commitOffset, sysFlag, pullNum);
+        Command request = buildPullRequest(group, topicQueue, subscription, pullOffset, commitOffset, sysFlag, pullNum);
         long elapsed = System.currentTimeMillis() - startTime;
         if (elapsed > CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND) {
             throw new TimeoutException(endpoint);
@@ -239,33 +239,32 @@ public class BrokerApiFacade {
         return status;
     }
 
-    private static Command buildPullRequestHeader(String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum) {
+    private static Command buildPullRequest(String group, TopicQueue topicQueue, TopicSubscription subscription, long pullOffset, long commitOffset, int sysFlag, int pullNum) {
         MessagePullCommand.RequestHeader requestHeader = new MessagePullCommand.RequestHeader();
         requestHeader.setGroup(group);
         requestHeader.setTopic(topicQueue.getTopic());
         requestHeader.setQueueId(topicQueue.getQueueId());
-        requestHeader.setQueueOffset(pullOffset);
         requestHeader.setPullNum(pullNum);
-        requestHeader.setSysFlag(sysFlag);
+        requestHeader.setPullOffset(pullOffset);
         requestHeader.setCommitOffset(commitOffset);
+        requestHeader.setSysFlag(sysFlag);
         requestHeader.setSuspendTimeout(BROKER_SUSPEND_MAX_TIME_MILLIS);
         requestHeader.setExpression(subscription.getExpression());
-        requestHeader.setVersion(subscription.getVersion());
         requestHeader.setExpressionType(subscription.getExpressionType());
-        return Command.buildRequest(RequestCode.UNREGISTER_CLIENT, requestHeader);
+        requestHeader.setVersion(subscription.getVersion());
+        return Command.buildRequest(RequestCode.PULL_MESSAGE, requestHeader);
     }
 
     private static PullResult parsePullResponse(String endpoint, Command response) throws BrokerException {
         MessagePullCommand.ResponseHeader responseHeader = response.decodeHeader(MessagePullCommand.ResponseHeader.class);
-        PullResult pullResult = new PullResult();
-        pullResult.setStatus(parsePullResponseStatus(endpoint, response));
-        pullResult.setNextBeginOffset(responseHeader.getNextBeginOffset());
-        pullResult.setMinOffset(responseHeader.getMinOffset());
-        pullResult.setMaxOffset(responseHeader.getMaxOffset());
-        pullResult.setMessages(null);
-        pullResult.setSuggestWhichBrokerId(responseHeader.getSuggestWhichBrokerId());
-        pullResult.setMessageBinary(response.getBody());
-        return pullResult;
+        PullResult result = new PullResult();
+        result.setStatus(parsePullResponseStatus(endpoint, response));
+        result.setNextBeginOffset(responseHeader.getNextBeginOffset());
+        result.setMinOffset(responseHeader.getMinOffset());
+        result.setMaxOffset(responseHeader.getMaxOffset());
+        result.setMessages(null);
+        result.setMessageBinary(response.getBody());
+        return result;
     }
 
     private static PullStatus parsePullResponseStatus(String endpoint, Command response) throws BrokerException {

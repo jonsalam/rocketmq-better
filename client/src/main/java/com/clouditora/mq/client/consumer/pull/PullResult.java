@@ -16,6 +16,5 @@ public class PullResult {
     private Long minOffset;
     private Long maxOffset;
     private List<MessageEntity> messages;
-    private long suggestWhichBrokerId;
     private byte[] messageBinary;
 }

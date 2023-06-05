@@ -29,6 +29,9 @@ public class MappedFileQueue<T extends MappedFile> {
         this.fileSize = fileSize;
     }
 
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#getFirstMappedFile
+     */
     public T getFirstFile() {
         if (this.files.isEmpty()) {
             return null;
@@ -37,20 +40,19 @@ public class MappedFileQueue<T extends MappedFile> {
             return this.files.get(0);
         } catch (IndexOutOfBoundsException ignored) {
         } catch (Exception e) {
-            log.error("getFirstMappedFile has exception.", e);
+            log.error("get first file exception.", e);
         }
         return null;
     }
 
     /**
-     * @link org.apache.rocketmq.store.MappedFileQueue#getLastMappedFile()
+     * @link org.apache.rocketmq.store.MappedFileQueue#getLastMappedFile
      */
     public T getLastFile() {
         while (!this.files.isEmpty()) {
             try {
                 return this.files.get(this.files.size() - 1);
-            } catch (IndexOutOfBoundsException e) {
-                // files 变小了
+            } catch (IndexOutOfBoundsException ignored) {
             } catch (Exception e) {
                 log.error("get last file exception", e);
                 return null;
@@ -60,24 +62,22 @@ public class MappedFileQueue<T extends MappedFile> {
     }
 
     /**
-     * 当映射文件<b>可用</b>, 直接返回
-     * 当映射文件<b>不存在</b>, 创建一个从startOffset开始偏移的文件
-     * 当映射文件<b>已经写满</b>, 创建一个新偏移量的文件
-     * TIPS: 被除数 = 除数 x 商 + 余数 ==> 除数 x 商 = 被除数 - 余数
-     * TIPS: N * mappedFileSize = offset - offset % mappedFileSize
+     * 当映射文件<b>不存在</b>, 根据offset创建新文件
+     * 当映射文件<b>已经写满</b>, 创建新文件
+     * 否则返回队列中偏移量最大的文件
      *
-     * @link org.apache.rocketmq.store.MappedFileQueue#getLastMappedFile
+     * @link org.apache.rocketmq.store.MappedFileQueue#getLastMappedFile(long, boolean)
      */
-    public T getOrCreate(long startOffset) {
+    public T getOrCreate(long offset) {
         T file = getLastFile();
         if (file == null) {
-            // 文件不存在
-            long offset = startOffset - (startOffset % this.fileSize);
-            return createSilence(offset);
+            // 被除数 = 除数 x 商 + 余数 ==> 除数 x 商 = 被除数 - 余数
+            long startOffset = offset - (offset % this.fileSize);
+            return createSilence(startOffset);
         } else if (file.isFull()) {
             // 文件写满了
-            long offset = file.getStartOffset() + this.fileSize;
-            return createSilence(offset);
+            long startOffset = file.getStartOffset() + this.fileSize;
+            return createSilence(startOffset);
         }
         return file;
     }
@@ -87,7 +87,7 @@ public class MappedFileQueue<T extends MappedFile> {
     }
 
     @SuppressWarnings("unchecked")
-    private T createSilence(long offset) {
+    protected T createSilence(long offset) {
         try {
             T file = (T) create(offset);
             this.files.add(file);
@@ -98,40 +98,43 @@ public class MappedFileQueue<T extends MappedFile> {
         }
     }
 
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#doCreateMappedFile
+     */
     protected MappedFile create(long offset) throws IOException {
-        String nextFilePath = "%s/%s".formatted(this.path, StoreUtil.long2String(offset));
-        return new MappedFile(nextFilePath, this.fileSize);
+        String newPath = "%s/%s".formatted(this.path, StoreUtil.long2String(offset));
+        return new MappedFile(newPath, this.fileSize);
     }
 
     /**
-     * org.apache.rocketmq.store.MappedFileQueue#findMappedFileByOffset(long, boolean)
-     *
-     * @param logOffset 是全局的偏移量, 需要减去第一个映射文件的起始偏移量
+     * @param offset 是全局的偏移量, 需要减去第一个映射文件的起始偏移量
+     * @link org.apache.rocketmq.store.MappedFileQueue#findMappedFileByOffset(long, boolean)
      * @implNote TODO: https://issues.apache.org/jira/projects/ROCKETMQ/issues/ROCKETMQ-332
      * 一个线程创建映射文件, 一个线程清除过期的, 另一个线程获取的时候, 可能导致获取的文件是错误的
      * 官方的解决方案是根据下标获取文件, 检查偏移量是否正确, 不正确的话就遍历整个映射文件(2分查找不好么)
      */
-    public T slice(long logOffset) {
-        T file = sliceWithIndex(logOffset);
+    public T slice(long offset) {
+        T file = sliceWithIndex(offset);
         if (file != null) {
             return file;
         }
-        file = sliceWithIterator(logOffset);
-        return file;
+        return sliceWithIterator(offset);
     }
 
     private T sliceWithIndex(long offset) {
         MappedFile firstFile = getFirstFile();
-        if (firstFile == null) {
+        MappedFile lastFile = getLastFile();
+        if (firstFile == null || lastFile == null) {
             return null;
         }
-        int index = (int) ((offset - firstFile.getStartOffset()) / fileSize);
-        if (index < 0 || index >= files.size()) {
-            log.warn("offset not matched, request offset:{}, mappedFiles:{}", offset, files);
+        if (offset < firstFile.getStartOffset() || offset >= lastFile.getStartOffset() + this.fileSize) {
+            log.warn("offset not matched: offset:{}, star:{}, end:{}", offset, firstFile.getStartOffset(), lastFile.getStartOffset() + this.fileSize);
+            return null;
         }
         try {
-            T file = files.get(index);
-            if (calcOffset(offset, file)) {
+            long index = (offset - firstFile.getStartOffset()) / this.fileSize;
+            T file = this.files.get((int) index);
+            if (offsetMatched(file, offset)) {
                 return file;
             }
         } catch (Exception ignored) {
@@ -140,8 +143,8 @@ public class MappedFileQueue<T extends MappedFile> {
     }
 
     private T sliceWithIterator(long offset) {
-        for (T file : files) {
-            if (calcOffset(offset, file)) {
+        for (T file : this.files) {
+            if (offsetMatched(file, offset)) {
                 return file;
             }
         }
@@ -151,7 +154,10 @@ public class MappedFileQueue<T extends MappedFile> {
     /**
      * 在文件偏移量范围之内
      */
-    protected boolean calcOffset(long offset, T file) {
-        return offset >= file.getStartOffset() && offset < file.getStartOffset() + fileSize;
+    protected boolean offsetMatched(T file, long offset) {
+        if (file == null) {
+            return false;
+        }
+        return file.getStartOffset() <= offset && offset < file.getStartOffset() + this.fileSize;
     }
 }

@@ -30,17 +30,17 @@ public class ConsumerManager {
     }
 
     public void register(Consumer consumer) {
-        try {
-            try {
-                this.lock.writeLock().lockInterruptibly();
-                Object prev = this.consumerMap.putIfAbsent(consumer.getGroup(), consumer);
-                log.info("register: group={}, consumer={}, prev={}", consumer.getGroup(), consumer, prev);
-            } finally {
-                this.lock.writeLock().unlock();
-            }
-        } catch (Exception e) {
-            log.error("register exception: group={}", consumer.getGroup(), e);
-        }
+//        try {
+//            try {
+//                this.lock.writeLock().lockInterruptibly();
+//                Object prev = this.consumerMap.putIfAbsent(consumer.getGroup(), consumer);
+//                log.info("register: group={}, consumer={}, prev={}", consumer.getGroup(), consumer, prev);
+//            } finally {
+//                this.lock.writeLock().unlock();
+//            }
+//        } catch (Exception e) {
+//            log.error("register exception: group={}", consumer.getGroup(), e);
+//        }
     }
 
     public void unregister(String group) {

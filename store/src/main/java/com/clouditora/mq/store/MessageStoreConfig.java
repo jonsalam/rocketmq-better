@@ -1,7 +1,7 @@
 package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.constant.GlobalConstant;
-import com.clouditora.mq.store.index.ConsumeFile;
+import com.clouditora.mq.store.consume.ConsumeFile;
 import lombok.Data;
 
 @Data

@@ -1,5 +1,8 @@
-package com.clouditora.mq.broker.client;
+package com.clouditora.mq.broker.client.consumer;
 
+import com.clouditora.mq.broker.client.ClientChannel;
+import com.clouditora.mq.broker.client.ClientChannelManager;
+import com.clouditora.mq.broker.client.TopicQueueConfigManager;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.common.topic.GroupSubscription;
 import io.netty.channel.Channel;

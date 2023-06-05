@@ -1,4 +1,4 @@
-package com.clouditora.mq.client.consumer.consume;
+package com.clouditora.mq.client.consumer.handler;
 
 import com.clouditora.mq.common.message.MessageEntity;
 import lombok.Getter;
@@ -22,7 +22,7 @@ public class ConsumerQueue {
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
 
     @Setter
-//    private volatile long lastPullTimestamp = System.currentTimeMillis();
+    private volatile long lastPullTimestamp = System.currentTimeMillis();
     /**
      * @link org.apache.rocketmq.client.impl.consumer.ProcessQueue#msgCount
      */
@@ -81,16 +81,16 @@ public class ConsumerQueue {
                     MessageEntity old = this.messageMap.put(message.getQueueOffset(), message);
                     if (old == null) {
                         validMsgCnt++;
-                        this.queueOffsetMax = message.getQueueOffset();
+//                        this.queueOffsetMax = message.getQueueOffset();
                         this.messageSize.addAndGet(message.getBody().length);
                     }
                 }
                 this.messageCount.addAndGet(validMsgCnt);
 
-                if (!this.messageMap.isEmpty() && !this.consuming) {
-                    dispatchToConsume = true;
-                    this.consuming = true;
-                }
+//                if (!this.messageMap.isEmpty() && !this.consuming) {
+//                    dispatchToConsume = true;
+//                    this.consuming = true;
+//                }
             } finally {
                 this.lock.writeLock().unlock();
             }
@@ -103,12 +103,13 @@ public class ConsumerQueue {
         long now = System.currentTimeMillis();
         try {
             this.lock.writeLock().lockInterruptibly();
-            this.lastConsumeTimestamp = now;
+//            this.lastConsumeTimestamp = now;
             try {
                 if (this.messageMap.isEmpty()) {
                     return -1;
                 }
-                long result = this.queueOffsetMax + 1;
+//                long result = this.queueOffsetMax + 1;
+                long result = 0;
                 for (MessageEntity message : messages) {
                     MessageEntity prev = this.messageMap.remove(message.getQueueOffset());
                     if (prev != null) {

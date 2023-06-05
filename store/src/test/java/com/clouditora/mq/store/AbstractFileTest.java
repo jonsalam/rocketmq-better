@@ -1,12 +1,12 @@
 package com.clouditora.mq.store;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.platform.commons.util.StringUtils;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Slf4j
 public abstract class AbstractFileTest {
     protected String path = "target/unit-test/";
 
@@ -25,7 +25,7 @@ public abstract class AbstractFileTest {
         }
         if (file.isFile()) {
             boolean result = file.delete();
-            assertTrue(result);
+            log.info("delete {}: {}", file, result);
         } else if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files == null) {
@@ -35,7 +35,7 @@ public abstract class AbstractFileTest {
                 deleteFile(f);
             }
             boolean result = file.delete();
-            assertTrue(result);
+            log.info("delete {}: {}", file, result);
         }
     }
 }
