@@ -7,9 +7,9 @@ import com.clouditora.mq.store.exception.PutException;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileQueue;
 import com.clouditora.mq.store.file.PutResult;
-import com.clouditora.mq.store.serializer.ByteBufferSerializer;
-import com.clouditora.mq.store.serializer.SerializeException;
-import com.clouditora.mq.store.serializer.serializer.EndOfFileException;
+import com.clouditora.mq.store.serialize.ByteBufferSerializer;
+import com.clouditora.mq.store.serialize.EndOfFileException;
+import com.clouditora.mq.store.serialize.SerializeException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,14 +50,14 @@ public class CommitLog {
             // 当前文件写指针
             int writePosition = commitLog.getWritePosition();
             // 物理偏移量
-            long physicalOffset = commitLog.getStartOffset() + writePosition;
+            long physicalOffset = commitLog.getOffset() + writePosition;
             // 当前文件剩余空间
             int remainLength = commitLog.getFileSize() - writePosition;
             ByteBuffer byteBuffer = this.tlSerializer.get().serialize(physicalOffset, remainLength, message);
             commitLog.append(byteBuffer);
             return PutResult.buildAsync(PutStatus.SUCCESS, message.getMessageId(), queueOffset);
         } catch (EndOfFileException e) {
-            log.debug("end of file: file={}, messageLength={}", commitLog, e.getMessageLength());
+            log.debug("end of file: file={}, messageLength={}", commitLog, e.getLength());
             // 剩余空间不够了: 1.当前文件写满; 2.消息写入下一个文件
             fillBlank(commitLog, e);
             return asyncPut(message);
@@ -73,7 +73,7 @@ public class CommitLog {
 
     private static void fillBlank(MappedFile file, EndOfFileException e) {
         try {
-            file.append(e.getByteBuffer(), e.getRemainLength());
+            file.append(e.getByteBuffer(), e.getFree());
         } catch (PutException ex) {
             throw new RuntimeException(ex);
         }

@@ -2,7 +2,7 @@ package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.file.GetMessageResult;
-import com.clouditora.mq.store.serializer.ByteBufferDeserializer;
+import com.clouditora.mq.store.serialize.ByteBufferDeserializer;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;

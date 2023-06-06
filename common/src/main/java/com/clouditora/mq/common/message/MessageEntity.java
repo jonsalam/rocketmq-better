@@ -66,7 +66,7 @@ public class MessageEntity extends Message {
         if (bornHost.getAddress() instanceof Inet6Address) {
             this.sysFlag |= MessageConst.SysFlg.BORN_HOST_V6_FLAG;
         } else {
-            this.sysFlag ^= MessageConst.SysFlg.BORN_HOST_V6_FLAG;
+            this.sysFlag &= ~MessageConst.SysFlg.BORN_HOST_V6_FLAG;
         }
     }
 
@@ -75,7 +75,7 @@ public class MessageEntity extends Message {
         if (storeHost.getAddress() instanceof Inet6Address) {
             this.sysFlag |= MessageConst.SysFlg.STORE_HOST_V6_FLAG;
         } else {
-            this.sysFlag ^= MessageConst.SysFlg.STORE_HOST_V6_FLAG;
+            this.sysFlag &= ~MessageConst.SysFlg.STORE_HOST_V6_FLAG;
         }
     }
 

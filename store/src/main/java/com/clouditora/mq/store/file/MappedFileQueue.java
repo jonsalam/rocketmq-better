@@ -3,7 +3,11 @@ package com.clouditora.mq.store.file;
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -14,7 +18,7 @@ public class MappedFileQueue<T extends MappedFile> {
     /**
      * 存储目录
      */
-    protected final String path;
+    protected final String dir;
     /**
      * 每个映射文件的大小
      */
@@ -24,9 +28,37 @@ public class MappedFileQueue<T extends MappedFile> {
      */
     protected final CopyOnWriteArrayList<T> files = new CopyOnWriteArrayList<>();
 
-    public MappedFileQueue(String path, int fileSize) {
-        this.path = path;
+    public MappedFileQueue(String dir, int fileSize) {
+        this.dir = dir;
         this.fileSize = fileSize;
+    }
+
+    public void load() {
+        File dir = new File(this.dir);
+        File[] files = dir.listFiles();
+        if (files != null) {
+            loadFile(Arrays.asList(files));
+        }
+    }
+
+    public void loadFile(List<File> files) {
+        files.sort(Comparator.comparing(File::getName));
+        for (File file : files) {
+            if (file.length() != this.fileSize) {
+                log.error("load file {} failed: file size not matched message store config value", file);
+                return;
+            }
+            try {
+                T mappedFile = createSilence(StoreUtil.string2Long(file.getName()));
+                mappedFile.setWritePosition(this.fileSize);
+                mappedFile.setFlushPosition(this.fileSize);
+                this.files.add(mappedFile);
+                log.error("load file {} success", mappedFile);
+            } catch (Exception e) {
+                log.error("load file {} exception", file, e);
+                return;
+            }
+        }
     }
 
     /**
@@ -76,7 +108,7 @@ public class MappedFileQueue<T extends MappedFile> {
             return createSilence(startOffset);
         } else if (file.isFull()) {
             // 文件写满了
-            long startOffset = file.getStartOffset() + this.fileSize;
+            long startOffset = file.getOffset() + this.fileSize;
             return createSilence(startOffset);
         }
         return file;
@@ -93,7 +125,7 @@ public class MappedFileQueue<T extends MappedFile> {
             this.files.add(file);
             return file;
         } catch (IOException e) {
-            log.error("create failed", e);
+            log.error("create file exception", e);
             return null;
         }
     }
@@ -102,8 +134,12 @@ public class MappedFileQueue<T extends MappedFile> {
      * @link org.apache.rocketmq.store.MappedFileQueue#doCreateMappedFile
      */
     protected MappedFile create(long offset) throws IOException {
-        String newPath = "%s/%s".formatted(this.path, StoreUtil.long2String(offset));
-        return new MappedFile(newPath, this.fileSize);
+        try {
+            String newPath = "%s/%s".formatted(this.dir, StoreUtil.long2String(offset));
+            return new MappedFile(newPath, this.fileSize);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -127,12 +163,12 @@ public class MappedFileQueue<T extends MappedFile> {
         if (firstFile == null || lastFile == null) {
             return null;
         }
-        if (offset < firstFile.getStartOffset() || offset >= lastFile.getStartOffset() + this.fileSize) {
-            log.warn("offset not matched: offset:{}, star:{}, end:{}", offset, firstFile.getStartOffset(), lastFile.getStartOffset() + this.fileSize);
+        if (offset < firstFile.getOffset() || offset >= lastFile.getOffset() + this.fileSize) {
+            log.warn("offset not matched: offset:{}, star:{}, end:{}", offset, firstFile.getOffset(), lastFile.getOffset() + this.fileSize);
             return null;
         }
         try {
-            long index = (offset - firstFile.getStartOffset()) / this.fileSize;
+            long index = (offset - firstFile.getOffset()) / this.fileSize;
             T file = this.files.get((int) index);
             if (offsetMatched(file, offset)) {
                 return file;
@@ -158,6 +194,6 @@ public class MappedFileQueue<T extends MappedFile> {
         if (file == null) {
             return false;
         }
-        return file.getStartOffset() <= offset && offset < file.getStartOffset() + this.fileSize;
+        return file.getOffset() <= offset && offset < file.getOffset() + this.fileSize;
     }
 }

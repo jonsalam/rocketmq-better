@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 public class TestUtil {
-    private static final byte[] messageBody = "Once, there was a chance for me!".getBytes(StandardCharsets.UTF_8);
+    public static final byte[] MESSAGE_BODY = "Once, there was a chance for me!".getBytes(StandardCharsets.UTF_8);
 
     private static InetSocketAddress bornHost;
     private static InetSocketAddress storeHost;
@@ -39,11 +39,11 @@ public class TestUtil {
     }
 
     public static MessageEntity buildMessage(String topic) {
-        return buildMessage(topic, messageBody);
+        return buildMessage(topic, MESSAGE_BODY);
     }
 
     public static MessageEntity buildMessage() {
-        return buildMessage("FooBar", messageBody);
+        return buildMessage("FooBar", MESSAGE_BODY);
     }
 
     public static void sleep(int second) {

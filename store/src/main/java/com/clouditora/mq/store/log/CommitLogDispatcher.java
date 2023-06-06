@@ -8,7 +8,7 @@ import com.clouditora.mq.store.consume.ConsumeFileDispatcher;
 import com.clouditora.mq.store.consume.ConsumeFileQueues;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.index.IndexFileDispatcher;
-import com.clouditora.mq.store.serializer.ByteBufferDeserializer;
+import com.clouditora.mq.store.serialize.ByteBufferDeserializer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -58,7 +58,7 @@ public class CommitLogDispatcher extends AbstractLoopedService {
         if (file == null) {
             return;
         }
-        this.offset = file.getStartOffset();
+        this.offset = file.getOffset();
         ByteBuffer byteBuffer = file.getByteBuffer();
         for (long position = 0; position < file.getWritePosition(); ) {
             // TODO 消息可能反序列化失败

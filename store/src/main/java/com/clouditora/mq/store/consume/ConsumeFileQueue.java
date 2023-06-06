@@ -35,7 +35,7 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
 
     @Override
     protected ConsumeFile create(long offset) throws IOException {
-        String path = "%s/%s".formatted(super.path, StoreUtil.long2String(offset));
+        String path = "%s/%s".formatted(super.dir, StoreUtil.long2String(offset));
         return new ConsumeFile(path, super.fileSize);
     }
 
@@ -52,8 +52,8 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
             this.minOffset = offset;
             fillBlank(file, offset);
         }
-        if (offset < file.getWritePosition() + file.getStartOffset()) {
-            log.warn("create consume file repeatedly: expectOffset={}, currentOffset={}", offset, file.getWritePosition() + file.getStartOffset());
+        if (offset < file.getWritePosition() + file.getOffset()) {
+            log.warn("create consume file repeatedly: expectOffset={}, currentOffset={}", offset, file.getWritePosition() + file.getOffset());
             return null;
         }
         return file;
