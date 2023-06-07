@@ -109,7 +109,7 @@ public class Producer {
         ClientInstance instance = new ClientInstance(config);
         instance.registerProducer(producer);
         instance.startup();
-        Message message = new Message("SELF_TEST_TOPIC", "Tag1", "hello world".getBytes(StandardCharsets.UTF_8));
+        Message message = new Message("SELF_TEST_TOPIC", "Tag1", null, "hello world".getBytes(StandardCharsets.UTF_8));
         try {
             producer.send(message);
         } catch (Exception e) {

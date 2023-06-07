@@ -146,10 +146,15 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.source}</target>
-                    <compilerArgs>
-                        <arg>--add-modules=java.base</arg>
-                    </compilerArgs>
+                    <compilerVersion>${maven.compiler.source}</compilerVersion>
+                    <showDeprecation>true</showDeprecation>
+                    <showWarnings>true</showWarnings>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0</version>
             </plugin>
         </plugins>
     </build>

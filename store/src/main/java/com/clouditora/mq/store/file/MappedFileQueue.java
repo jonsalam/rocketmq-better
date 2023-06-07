@@ -1,6 +1,7 @@
 package com.clouditora.mq.store.file;
 
 import com.clouditora.mq.store.util.StoreUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -14,34 +15,50 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @link org.apache.rocketmq.store.MappedFileQueue
  */
 @Slf4j
-public class MappedFileQueue<T extends MappedFile> {
+public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.store.file.File {
+    private static final int DELETE_FILES_BATCH_MAX = 10;
+
     /**
-     * 存储目录
+     * @link org.apache.rocketmq.store.MappedFileQueue#storePath
      */
-    protected final String dir;
+    protected final File dir;
     /**
-     * 每个映射文件的大小
+     * @link org.apache.rocketmq.store.MappedFileQueue#mappedFileSize
      */
     protected final int fileSize;
     /**
-     * MappedFile 集合
+     * @link org.apache.rocketmq.store.MappedFileQueue#mappedFiles
      */
     protected final CopyOnWriteArrayList<T> files = new CopyOnWriteArrayList<>();
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#flushedWhere
+     */
+    @Getter
+    protected long flushPosition = 0;
 
     public MappedFileQueue(String dir, int fileSize) {
-        this.dir = dir;
+        this.dir = new File(dir);
+        if (this.dir.isDirectory()) {
+            throw new IllegalStateException("create mapped file exception: %s is not directory".formatted(dir));
+        }
         this.fileSize = fileSize;
     }
 
-    public void load() {
-        File dir = new File(this.dir);
-        File[] files = dir.listFiles();
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#load
+     */
+    @Override
+    public void mapped() {
+        File[] files = this.dir.listFiles();
         if (files != null) {
-            loadFile(Arrays.asList(files));
+            mapped(Arrays.asList(files));
         }
     }
 
-    public void loadFile(List<File> files) {
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#doLoad
+     */
+    private void mapped(List<File> files) {
         files.sort(Comparator.comparing(File::getName));
         for (File file : files) {
             if (file.length() != this.fileSize) {
@@ -59,6 +76,50 @@ public class MappedFileQueue<T extends MappedFile> {
                 return;
             }
         }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#shutdown
+     */
+    @Override
+    public void unmapped() {
+        for (T file : this.files) {
+            file.unmapped();
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#destroy
+     */
+    @Override
+    public void delete() {
+        for (T file : this.files) {
+            file.delete();
+        }
+        boolean delete = this.dir.delete();
+        log.info("delete mapped files dir {}: {}", this.dir, delete);
+    }
+
+    /**
+     * @param pages 0表示只要有写入就刷盘
+     */
+    @Override
+    public void flush(int pages) {
+        T file = slice(this.flushPosition);
+        if (file == null) {
+            file = getFirstFile();
+        }
+        if (file != null) {
+            file.flush(pages);
+            this.flushPosition = file.getOffset() + file.getFlushPosition();
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#getMappedMemorySize
+     */
+    public long getMappedMemorySize() {
+        return AbstractMappedFile.TOTAL_MAPPED_MEMORY.get();
     }
 
     /**

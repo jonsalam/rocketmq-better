@@ -4,6 +4,7 @@ import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.MessageStoreConfig;
 import com.clouditora.mq.store.enums.PutStatus;
 import com.clouditora.mq.store.exception.PutException;
+import com.clouditora.mq.store.file.File;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileQueue;
 import com.clouditora.mq.store.file.PutResult;
@@ -21,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @link org.apache.rocketmq.store.CommitLog
  */
 @Slf4j
-public class CommitLog {
+public class CommitLog implements File {
     @Getter
     private final int fileSize;
     private final MappedFileQueue<MappedFile> commitLogQueue;
@@ -32,6 +33,26 @@ public class CommitLog {
         this.fileSize = config.getCommitLogFileSize();
         this.commitLogQueue = new MappedFileQueue<>(config.getCommitLogPath(), config.getCommitLogFileSize());
         this.tlSerializer = ThreadLocal.withInitial(ByteBufferSerializer::new);
+    }
+
+    @Override
+    public void mapped() {
+
+    }
+
+    @Override
+    public void unmapped() {
+
+    }
+
+    @Override
+    public void delete() {
+
+    }
+
+    @Override
+    public void flush(int pages) {
+
     }
 
     /**

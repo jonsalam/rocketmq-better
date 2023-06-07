@@ -1,7 +1,7 @@
 package com.clouditora.mq.store.file;
 
 import com.clouditora.mq.common.util.FileUtil;
-import com.clouditora.mq.store.util.LibC;
+import com.clouditora.mq.store.util.LibraryC;
 import com.clouditora.mq.store.util.StoreUtil;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
@@ -17,16 +17,15 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @link org.apache.rocketmq.store.ReferenceResource
  */
 @Slf4j
-public abstract class AbstractMappedFile {
+public abstract class AbstractMappedFile implements com.clouditora.mq.store.file.File {
     public static final int OS_PAGE_SIZE = 1024 * 4;
-    public static final AtomicLong TOTAL_MAPPED_MEMORY = new AtomicLong(0);
-    public static final AtomicInteger TOTAL_MAPPED_FILES = new AtomicInteger(0);
+    static final AtomicLong TOTAL_MAPPED_MEMORY = new AtomicLong(0);
+    static final AtomicInteger TOTAL_MAPPED_FILES = new AtomicInteger(0);
 
     /**
      * @link org.apache.rocketmq.store.MappedFile#fileFromOffset
@@ -56,12 +55,11 @@ public abstract class AbstractMappedFile {
     /**
      * @link org.apache.rocketmq.store.ReferenceResource#available
      */
-    protected volatile boolean available = false;
+    protected volatile boolean mapped = true;
     /**
      * @link org.apache.rocketmq.store.ReferenceResource#refCount
      */
     protected AtomicLong acquiredCount = new AtomicLong(1);
-    private final ReentrantLock lock = new ReentrantLock();
 
     protected AbstractMappedFile(File file, int fileSize) {
         this.offset = StoreUtil.string2Long(file.getName());
@@ -127,15 +125,15 @@ public abstract class AbstractMappedFile {
      */
     public void lockMappedMemory() {
         long beginTime = System.currentTimeMillis();
-        long address = ((DirectBuffer) (this.mappedByteBuffer)).address();
+        long address = ((DirectBuffer) this.mappedByteBuffer).address();
         Pointer pointer = new Pointer(address);
         {
-            int ret = LibC.INSTANCE.mlock(pointer, new NativeLong(this.fileSize));
+            int ret = LibraryC.INSTANCE.mlock(pointer, new NativeLong(this.fileSize));
             log.info("lock {} @{}/{}={}, elapsed={}", this.file, address, this.fileSize, ret, System.currentTimeMillis() - beginTime);
         }
 
         {
-            int ret = LibC.INSTANCE.madvise(pointer, new NativeLong(this.fileSize), LibC.MADV_WILLNEED);
+            int ret = LibraryC.INSTANCE.madvise(pointer, new NativeLong(this.fileSize), LibraryC.MADV_WILLNEED);
             log.info("advise {} @{}/{}={}, elapsed={}", this.file, address, this.fileSize, ret, System.currentTimeMillis() - beginTime);
         }
     }
@@ -145,52 +143,10 @@ public abstract class AbstractMappedFile {
      */
     public void unlockMappedMemory() {
         long beginTime = System.currentTimeMillis();
-        long address = ((DirectBuffer) (this.mappedByteBuffer)).address();
+        long address = ((DirectBuffer) this.mappedByteBuffer).address();
         Pointer pointer = new Pointer(address);
-        int ret = LibC.INSTANCE.munlock(pointer, new NativeLong(this.fileSize));
+        int ret = LibraryC.INSTANCE.munlock(pointer, new NativeLong(this.fileSize));
         log.info("unlock {} @{}/{}={}, elapsed={}", this.file, address, this.fileSize, ret, System.currentTimeMillis() - beginTime);
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.MappedFile#destroy
-     */
-    public void delete() {
-        if (this.acquiredCount.get() > 0) {
-            log.warn("delete file {} failed: acquired count={}", this.file, this.acquiredCount.get());
-            return;
-        }
-        unmap();
-        try {
-            this.fileChannel.close();
-            boolean delete = this.file.delete();
-            log.info("delete file {}={}", this.file, delete);
-        } catch (Exception e) {
-            log.error("close file {} exception", this.file, e);
-        }
-        this.available = false;
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.ReferenceResource#shutdown
-     * @link org.apache.rocketmq.store.ReferenceResource#cleanup
-     */
-    public void unmap() {
-        if (!this.available) {
-            log.error("unload file {} failed: already unloaded", this.file);
-            return;
-        }
-        try {
-            StoreUtil.clean(this.mappedByteBuffer);
-            TOTAL_MAPPED_MEMORY.addAndGet(-this.fileSize);
-            TOTAL_MAPPED_FILES.decrementAndGet();
-        } catch (Exception e) {
-            log.error("unload file {} exception", this.file, e);
-        }
-        this.available = false;
-    }
-
-    public void load() {
-        this.available = true;
     }
 
     /**
@@ -204,18 +160,65 @@ public abstract class AbstractMappedFile {
      * @link org.apache.rocketmq.store.ReferenceResource#release
      */
     public void release() {
-        long value = acquiredCount.decrementAndGet();
-        if (value > 0) {
-            return;
-        }
-        try {
-            this.lock.lock();
-            unmap();
-        } finally {
-            this.lock.unlock();
+        long value = this.acquiredCount.decrementAndGet();
+        if (value == 0) {
+            unmapped();
         }
     }
 
+    @Override
+    public void mapped() {
+        if (!this.mapped) {
+            throw new IllegalStateException();
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.ReferenceResource#cleanup
+     */
+    @Override
+    public void unmapped() {
+        if (!this.mapped) {
+            return;
+        }
+        if (this.acquiredCount.get() > 1) {
+            return;
+        }
+        this.acquiredCount.set(0);
+        this.mapped = false;
+        try {
+            StoreUtil.clean(this.mappedByteBuffer);
+            TOTAL_MAPPED_MEMORY.addAndGet(-this.fileSize);
+            TOTAL_MAPPED_FILES.decrementAndGet();
+            log.info("unmapped file {}", this.file);
+        } catch (Exception e) {
+            log.error("unmapped file {} exception", this.file, e);
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFile#destroy
+     */
+    @Override
+    public void delete() {
+        release();
+        if (this.mapped) {
+            log.warn("delete mapped file {} failed: unmapped", this.file);
+            return;
+        }
+        try {
+            this.fileChannel.close();
+            boolean delete = this.file.delete();
+            log.info("delete mapped file {}: {}", this.file, delete);
+        } catch (Exception e) {
+            log.error("delete mapped file {} exception", this.file, e);
+        }
+    }
+
+    /**
+     * @param pages 0表示只要有写入就刷盘
+     */
+    @Override
     public void flush(int pages) {
         boolean needed;
         if (isFull()) {
@@ -230,8 +233,14 @@ public abstract class AbstractMappedFile {
             }
         }
         if (needed) {
-            this.flushPosition.set(getWritePosition());
-            force();
+            acquire();
+            try {
+                force();
+                this.flushPosition.set(getWritePosition());
+            } catch (Exception e) {
+                log.error("flush file {} exception", this.file, e);
+            }
+            release();
         }
     }
 
@@ -241,7 +250,6 @@ public abstract class AbstractMappedFile {
     public void warmup(FlushType type, int pages) {
         ByteBuffer byteBuffer = getByteBuffer();
         long beginTime = System.currentTimeMillis();
-        long flushtime = System.currentTimeMillis();
         int flushIndex = 0;
         for (int index = 0, j = 0; index < this.fileSize; index += OS_PAGE_SIZE, j++) {
             byteBuffer.put(index, (byte) 0);
@@ -250,17 +258,6 @@ public abstract class AbstractMappedFile {
                 if ((index - flushIndex) / OS_PAGE_SIZE >= pages) {
                     flushIndex = index;
                     force();
-                }
-            }
-
-            // prevent gc
-            if (j % 1000 == 0) {
-                log.info("file warmup to disk: file={}, elapsed={}", this.file, System.currentTimeMillis() - flushtime);
-                flushtime = System.currentTimeMillis();
-                try {
-                    Thread.sleep(0);
-                } catch (InterruptedException e) {
-                    log.error("file warmup interrupted", e);
                 }
             }
         }

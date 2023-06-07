@@ -76,6 +76,7 @@ public class MappedFile extends AbstractMappedFile {
         }
         // mappedByteBuffer的position一直为0, 所以需要2次slice
         MappedByteBuffer byteBuffer = this.mappedByteBuffer.slice().position(position).slice().limit(length);
+        acquire();
         return new MappedFile(this, position, length, byteBuffer);
     }
 

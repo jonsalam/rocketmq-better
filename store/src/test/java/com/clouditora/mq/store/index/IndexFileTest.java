@@ -1,6 +1,6 @@
 package com.clouditora.mq.store.index;
 
-import com.clouditora.mq.store.AbstractFileTest;
+import com.clouditora.mq.store.file.AbstractFileTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

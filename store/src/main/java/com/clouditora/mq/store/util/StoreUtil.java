@@ -79,19 +79,11 @@ public class StoreUtil {
 
     private static Object invoke(Object target, String methodName, Class<?>... args) {
         try {
-            Method method = getMethod(target, methodName, args);
+            Method method = target.getClass().getMethod(methodName, args);
             method.setAccessible(true);
-            return method.invoke(target);
-        } catch (Exception e) {
+            return method.invoke(target, new Class[0]);
+        } catch (Throwable e) {
             throw new IllegalStateException(e);
-        }
-    }
-
-    private static Method getMethod(Object target, String methodName, Class<?>[] args) throws NoSuchMethodException {
-        try {
-            return target.getClass().getMethod(methodName, args);
-        } catch (NoSuchMethodException e) {
-            return target.getClass().getDeclaredMethod(methodName, args);
         }
     }
 }

@@ -2,8 +2,12 @@ package com.clouditora.mq.store.util;
 
 import com.sun.jna.*;
 
-public interface LibC extends Library {
-    LibC INSTANCE = (LibC) Native.loadLibrary(Platform.isWindows() ? "msvcrt" : "c", LibC.class);
+/**
+ * @link org.apache.rocketmq.store.util.LibC
+ */
+@SuppressWarnings("unused")
+public interface LibraryC extends Library {
+    LibraryC INSTANCE = Native.load(Platform.isWindows() ? "msvcrt" : "c", LibraryC.class);
 
     int MADV_WILLNEED = 3;
     int MADV_DONTNEED = 4;
@@ -12,11 +16,17 @@ public interface LibC extends Library {
     int MCL_FUTURE = 2;
     int MCL_ONFAULT = 4;
 
-    /* sync memory asynchronously */
+    /**
+     * sync memory asynchronously
+     */
     int MS_ASYNC = 0x0001;
-    /* invalidate mappings & caches */
+    /**
+     * invalidate mappings & caches
+     */
     int MS_INVALIDATE = 0x0002;
-    /* synchronous memory sync */
+    /**
+     * synchronous memory sync
+     */
     int MS_SYNC = 0x0004;
 
     int mlock(Pointer var1, NativeLong var2);

@@ -1,6 +1,5 @@
 package com.clouditora.mq.store.file;
 
-import com.clouditora.mq.store.AbstractFileTest;
 import com.clouditora.mq.store.exception.PutException;
 import com.clouditora.mq.store.util.StoreUtil;
 import org.junit.jupiter.api.Test;
@@ -89,7 +88,7 @@ public class MappedFileQueueTest extends AbstractFileTest {
             mappedFile.append(fixedMsg.getBytes());
         }
 
-        assertThat(AbstractMappedFile.TOTAL_MAPPED_MEMORY.get()).isEqualTo(fixedMsg.getBytes().length * 1024L);
+        assertThat(mappedFileQueue.getMappedMemorySize()).isEqualTo(fixedMsg.getBytes().length * 1024L);
 
         MappedFile mappedFile = mappedFileQueue.slice(0);
         assertThat(mappedFile).isNotNull();
@@ -121,5 +120,78 @@ public class MappedFileQueueTest extends AbstractFileTest {
 
         mappedFile = mappedFileQueue.slice(1024 * 4 + 100);
         assertThat(mappedFile).isNull();
+
+        mappedFileQueue.unmapped();
+        mappedFileQueue.delete();
+    }
+
+    @Test
+    public void testFindMappedFileByOffset_StartOffsetIsNonZero() {
+        MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(super.path, 1024);
+
+        //Start from a non-zero offset
+        MappedFile mappedFile = mappedFileQueue.getOrCreate(1024);
+        assertThat(mappedFile).isNotNull();
+
+        assertThat(mappedFileQueue.slice(1025)).isEqualTo(mappedFile);
+
+        assertThat(mappedFileQueue.slice(0)).isNull();
+        assertThat(mappedFileQueue.slice(123)).isNull();
+
+        assertThat(mappedFileQueue.slice(0)).isNull();
+
+        mappedFileQueue.unmapped();
+        mappedFileQueue.delete();
+    }
+
+    @Test
+    public void testAppendMessage() throws PutException {
+        final String fixedMsg = "0123456789abcdef";
+
+        MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(super.path, 1024);
+
+        for (int i = 0; i < 1024; i++) {
+            MappedFile mappedFile = mappedFileQueue.getOrCreate(0);
+            assertThat(mappedFile).isNotNull();
+            mappedFile.append(fixedMsg.getBytes());
+        }
+
+        mappedFileQueue.flush(0);
+        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024);
+
+        mappedFileQueue.flush(0);
+        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 2);
+
+        mappedFileQueue.flush(0);
+        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 3);
+
+        mappedFileQueue.flush(0);
+        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 4);
+
+        mappedFileQueue.flush(0);
+        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 5);
+
+        mappedFileQueue.flush(0);
+        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 6);
+
+        mappedFileQueue.unmapped();
+        mappedFileQueue.delete();
+    }
+
+    @Test
+    public void testGetMappedMemorySize() throws PutException {
+        final String fixedMsg = "abcd";
+
+        MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(super.path, 1024);
+
+        for (int i = 0; i < 1024; i++) {
+            MappedFile mappedFile = mappedFileQueue.getOrCreate(0);
+            assertThat(mappedFile).isNotNull();
+            mappedFile.append(fixedMsg.getBytes());
+        }
+
+        assertThat(mappedFileQueue.getMappedMemorySize()).isEqualTo(fixedMsg.length() * 1024);
+        mappedFileQueue.unmapped();
+        mappedFileQueue.delete();
     }
 }
