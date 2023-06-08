@@ -17,14 +17,16 @@ public class BornTimestampSerializer implements Serializer {
     @Override
     public void serialize(SerializerChainContext context) throws SerializeException {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        byteBuffer.putLong(context.getMessage().getBornTimestamp());
+        long bornTimestamp = context.getMessage().getBornTimestamp();
+        byteBuffer.putLong(bornTimestamp);
         context.next();
     }
 
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setBornTimestamp(byteBuffer.getLong());
+        long bornTimestamp = byteBuffer.getLong();
+        context.getMessage().setBornTimestamp(bornTimestamp);
         context.next();
     }
 }

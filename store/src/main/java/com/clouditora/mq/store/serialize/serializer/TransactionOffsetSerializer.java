@@ -17,14 +17,16 @@ public class TransactionOffsetSerializer implements Serializer {
     @Override
     public void serialize(SerializerChainContext context) throws SerializeException {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        byteBuffer.putLong(context.getMessage().getTransactionOffset());
+        long transactionOffset = context.getMessage().getTransactionOffset();
+        byteBuffer.putLong(transactionOffset);
         context.next();
     }
 
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setTransactionOffset(byteBuffer.getLong());
+        long transactionOffset = byteBuffer.getLong();
+        context.getMessage().setTransactionOffset(transactionOffset);
         context.next();
     }
 }

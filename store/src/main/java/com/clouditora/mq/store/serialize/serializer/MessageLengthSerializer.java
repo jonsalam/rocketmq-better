@@ -1,6 +1,8 @@
 package com.clouditora.mq.store.serialize.serializer;
 
 import com.clouditora.mq.common.MessageConst;
+import com.clouditora.mq.common.constant.MagicCode;
+import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.serialize.DeserializerChainContext;
 import com.clouditora.mq.store.serialize.SerializeException;
 import com.clouditora.mq.store.serialize.Serializer;
@@ -32,7 +34,14 @@ public class MessageLengthSerializer implements Serializer {
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setMessageLength(byteBuffer.getInt());
-        context.next();
+        MessageEntity message = context.getMessage();
+        try {
+            int messageLength = byteBuffer.getInt();
+            message.setMessageLength(messageLength);
+            context.next();
+        } catch (Exception ignored) {
+            // 读到了没有写入的位置
+            message.setMagicCode(MagicCode.BLANK);
+        }
     }
 }

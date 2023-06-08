@@ -17,14 +17,16 @@ public class CommitLogOffsetSerializer implements Serializer {
     @Override
     public void serialize(SerializerChainContext context) throws SerializeException {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        byteBuffer.putLong(context.getOffset());
+        long offset = context.getMessage().getCommitLogOffset();
+        byteBuffer.putLong(offset);
         context.next();
     }
 
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setCommitLogOffset(byteBuffer.getLong());
+        long offset = byteBuffer.getLong();
+        context.getMessage().setCommitLogOffset(offset);
         context.next();
     }
 }

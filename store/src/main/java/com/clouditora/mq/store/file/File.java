@@ -1,11 +1,20 @@
 package com.clouditora.mq.store.file;
 
 public interface File {
-    void mapped();
+    void map();
 
-    void unmapped();
+    /**
+     * @link org.apache.rocketmq.store.ReferenceResource#cleanup
+     */
+    void unmap();
 
+    /**
+     * @link org.apache.rocketmq.store.MappedFile#destroy
+     */
     void delete();
 
+    /**
+     * @param pages 0表示只要有写入就刷盘
+     */
     void flush(int pages);
 }

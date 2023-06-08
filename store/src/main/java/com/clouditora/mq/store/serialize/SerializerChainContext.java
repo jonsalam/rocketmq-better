@@ -11,10 +11,6 @@ import java.util.List;
 @Getter
 public class SerializerChainContext extends AbstractChainContext {
     /**
-     * wrotePosition, commitLogOffset of mapped file
-     */
-    private long offset;
-    /**
      * remain length of mapped file
      */
     private int free;

@@ -8,12 +8,20 @@ import lombok.Data;
 public class MessageStoreConfig {
     private String home = System.getProperty(GlobalConstant.ROCKETMQ_HOME_PROPERTY, System.getenv(GlobalConstant.ROCKETMQ_HOME_ENV));
     private String rootPath = "%s/store".formatted(home);
-    // CommitLog file size, default is 1G
+    /**
+     * CommitLog file size, default is 1G
+     */
     private int commitLogFileSize = 1024 * 1024 * 1024;
-    // ConsumeQueue file size, default is 30W
+    /**
+     * ConsumeQueue file size, default is 30W
+     */
     private int consumeQueueFileSize = 30_0000 * ConsumeFile.UNIT_SIZE;
     private int maxSlotCount = 500_0000;
     private int maxItemCount = 500_0000 * 4;
+    /**
+     * How many pages are to be flushed when flush CommitLog
+     */
+    private int flushCommitLogLeastPages = 4;
 
     public String getCommitLogPath() {
         return "%s/commitlog".formatted(rootPath);

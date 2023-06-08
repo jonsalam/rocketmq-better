@@ -17,14 +17,16 @@ public class SysFlagSerializer implements Serializer {
     @Override
     public void serialize(SerializerChainContext context) throws SerializeException {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        byteBuffer.putInt(context.getMessage().getSysFlag());
+        int sysFlag = context.getMessage().getSysFlag();
+        byteBuffer.putInt(sysFlag);
         context.next();
     }
 
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setSysFlag(byteBuffer.getInt());
+        int sysFlag = byteBuffer.getInt();
+        context.getMessage().setSysFlag(sysFlag);
         context.next();
     }
 }

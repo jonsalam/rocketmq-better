@@ -2,6 +2,7 @@ package com.clouditora.mq.store.serialize.serializer;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.message.MessageEntity;
+import com.clouditora.mq.common.util.MessageUtil;
 import com.clouditora.mq.store.serialize.DeserializerChainContext;
 import com.clouditora.mq.store.serialize.SerializeException;
 import com.clouditora.mq.store.serialize.Serializer;
@@ -17,7 +18,7 @@ public class PropertiesSerializer implements Serializer {
     @Override
     public int fieldLength(SerializerChainContext context) {
         MessageEntity message = context.getMessage();
-        this.propertyBytes = message.getPropertyBytes();
+        this.propertyBytes = MessageUtil.properties2Bytes(message.getProperties());
         if (propertyBytes == null) {
             return 2;
         } else {

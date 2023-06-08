@@ -1,10 +1,13 @@
 package com.clouditora.mq.common.message;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;
+import com.clouditora.mq.common.constant.MagicCode;
 import com.clouditora.mq.common.util.MessageUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.net.Inet6Address;
@@ -16,17 +19,20 @@ import java.util.Map;
  * @link org.apache.rocketmq.common.message.MessageExt
  * @link org.apache.rocketmq.store.MessageExtBrokerInner
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+@Data
+@NoArgsConstructor
 public class MessageEntity extends Message {
     /**
      * @link org.apache.rocketmq.common.message.MessageExt#msgId
      */
+    @JSONField(name = "msgId")
     private String messageId;
     /**
      * @link org.apache.rocketmq.common.message.MessageExt#storeSize
      */
+    @JSONField(name = "storeSize")
     private int messageLength;
     private String brokerName;
     private int queueId;
@@ -40,16 +46,16 @@ public class MessageEntity extends Message {
     /**
      * @link org.apache.rocketmq.common.message.MessageExt#reconsumeTimes
      */
+    @JSONField(name = "reconsumeTimes")
     private int reConsumeTimes;
     /**
      * @link org.apache.rocketmq.common.message.MessageExt#preparedTransactionOffset
      */
+    @JSONField(name = "preparedTransactionOffset")
     private long transactionOffset;
     private int bodyCrc;
-    private int magicCode;
-
-    public MessageEntity() {
-    }
+    @JSONField(serialize = false, deserialize = false)
+    private MagicCode magicCode;
 
     public MessageEntity(String topic, String tags, String keys, byte[] body) {
         super(topic, tags, keys, body);
@@ -83,10 +89,6 @@ public class MessageEntity extends Message {
         String string = new String(bytes, StandardCharsets.UTF_8);
         Map<String, String> map = MessageUtil.string2Properties(string);
         super.setProperties(map);
-    }
-
-    public byte[] getPropertyBytes() {
-        return MessageUtil.properties2Bytes(properties);
     }
 
 }

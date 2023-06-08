@@ -10,6 +10,7 @@ public class DeserializerChainContext extends AbstractChainContext {
 
     public void next() {
         if (index >= serializers.size()) {
+            index = 0;
             return;
         }
         Serializer serializer = serializers.get(index++);

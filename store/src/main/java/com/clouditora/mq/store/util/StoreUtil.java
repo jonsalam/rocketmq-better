@@ -81,7 +81,7 @@ public class StoreUtil {
         try {
             Method method = target.getClass().getMethod(methodName, args);
             method.setAccessible(true);
-            return method.invoke(target, new Class[0]);
+            return method.invoke(target);
         } catch (Throwable e) {
             throw new IllegalStateException(e);
         }

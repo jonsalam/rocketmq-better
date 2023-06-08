@@ -2,7 +2,7 @@ package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.message.MessageEntity;
-import com.clouditora.mq.store.log.MessageDispatcher;
+import com.clouditora.mq.store.log.CommitLogDispatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
  * @link org.apache.rocketmq.store.DefaultMessageStore.CommitLogDispatcherBuildConsumeQueue
  */
 @Slf4j
-public class ConsumeFileDispatcher implements MessageDispatcher {
+public class ConsumeFileDispatcher implements CommitLogDispatcher {
     private final ConsumeFileQueues files;
     /**
      * @link org.apache.rocketmq.store.ConsumeQueue#byteBufferIndex

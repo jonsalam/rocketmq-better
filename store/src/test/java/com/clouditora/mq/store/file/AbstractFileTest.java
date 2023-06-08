@@ -8,10 +8,10 @@ import java.io.File;
 
 @Slf4j
 public abstract class AbstractFileTest {
-    protected String path = "target/unit-test/";
+    protected String path = "./target/store";
 
     @AfterEach
-    public void init() {
+    void deleteFiles() {
         if (StringUtils.isBlank(path)) {
             return;
         }
@@ -20,7 +20,7 @@ public abstract class AbstractFileTest {
         MappedFile.TOTAL_MAPPED_MEMORY.set(0);
     }
 
-    public void deleteFile(File file) {
+    void deleteFile(File file) {
         if (!file.exists()) {
             return;
         }

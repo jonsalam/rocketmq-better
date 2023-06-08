@@ -24,7 +24,8 @@ public class QueueIdSerializer implements Serializer {
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setQueueId(byteBuffer.getInt());
+        int queueId = byteBuffer.getInt();
+        context.getMessage().setQueueId(queueId);
         context.next();
     }
 }

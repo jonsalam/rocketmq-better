@@ -30,9 +30,9 @@ public class MappedFile extends AbstractMappedFile {
         this.writePosition = new AtomicInteger(0);
     }
 
-    public MappedFile(MappedFile file, int writePosition, int length, MappedByteBuffer byteBuffer) {
-        super(file, writePosition + length, byteBuffer);
-        this.writePosition = new AtomicInteger(writePosition);
+    public MappedFile(MappedFile file, int offset, int length, MappedByteBuffer byteBuffer) {
+        super(file, offset + length, byteBuffer);
+        this.writePosition = new AtomicInteger(file.getWritePosition());
     }
 
     /**
@@ -75,7 +75,7 @@ public class MappedFile extends AbstractMappedFile {
             length = writePosition - position;
         }
         // mappedByteBuffer的position一直为0, 所以需要2次slice
-        MappedByteBuffer byteBuffer = this.mappedByteBuffer.slice().position(position).slice().limit(length);
+        MappedByteBuffer byteBuffer = getByteBuffer().position(position).slice().limit(length);
         acquire();
         return new MappedFile(this, position, length, byteBuffer);
     }
@@ -85,35 +85,29 @@ public class MappedFile extends AbstractMappedFile {
     }
 
     /**
-     * @param position    从指定位置开始写数据
-     * @param bytes       数据
      * @param byteLength  数据长度
      * @param writeLength 指定长度: 用于写指针
-     * @link org.apache.rocketmq.store.MappedFile#appendMessage(byte[], int, int)
+     * @link org.apache.rocketmq.store.MappedFile#appendMessagesInner
      */
-    public void append(int position, byte[] bytes, int byteLength, int writeLength) throws PutException {
+    private void append(byte[] bytes, int byteLength, int writeLength) throws PutException {
         if (isFull()) {
             log.error("file is full: file={}, writePosition={}, fileSize={}", this.file, this.writePosition.get(), fileSize);
             throw new PutException(PutStatus.UNKNOWN_ERROR);
         }
-        this.mappedByteBuffer.slice().put(bytes, position, byteLength);
         // 记录写入字节数: 在EOF的时候, mappedByteBuffer的position<fileSize, 此时无法判断是否写满
-        this.writePosition.addAndGet(writeLength);
-    }
-
-    public void append(byte[] bytes, int length) throws PutException {
-        append(0, bytes, length, length);
-    }
-
-    public void append(byte[] bytes) throws PutException {
-        append(0, bytes, bytes.length, bytes.length);
-    }
-
-    public void append(ByteBuffer byteBuffer, int length) throws PutException {
-        append(0, byteBuffer.array(), byteBuffer.limit(), length);
+        int position = this.writePosition.getAndAdd(writeLength);
+        getByteBuffer().put(position, bytes, 0, byteLength);
     }
 
     public void append(ByteBuffer byteBuffer) throws PutException {
-        append(0, byteBuffer.array(), byteBuffer.limit(), byteBuffer.limit());
+        append(byteBuffer.array(), byteBuffer.limit(), byteBuffer.limit());
+    }
+
+    public void append(byte[] bytes) throws PutException {
+        append(bytes, bytes.length, bytes.length);
+    }
+
+    public void fillBlank(ByteBuffer byteBuffer, int length) throws PutException {
+        append(byteBuffer.array(), byteBuffer.limit(), length);
     }
 }

@@ -24,7 +24,8 @@ public class FlagSerializer implements Serializer {
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setFlag(byteBuffer.getInt());
+        int flag = byteBuffer.getInt();
+        context.getMessage().setFlag(flag);
         context.next();
     }
 }

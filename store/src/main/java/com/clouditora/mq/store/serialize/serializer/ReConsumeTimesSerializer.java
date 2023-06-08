@@ -17,14 +17,16 @@ public class ReConsumeTimesSerializer implements Serializer {
     @Override
     public void serialize(SerializerChainContext context) throws SerializeException {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        byteBuffer.putInt(context.getMessage().getReConsumeTimes());
+        int times = context.getMessage().getReConsumeTimes();
+        byteBuffer.putInt(times);
         context.next();
     }
 
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setReConsumeTimes(byteBuffer.getInt());
+        int times = byteBuffer.getInt();
+        context.getMessage().setReConsumeTimes(times);
         context.next();
     }
 }

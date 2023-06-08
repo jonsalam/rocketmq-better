@@ -38,14 +38,14 @@ public class MappedFileQueueTest extends AbstractFileTest {
     }
 
     @Test
-    public void slice_0() {
+    void slice_0() {
         MappedFileQueue<MappedFile> queue = new MappedFileQueue<>(super.path, 180);
         MappedFile file = queue.slice(180);
         assertThat(file).isNull();
     }
 
     @Test
-    public void slice_1() {
+    void slice_1() {
         MappedFileQueue<MappedFile> queue = new MappedFileQueue<>(super.path, 180);
         queue.getOrCreate(0);
 
@@ -54,7 +54,7 @@ public class MappedFileQueueTest extends AbstractFileTest {
     }
 
     @Test
-    public void slice_2() {
+    void slice_2() {
         MappedFileQueue<MappedFile> queue = new MappedFileQueue<>(super.path, 180);
         queue.getOrCreate(0);
 
@@ -63,7 +63,7 @@ public class MappedFileQueueTest extends AbstractFileTest {
     }
 
     @Test
-    public void slice_3() {
+    void slice_3() {
         MappedFileQueue<MappedFile> queue = new MappedFileQueue<>(super.path, 180);
         MappedFile file = queue.getOrCreate(0);
         file.writePosition.set(180);
@@ -77,7 +77,7 @@ public class MappedFileQueueTest extends AbstractFileTest {
     }
 
     @Test
-    public void testFindMappedFileByOffset() throws PutException {
+    void testFindMappedFileByOffset() throws PutException {
         // four-byte string.
         final String fixedMsg = "abcd";
 
@@ -121,12 +121,12 @@ public class MappedFileQueueTest extends AbstractFileTest {
         mappedFile = mappedFileQueue.slice(1024 * 4 + 100);
         assertThat(mappedFile).isNull();
 
-        mappedFileQueue.unmapped();
+        mappedFileQueue.unmap();
         mappedFileQueue.delete();
     }
 
     @Test
-    public void testFindMappedFileByOffset_StartOffsetIsNonZero() {
+    void testFindMappedFileByOffset_StartOffsetIsNonZero() {
         MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(super.path, 1024);
 
         //Start from a non-zero offset
@@ -140,12 +140,12 @@ public class MappedFileQueueTest extends AbstractFileTest {
 
         assertThat(mappedFileQueue.slice(0)).isNull();
 
-        mappedFileQueue.unmapped();
+        mappedFileQueue.unmap();
         mappedFileQueue.delete();
     }
 
     @Test
-    public void testAppendMessage() throws PutException {
+    void testAppendMessage() throws PutException {
         final String fixedMsg = "0123456789abcdef";
 
         MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(super.path, 1024);
@@ -157,29 +157,29 @@ public class MappedFileQueueTest extends AbstractFileTest {
         }
 
         mappedFileQueue.flush(0);
-        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024);
+        assertThat(mappedFileQueue.getFlushOffset()).isEqualTo(1024);
 
         mappedFileQueue.flush(0);
-        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 2);
+        assertThat(mappedFileQueue.getFlushOffset()).isEqualTo(1024 * 2);
 
         mappedFileQueue.flush(0);
-        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 3);
+        assertThat(mappedFileQueue.getFlushOffset()).isEqualTo(1024 * 3);
 
         mappedFileQueue.flush(0);
-        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 4);
+        assertThat(mappedFileQueue.getFlushOffset()).isEqualTo(1024 * 4);
 
         mappedFileQueue.flush(0);
-        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 5);
+        assertThat(mappedFileQueue.getFlushOffset()).isEqualTo(1024 * 5);
 
         mappedFileQueue.flush(0);
-        assertThat(mappedFileQueue.getFlushPosition()).isEqualTo(1024 * 6);
+        assertThat(mappedFileQueue.getFlushOffset()).isEqualTo(1024 * 6);
 
-        mappedFileQueue.unmapped();
+        mappedFileQueue.unmap();
         mappedFileQueue.delete();
     }
 
     @Test
-    public void testGetMappedMemorySize() throws PutException {
+    void testGetMappedMemorySize() throws PutException {
         final String fixedMsg = "abcd";
 
         MappedFileQueue<MappedFile> mappedFileQueue = new MappedFileQueue<>(super.path, 1024);
@@ -191,7 +191,7 @@ public class MappedFileQueueTest extends AbstractFileTest {
         }
 
         assertThat(mappedFileQueue.getMappedMemorySize()).isEqualTo(fixedMsg.length() * 1024);
-        mappedFileQueue.unmapped();
+        mappedFileQueue.unmap();
         mappedFileQueue.delete();
     }
 }

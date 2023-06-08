@@ -24,7 +24,8 @@ public class BodyCrcSerializer implements Serializer {
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setBodyCrc(byteBuffer.getInt());
+        int bodyCrc = byteBuffer.getInt();
+        context.getMessage().setBodyCrc(bodyCrc);
         context.next();
     }
 }

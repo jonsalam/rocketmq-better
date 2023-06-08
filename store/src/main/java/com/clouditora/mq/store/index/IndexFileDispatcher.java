@@ -5,11 +5,11 @@ import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.MessageStoreConfig;
 import com.clouditora.mq.store.enums.PutStatus;
 import com.clouditora.mq.store.exception.PutException;
-import com.clouditora.mq.store.log.MessageDispatcher;
+import com.clouditora.mq.store.log.CommitLogDispatcher;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class IndexFileDispatcher implements MessageDispatcher {
+public class IndexFileDispatcher implements CommitLogDispatcher {
     private IndexFileQueue indexFileQueue;
 
     public IndexFileDispatcher(MessageStoreConfig config) {

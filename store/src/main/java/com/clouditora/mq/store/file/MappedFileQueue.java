@@ -2,22 +2,24 @@ package com.clouditora.mq.store.file;
 
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
  * @link org.apache.rocketmq.store.MappedFileQueue
  */
 @Slf4j
 public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.store.file.File {
-    private static final int DELETE_FILES_BATCH_MAX = 10;
-
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#storePath
      */
@@ -29,16 +31,18 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#mappedFiles
      */
-    protected final CopyOnWriteArrayList<T> files = new CopyOnWriteArrayList<>();
+    @Getter
+    protected final List<T> files = new CopyOnWriteArrayList<>();
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#flushedWhere
      */
     @Getter
-    protected long flushPosition = 0;
+    @Setter
+    protected long flushOffset = 0;
 
     public MappedFileQueue(String dir, int fileSize) {
         this.dir = new File(dir);
-        if (this.dir.isDirectory()) {
+        if (this.dir.exists() && !this.dir.isDirectory()) {
             throw new IllegalStateException("create mapped file exception: %s is not directory".formatted(dir));
         }
         this.fileSize = fileSize;
@@ -48,18 +52,22 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
      * @link org.apache.rocketmq.store.MappedFileQueue#load
      */
     @Override
-    public void mapped() {
+    public void map() {
         File[] files = this.dir.listFiles();
-        if (files != null) {
-            mapped(Arrays.asList(files));
+        if (files == null) {
+            return;
         }
+        List<File> list = Arrays.stream(files)
+                .filter(e -> NumberUtils.isCreatable(e.getName()))
+                .sorted(Comparator.comparing(File::getName))
+                .collect(Collectors.toList());
+        map(list);
     }
 
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#doLoad
      */
-    private void mapped(List<File> files) {
-        files.sort(Comparator.comparing(File::getName));
+    private void map(List<File> files) {
         for (File file : files) {
             if (file.length() != this.fileSize) {
                 log.error("load file {} failed: file size not matched message store config value", file);
@@ -69,7 +77,6 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
                 T mappedFile = createSilence(StoreUtil.string2Long(file.getName()));
                 mappedFile.setWritePosition(this.fileSize);
                 mappedFile.setFlushPosition(this.fileSize);
-                this.files.add(mappedFile);
                 log.error("load file {} success", mappedFile);
             } catch (Exception e) {
                 log.error("load file {} exception", file, e);
@@ -82,9 +89,9 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
      * @link org.apache.rocketmq.store.MappedFileQueue#shutdown
      */
     @Override
-    public void unmapped() {
+    public void unmap() {
         for (T file : this.files) {
-            file.unmapped();
+            file.unmap();
         }
     }
 
@@ -101,17 +108,33 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     }
 
     /**
+     * @param offset 删除大于offset的文件
+     * @link org.apache.rocketmq.store.MappedFileQueue#truncateDirtyFiles
+     */
+    public void delete(long offset) {
+        Iterator<T> iterator = this.files.iterator();
+        while (iterator.hasNext()) {
+            T file = iterator.next();
+            if (file.getOffset() > offset) {
+                file.unmap();
+                iterator.remove();
+                log.info("delete file: {}", file);
+            }
+        }
+    }
+
+    /**
      * @param pages 0表示只要有写入就刷盘
      */
     @Override
     public void flush(int pages) {
-        T file = slice(this.flushPosition);
+        T file = slice(this.flushOffset);
         if (file == null) {
             file = getFirstFile();
         }
         if (file != null) {
             file.flush(pages);
-            this.flushPosition = file.getOffset() + file.getFlushPosition();
+            this.flushOffset = file.getOffset() + file.getFlushPosition();
         }
     }
 
@@ -256,5 +279,17 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
             return false;
         }
         return file.getOffset() <= offset && offset < file.getOffset() + this.fileSize;
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#getMaxOffset
+     * @link org.apache.rocketmq.store.MappedFileQueue#getMaxWrotePosition
+     */
+    public long getMaxWriteOffset() {
+        MappedFile file = getLastFile();
+        if (file != null) {
+            return file.getOffset() + file.getWritePosition();
+        }
+        return 0;
     }
 }

@@ -17,16 +17,16 @@ public class StoreTimestampSerializer implements Serializer {
     @Override
     public void serialize(SerializerChainContext context) throws SerializeException {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        long timestamp = System.currentTimeMillis();
-        byteBuffer.putLong(timestamp);
-        context.getMessage().setStoreTimestamp(timestamp);
+        long storeTimestamp = context.getMessage().getStoreTimestamp();
+        byteBuffer.putLong(storeTimestamp);
         context.next();
     }
 
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setStoreTimestamp(byteBuffer.getLong());
+        long storeTimestamp = byteBuffer.getLong();
+        context.getMessage().setStoreTimestamp(storeTimestamp);
         context.next();
     }
 }

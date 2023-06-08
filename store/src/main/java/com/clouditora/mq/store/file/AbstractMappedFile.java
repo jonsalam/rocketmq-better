@@ -50,10 +50,12 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
      * @link org.apache.rocketmq.store.MappedFile#mappedByteBuffer
      */
     protected final MappedByteBuffer mappedByteBuffer;
-    protected final AtomicInteger flushPosition = new AtomicInteger(0);
-
     /**
-     * @link org.apache.rocketmq.store.ReferenceResource#available
+     * @link org.apache.rocketmq.store.MappedFile#flushedPosition
+     */
+    protected final AtomicInteger flushPosition = new AtomicInteger(0);
+    /**
+     * @link org.apache.rocketmq.store.ReferenceResource#cleanupOver
      */
     protected volatile boolean mapped = true;
     /**
@@ -82,6 +84,7 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         this.fileSize = fileSize;
         this.fileChannel = file.fileChannel;
         this.mappedByteBuffer = mappedByteBuffer;
+        this.acquiredCount.set(file.acquiredCount.get());
     }
 
     @Override
@@ -162,12 +165,12 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
     public void release() {
         long value = this.acquiredCount.decrementAndGet();
         if (value == 0) {
-            unmapped();
+            unmap();
         }
     }
 
     @Override
-    public void mapped() {
+    public void map() {
         if (!this.mapped) {
             throw new IllegalStateException();
         }
@@ -177,15 +180,12 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
      * @link org.apache.rocketmq.store.ReferenceResource#cleanup
      */
     @Override
-    public void unmapped() {
-        if (!this.mapped) {
+    public void unmap() {
+        if (!this.mapped && this.acquiredCount.get() > 0) {
             return;
         }
-        if (this.acquiredCount.get() > 1) {
-            return;
-        }
-        this.acquiredCount.set(0);
         this.mapped = false;
+        this.acquiredCount.set(0);
         try {
             StoreUtil.clean(this.mappedByteBuffer);
             TOTAL_MAPPED_MEMORY.addAndGet(-this.fileSize);
@@ -215,9 +215,6 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         }
     }
 
-    /**
-     * @param pages 0表示只要有写入就刷盘
-     */
     @Override
     public void flush(int pages) {
         boolean needed;

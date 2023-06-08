@@ -3,14 +3,16 @@ package com.clouditora.mq.store;
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.common.service.AbstractNothingService;
 import com.clouditora.mq.store.consume.ConsumeFile;
+import com.clouditora.mq.store.consume.ConsumeFileDispatcher;
 import com.clouditora.mq.store.consume.ConsumeFileQueue;
 import com.clouditora.mq.store.consume.ConsumeFileQueues;
 import com.clouditora.mq.store.enums.GetMessageStatus;
 import com.clouditora.mq.store.file.GetMessageResult;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.PutResult;
+import com.clouditora.mq.store.index.IndexFileDispatcher;
 import com.clouditora.mq.store.log.CommitLog;
-import com.clouditora.mq.store.log.CommitLogDispatcher;
+import com.clouditora.mq.store.log.CommitLogReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -26,13 +28,15 @@ public class MessageStore extends AbstractNothingService {
     private final MessageStoreConfig storeConfig;
     private final CommitLog commitLog;
     private final ConsumeFileQueues consumeFileQueues;
-    private final CommitLogDispatcher dispatcher;
+    private final CommitLogReader dispatcher;
 
     public MessageStore(MessageStoreConfig storeConfig) {
         this.storeConfig = storeConfig;
         this.commitLog = new CommitLog(storeConfig);
         this.consumeFileQueues = new ConsumeFileQueues(storeConfig);
-        this.dispatcher = new CommitLogDispatcher(this.storeConfig, this.commitLog, this.consumeFileQueues);
+        ConsumeFileDispatcher consumeFileDispatcher = new ConsumeFileDispatcher(this.consumeFileQueues);
+        IndexFileDispatcher indexFileDispatcher = new IndexFileDispatcher(storeConfig);
+        this.dispatcher = new CommitLogReader(this.commitLog, consumeFileDispatcher, indexFileDispatcher);
     }
 
     @Override
@@ -56,7 +60,7 @@ public class MessageStore extends AbstractNothingService {
      * org.apache.rocketmq.store.DefaultMessageStore#asyncPutMessage
      */
     public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
-        return this.commitLog.asyncPut(message);
+        return this.commitLog.put(message);
     }
 
     /**

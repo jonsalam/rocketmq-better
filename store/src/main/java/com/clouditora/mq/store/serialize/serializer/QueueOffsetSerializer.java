@@ -24,7 +24,8 @@ public class QueueOffsetSerializer implements Serializer {
     @Override
     public void deserialize(DeserializerChainContext context) {
         ByteBuffer byteBuffer = context.getByteBuffer();
-        context.getMessage().setQueueOffset(byteBuffer.getLong());
+        long queueOffset = byteBuffer.getLong();
+        context.getMessage().setQueueOffset(queueOffset);
         context.next();
     }
 }
