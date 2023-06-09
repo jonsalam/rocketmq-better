@@ -1,6 +1,6 @@
 package com.clouditora.mq.store.file;
 
-import com.clouditora.mq.store.enums.PutStatus;
+import com.clouditora.mq.store.enums.PutMessageStatus;
 import com.clouditora.mq.store.exception.PutException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +27,11 @@ public class MappedFile extends AbstractMappedFile {
 
     public MappedFile(String path, int fileSize) throws IOException {
         super(new File(path), fileSize);
+        this.writePosition = new AtomicInteger(0);
+    }
+
+    protected MappedFile(String path, long offset, int fileSize) throws IOException {
+        super(new File(path), offset, fileSize);
         this.writePosition = new AtomicInteger(0);
     }
 
@@ -92,7 +97,7 @@ public class MappedFile extends AbstractMappedFile {
     private void append(byte[] bytes, int byteLength, int writeLength) throws PutException {
         if (isFull()) {
             log.error("file is full: file={}, writePosition={}, fileSize={}", this.file, this.writePosition.get(), fileSize);
-            throw new PutException(PutStatus.UNKNOWN_ERROR);
+            throw new PutException(PutMessageStatus.UNKNOWN_ERROR);
         }
         // 记录写入字节数: 在EOF的时候, mappedByteBuffer的position<fileSize, 此时无法判断是否写满
         int position = this.writePosition.getAndAdd(writeLength);
@@ -107,7 +112,11 @@ public class MappedFile extends AbstractMappedFile {
         append(bytes, bytes.length, bytes.length);
     }
 
-    public void fillBlank(ByteBuffer byteBuffer, int length) throws PutException {
-        append(byteBuffer.array(), byteBuffer.limit(), length);
+    public void fillBlank(ByteBuffer byteBuffer, int length) {
+        try {
+            append(byteBuffer.array(), byteBuffer.limit(), length);
+        } catch (PutException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

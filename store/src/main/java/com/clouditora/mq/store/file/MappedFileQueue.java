@@ -115,7 +115,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
         Iterator<T> iterator = this.files.iterator();
         while (iterator.hasNext()) {
             T file = iterator.next();
-            if (file.getOffset() > offset) {
+            if (offset < file.getOffset()) {
                 file.unmap();
                 iterator.remove();
                 log.info("delete file: {}", file);
@@ -123,19 +123,17 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
         }
     }
 
-    /**
-     * @param pages 0表示只要有写入就刷盘
-     */
     @Override
-    public void flush(int pages) {
+    public long flush(int pages) {
         T file = slice(this.flushOffset);
         if (file == null) {
-            file = getFirstFile();
+            file = getFirst();
         }
         if (file != null) {
-            file.flush(pages);
-            this.flushOffset = file.getOffset() + file.getFlushPosition();
+            long flushPosition = file.flush(pages);
+            this.flushOffset = file.getOffset() + flushPosition;
         }
+        return this.flushOffset;
     }
 
     /**
@@ -148,7 +146,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#getFirstMappedFile
      */
-    public T getFirstFile() {
+    public T getFirst() {
         if (this.files.isEmpty()) {
             return null;
         }
@@ -164,7 +162,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#getLastMappedFile
      */
-    public T getLastFile() {
+    public T getLast() {
         while (!this.files.isEmpty()) {
             try {
                 return this.files.get(this.files.size() - 1);
@@ -185,7 +183,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
      * @link org.apache.rocketmq.store.MappedFileQueue#getLastMappedFile(long, boolean)
      */
     public T getOrCreate(long offset) {
-        T file = getLastFile();
+        T file = getLast();
         if (file == null) {
             // 被除数 = 除数 x 商 + 余数 ==> 除数 x 商 = 被除数 - 余数
             long startOffset = offset - (offset % this.fileSize);
@@ -242,8 +240,8 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     }
 
     private T sliceWithIndex(long offset) {
-        MappedFile firstFile = getFirstFile();
-        MappedFile lastFile = getLastFile();
+        MappedFile firstFile = getFirst();
+        MappedFile lastFile = getLast();
         if (firstFile == null || lastFile == null) {
             return null;
         }
@@ -286,7 +284,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
      * @link org.apache.rocketmq.store.MappedFileQueue#getMaxWrotePosition
      */
     public long getMaxWriteOffset() {
-        MappedFile file = getLastFile();
+        MappedFile file = getLast();
         if (file != null) {
             return file.getOffset() + file.getWritePosition();
         }

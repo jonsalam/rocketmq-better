@@ -23,7 +23,7 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
 
     public CommitLogIterator(CommitLog commitLog, long offset) {
         this.commitLog = commitLog;
-        this.file = commitLog.slice(offset);
+        this.file = commitLog.slice(offset, 0);
         if (this.file == null) {
             this.hasNext = false;
             return;
@@ -45,6 +45,9 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
 
     @Override
     public MessageEntity next() {
+        if (!hasNext()) {
+            return null;
+        }
         MessageEntity message = this.deserializer.get().deserialize(byteBuffer);
         if (message.getMagicCode() == MagicCode.MESSAGE) {
             this.prevBlankMessage = false;
@@ -61,7 +64,7 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
             this.file.release();
             // 下一个文件的offset
             this.offset = this.offset + this.file.getFileSize() - this.offset % this.file.getFileSize();
-            this.file = this.commitLog.slice(this.offset);
+            this.file = this.commitLog.slice(this.offset, 0);
             if (this.file == null) {
                 // 下一个文件没有了
                 return null;

@@ -2,7 +2,7 @@ package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.message.MessageEntity;
-import com.clouditora.mq.store.log.CommitLogDispatcher;
+import com.clouditora.mq.store.log.dispatcher.MessageDispatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -12,14 +12,14 @@ import java.nio.ByteBuffer;
  * @link org.apache.rocketmq.store.DefaultMessageStore.CommitLogDispatcherBuildConsumeQueue
  */
 @Slf4j
-public class ConsumeFileDispatcher implements CommitLogDispatcher {
-    private final ConsumeFileQueues files;
+public class ConsumeDispatcher implements MessageDispatcher {
+    private final ConsumeQueueManager files;
     /**
      * @link org.apache.rocketmq.store.ConsumeQueue#byteBufferIndex
      */
     private final ByteBuffer byteBuffer;
 
-    public ConsumeFileDispatcher(ConsumeFileQueues files) {
+    public ConsumeDispatcher(ConsumeQueueManager files) {
         this.files = files;
         this.byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
     }
@@ -29,7 +29,7 @@ public class ConsumeFileDispatcher implements CommitLogDispatcher {
      */
     @Override
     public void dispatch(MessageEntity message) throws Exception {
-        ConsumeFileQueue queue = this.files.get(message.getTopic(), message.getQueueId());
+        ConsumeQueue queue = this.files.get(message.getTopic(), message.getQueueId());
         ConsumeFile file = queue.getOrCreate(message.getQueueOffset());
         if (file == null) {
             return;

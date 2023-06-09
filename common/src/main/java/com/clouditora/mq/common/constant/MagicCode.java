@@ -21,9 +21,7 @@ public enum MagicCode {
      *
      * @link org.apache.rocketmq.store.CommitLog#BLANK_MAGIC_CODE
      */
-    BLANK(-875286124),
-
-    ERROR(0);
+    BLANK(-875286124);
 
     private final int code;
 }

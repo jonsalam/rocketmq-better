@@ -11,21 +11,21 @@ import java.util.concurrent.FutureTask;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MessageStoreTest extends AbstractFileTest {
+public class StoreControllerTest extends AbstractFileTest {
 
     @Test
     public void getMessage() throws Exception {
-        MessageStoreConfig storeConfig = new MessageStoreConfig();
+        StoreConfig storeConfig = new StoreConfig();
         storeConfig.setRootPath(path);
-        MessageStore messageStore = new MessageStore(storeConfig);
-        messageStore.startup();
+        StoreController storeController = new StoreController(storeConfig);
+        storeController.startup();
 
         MessageEntity message = TestUtil.buildMessage();
-        messageStore.asyncPut(message);
+        storeController.asyncPut(message);
 
         FutureTask<GetMessageResult> task = new FutureTask<>(() -> {
             TestUtil.sleep(1);
-            return messageStore.get(null, message.getTopic(), 0, 0, 16);
+            return storeController.get(null, message.getTopic(), 0, 0, 16);
         });
         new Thread(task).start();
 

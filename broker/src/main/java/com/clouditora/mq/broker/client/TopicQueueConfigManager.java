@@ -8,7 +8,7 @@ import com.clouditora.mq.common.service.AbstractFileService;
 import com.clouditora.mq.common.topic.TopicQueueConfig;
 import com.clouditora.mq.common.topic.TopicQueueConfigFile;
 import com.clouditora.mq.common.util.JsonUtil;
-import com.clouditora.mq.store.MessageStoreConfig;
+import com.clouditora.mq.store.StoreConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,8 +24,8 @@ public class TopicQueueConfigManager extends AbstractFileService {
     @Getter
     private final ConcurrentMap<String, TopicQueueConfig> topicMap = new ConcurrentHashMap<>(1024);
 
-    public TopicQueueConfigManager(BrokerConfig brokerConfig, MessageStoreConfig messageStoreConfig, BrokerController brokerController) {
-        super("%s/config/topics.json".formatted(messageStoreConfig.getRootPath()));
+    public TopicQueueConfigManager(BrokerConfig brokerConfig, StoreConfig storeConfig, BrokerController brokerController) {
+        super("%s/config/topics.json".formatted(storeConfig.getRootPath()));
         this.brokerController = brokerController;
 
         {

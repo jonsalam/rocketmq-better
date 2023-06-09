@@ -31,7 +31,7 @@ public class MappedFileTest extends AbstractFileTest {
 
     @Test
     void writeAndRead() throws Exception {
-        String path = super.path + StoreUtil.long2String(0);
+        String path = super.path + "/" + StoreUtil.long2String(0);
         MessageEntity write = write(path);
         MessageEntity read = read(path);
         assertEquals(write, read);
@@ -39,7 +39,7 @@ public class MappedFileTest extends AbstractFileTest {
 
     @Test
     void slice() throws IOException, PutException {
-        String path = super.path + StoreUtil.long2String(1024);
+        String path = super.path + "/" + StoreUtil.long2String(1024);
         MappedFile file = new MappedFile(path, 1024);
         file.append(TestUtil.MESSAGE_BODY);
 

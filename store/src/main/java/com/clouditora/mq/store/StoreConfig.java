@@ -2,10 +2,11 @@ package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.store.consume.ConsumeFile;
+import com.clouditora.mq.store.file.FlushType;
 import lombok.Data;
 
 @Data
-public class MessageStoreConfig {
+public class StoreConfig {
     private String home = System.getProperty(GlobalConstant.ROCKETMQ_HOME_PROPERTY, System.getenv(GlobalConstant.ROCKETMQ_HOME_ENV));
     private String rootPath = "%s/store".formatted(home);
     /**
@@ -18,10 +19,11 @@ public class MessageStoreConfig {
     private int consumeQueueFileSize = 30_0000 * ConsumeFile.UNIT_SIZE;
     private int maxSlotCount = 500_0000;
     private int maxItemCount = 500_0000 * 4;
-    /**
-     * How many pages are to be flushed when flush CommitLog
-     */
+
+    private int flushIntervalCommitLog = 500;
     private int flushCommitLogLeastPages = 4;
+    private int flushCommitLogThoroughInterval = 1000 * 10;
+    private FlushType flushDiskType = FlushType.ASYNC_FLUSH;
 
     public String getCommitLogPath() {
         return "%s/commitlog".formatted(rootPath);

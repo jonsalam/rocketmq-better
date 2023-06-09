@@ -63,8 +63,8 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
      */
     protected AtomicLong acquiredCount = new AtomicLong(1);
 
-    protected AbstractMappedFile(File file, int fileSize) {
-        this.offset = StoreUtil.string2Long(file.getName());
+    protected AbstractMappedFile(File file, long offset, int fileSize) {
+        this.offset = offset;
         this.file = file;
         this.fileSize = fileSize;
         try {
@@ -76,6 +76,10 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         }
         TOTAL_MAPPED_MEMORY.addAndGet(fileSize);
         TOTAL_MAPPED_FILES.incrementAndGet();
+    }
+
+    protected AbstractMappedFile(File file, int fileSize) {
+        this(file, StoreUtil.string2Long(file.getName()), fileSize);
     }
 
     protected AbstractMappedFile(AbstractMappedFile file, int fileSize, MappedByteBuffer mappedByteBuffer) {
@@ -216,29 +220,32 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
     }
 
     @Override
-    public void flush(int pages) {
+    public long flush(int pages) {
+        int flushPosition = getFlushPosition();
+        int writePosition = getWritePosition();
         boolean needed;
         if (isFull()) {
             needed = true;
         } else {
-            int flushPosition1 = this.flushPosition.get();
-            int writePosition = getWritePosition();
             if (pages > 0) {
-                needed = (writePosition - flushPosition1) / OS_PAGE_SIZE >= pages;
+                needed = (writePosition - flushPosition) / OS_PAGE_SIZE >= pages;
             } else {
-                needed = writePosition > flushPosition1;
+                needed = writePosition > flushPosition;
             }
         }
         if (needed) {
-            acquire();
             try {
+                acquire();
                 force();
-                this.flushPosition.set(getWritePosition());
+                setFlushPosition(writePosition);
+                return writePosition;
             } catch (Exception e) {
                 log.error("flush file {} exception", this.file, e);
+            } finally {
+                release();
             }
-            release();
         }
+        return flushPosition;
     }
 
     /**

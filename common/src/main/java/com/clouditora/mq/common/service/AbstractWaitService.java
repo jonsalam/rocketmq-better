@@ -34,6 +34,9 @@ public abstract class AbstractWaitService extends AbstractSimpleService {
         }
     }
 
+    /**
+     * @link org.apache.rocketmq.common.ServiceThread#waitForRunning
+     */
     protected void await() {
         log.info("{} service wait for wake up, waken={}, timeout={}mS", getServiceName(), waken, this.interval);
         if (this.waken.compareAndSet(true, false)) {
@@ -76,6 +79,9 @@ public abstract class AbstractWaitService extends AbstractSimpleService {
 
     }
 
+    /**
+     * @link org.apache.rocketmq.common.ServiceThread#onWaitEnd
+     */
     protected abstract void onWakeup();
 
     protected void onPostWakeup() {

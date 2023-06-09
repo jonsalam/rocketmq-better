@@ -45,8 +45,7 @@ public class MagicCodeSerializer implements Serializer {
             message.setMagicCode(MagicCode.MESSAGE);
             context.next();
         } else {
-            message.setMagicCode(MagicCode.ERROR);
-            log.error("found illegal magic code: position={}", byteBuffer.position());
+            log.error("found illegal magic code: {}, position={}", magicCode, byteBuffer.position());
         }
     }
 }

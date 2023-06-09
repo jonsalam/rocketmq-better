@@ -1,7 +1,7 @@
 package com.clouditora.mq.client.broker;
 
 import com.clouditora.mq.client.consumer.ConsumerConfig;
-import com.clouditora.mq.client.consumer.handler.ConsumerQueue;
+import com.clouditora.mq.client.consumer.handler.ConsumeQueue;
 import com.clouditora.mq.client.consumer.offset.AbstractOffsetManager;
 import com.clouditora.mq.client.topic.TopicRouteManager;
 import com.clouditora.mq.common.constant.PositionStrategy;
@@ -36,7 +36,7 @@ public class BrokerQueueManager {
     /**
      * @link org.apache.rocketmq.client.impl.consumer.RebalanceImpl#processQueueTable
      */
-    protected final ConcurrentMap<TopicQueue, ConsumerQueue> queueMap = new ConcurrentHashMap<>(64);
+    protected final ConcurrentMap<TopicQueue, ConsumeQueue> queueMap = new ConcurrentHashMap<>(64);
     /**
      * topic:
      * org.apache.rocketmq.client.impl.consumer.RebalanceImpl#subscriptionInner
@@ -60,8 +60,8 @@ public class BrokerQueueManager {
         try {
             Set<TopicQueue> lockedQueues = this.brokerController.lockQueue(this.group, queue, this.clientId);
             for (TopicQueue lockedQueue : lockedQueues) {
-                ConsumerQueue consumerQueue = this.queueMap.get(lockedQueue);
-                if (consumerQueue != null) {
+                ConsumeQueue consumeQueue = this.queueMap.get(lockedQueue);
+                if (consumeQueue != null) {
 //                    consumerQueue.setLocked(true);
 //                    consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
                 }
@@ -85,19 +85,19 @@ public class BrokerQueueManager {
             try {
                 Set<TopicQueue> lockedQueues = this.brokerController.lockQueue(this.group, brokerName, queues, this.clientId);
                 for (TopicQueue lockedQueue : lockedQueues) {
-                    ConsumerQueue consumerQueue = this.queueMap.get(lockedQueue);
-                    if (consumerQueue != null) {
+                    ConsumeQueue consumeQueue = this.queueMap.get(lockedQueue);
+                    if (consumeQueue != null) {
 //                        consumerQueue.setLocked(true);
 //                        consumerQueue.setLastLockTimestamp(System.currentTimeMillis());
-                        log.info("lock queue success: {} {}", this.group, consumerQueue);
+                        log.info("lock queue success: {} {}", this.group, consumeQueue);
                     }
                 }
                 for (TopicQueue queue : queues) {
                     if (!lockedQueues.contains(queue)) {
-                        ConsumerQueue consumerQueue = this.queueMap.get(queue);
-                        if (consumerQueue != null) {
+                        ConsumeQueue consumeQueue = this.queueMap.get(queue);
+                        if (consumeQueue != null) {
 //                            consumerQueue.setLocked(false);
-                            log.info("lock queue failed: {} {}", this.group, consumerQueue);
+                            log.info("lock queue failed: {} {}", this.group, consumeQueue);
                         }
                     }
                 }
@@ -126,10 +126,10 @@ public class BrokerQueueManager {
             try {
                 this.brokerController.unlockQueue(oneway, this.group, brokerName, queues, this.clientId);
                 for (TopicQueue queue : queues) {
-                    ConsumerQueue consumerQueue = this.queueMap.get(queue);
-                    if (consumerQueue != null) {
+                    ConsumeQueue consumeQueue = this.queueMap.get(queue);
+                    if (consumeQueue != null) {
 //                        consumerQueue.setLocked(false);
-                        log.info("unlock queue failed: {} {}", this.group, consumerQueue);
+                        log.info("unlock queue failed: {} {}", this.group, consumeQueue);
                     }
                 }
             } catch (Exception e) {

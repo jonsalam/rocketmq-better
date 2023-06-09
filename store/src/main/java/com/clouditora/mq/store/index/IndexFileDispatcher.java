@@ -2,17 +2,17 @@ package com.clouditora.mq.store.index;
 
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.message.MessageEntity;
-import com.clouditora.mq.store.MessageStoreConfig;
-import com.clouditora.mq.store.enums.PutStatus;
+import com.clouditora.mq.store.StoreConfig;
+import com.clouditora.mq.store.enums.PutMessageStatus;
 import com.clouditora.mq.store.exception.PutException;
-import com.clouditora.mq.store.log.CommitLogDispatcher;
+import com.clouditora.mq.store.log.dispatcher.MessageDispatcher;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class IndexFileDispatcher implements CommitLogDispatcher {
+public class IndexFileDispatcher implements MessageDispatcher {
     private IndexFileQueue indexFileQueue;
 
-    public IndexFileDispatcher(MessageStoreConfig config) {
+    public IndexFileDispatcher(StoreConfig config) {
         indexFileQueue = new IndexFileQueue(config);
     }
 
@@ -21,7 +21,7 @@ public class IndexFileDispatcher implements CommitLogDispatcher {
         IndexFile file = indexFileQueue.getOrCreate();
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
-            throw new PutException(PutStatus.CREATE_MAPPED_FILE_FAILED);
+            throw new PutException(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
         }
         String key = buildKey(message);
         file.putKey(key, message.getCommitLogOffset(), message.getStoreTimestamp());

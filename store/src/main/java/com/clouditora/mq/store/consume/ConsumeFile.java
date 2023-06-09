@@ -7,7 +7,7 @@ import java.io.IOException;
 public class ConsumeFile extends MappedFile {
     public static final int UNIT_SIZE = 20;
 
-    public ConsumeFile(String fileName, int fileSize) throws IOException {
-        super(fileName, fileSize);
+    public ConsumeFile(String path, int fileSize) throws IOException {
+        super(path, fileSize);
     }
 }

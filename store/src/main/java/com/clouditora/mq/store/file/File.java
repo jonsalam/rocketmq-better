@@ -16,5 +16,5 @@ public interface File {
     /**
      * @param pages 0表示只要有写入就刷盘
      */
-    void flush(int pages);
+    long flush(int pages);
 }

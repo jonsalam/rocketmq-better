@@ -13,7 +13,7 @@ import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.network.util.NetworkUtil;
-import com.clouditora.mq.store.MessageStore;
+import com.clouditora.mq.store.StoreController;
 import com.clouditora.mq.store.file.PutResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +28,12 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDispatcher {
     protected final BrokerConfig brokerConfig;
-    protected final MessageStore messageStore;
+    protected final StoreController storeController;
     protected final InetSocketAddress storeHost;
 
-    public SendMessageDispatcher(BrokerConfig brokerConfig, MessageStore messageStore) {
+    public SendMessageDispatcher(BrokerConfig brokerConfig, StoreController storeController) {
         this.brokerConfig = brokerConfig;
-        this.messageStore = messageStore;
+        this.storeController = storeController;
         this.storeHost = new InetSocketAddress(brokerConfig.getBrokerIp(), brokerConfig.getBrokerPort());
     }
 
@@ -81,7 +81,7 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
         message.setStoreHost(this.storeHost);
         message.setReConsumeTimes(Optional.ofNullable(requestHeader.getReConsumeTimes()).orElse(0));
         message.putProperty(MessageConst.Property.CLUSTER, brokerConfig.getBrokerClusterName());
-        CompletableFuture<PutResult> result = this.messageStore.asyncPut(message);
+        CompletableFuture<PutResult> result = this.storeController.asyncPut(message);
         result.thenApply(e -> {
             if (e == null) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);

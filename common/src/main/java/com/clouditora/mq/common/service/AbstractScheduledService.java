@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractScheduledService extends AbstractNothingService {
     private static final long JOIN_TIME = 90 * 1000;
 
-    protected final ScheduledExecutorService scheduledExecutor;
+    protected final ScheduledExecutorService executor;
     protected final TimeUnit timeUnit;
 
     protected AbstractScheduledService(TimeUnit timeUnit) {
         this.timeUnit = timeUnit;
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
+        this.executor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
     }
 
     protected AbstractScheduledService() {
@@ -23,7 +23,7 @@ public abstract class AbstractScheduledService extends AbstractNothingService {
     }
 
     public void scheduled(TimeUnit timeUnit, long delay, long period, Runnable runnable) {
-        this.scheduledExecutor.scheduleWithFixedDelay(
+        this.executor.scheduleWithFixedDelay(
                 runnable,
                 delay,
                 period,
@@ -40,22 +40,22 @@ public abstract class AbstractScheduledService extends AbstractNothingService {
             log.warn("{} service not started", getServiceName());
             return;
         }
-        this.scheduledExecutor.shutdown();
+        this.executor.shutdown();
         if (!interrupt) {
             log.info("{} service shutdown", getServiceName());
             return;
         }
         try {
-            boolean termination = this.scheduledExecutor.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+            boolean termination = this.executor.awaitTermination(timeout, TimeUnit.MILLISECONDS);
             if (termination) {
                 log.info("{} service shutdown", getServiceName());
             } else {
                 log.warn("{} service shutdown timeout", getServiceName());
-                this.scheduledExecutor.shutdownNow();
+                this.executor.shutdownNow();
             }
         } catch (InterruptedException e) {
             log.error("{} service shutdown interrupted", getServiceName());
-            this.scheduledExecutor.shutdownNow();
+            this.executor.shutdownNow();
         }
     }
 

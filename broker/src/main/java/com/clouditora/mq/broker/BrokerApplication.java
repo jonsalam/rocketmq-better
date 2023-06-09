@@ -3,7 +3,7 @@ package com.clouditora.mq.broker;
 import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetworkConfig;
-import com.clouditora.mq.store.MessageStoreConfig;
+import com.clouditora.mq.store.StoreConfig;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -15,8 +15,8 @@ public class BrokerApplication {
         BrokerConfig brokerConfig = getBrokerConfig();
         ServerNetworkConfig serverNetworkConfig = getServerNetworkConfig();
         ClientNetworkConfig clientNetworkConfig = getClientNetworkConfig();
-        MessageStoreConfig messageStoreConfig = getMessageStoreConfig();
-        BrokerController controller = buildController(brokerConfig, serverNetworkConfig, clientNetworkConfig, messageStoreConfig);
+        StoreConfig storeConfig = getMessageStoreConfig();
+        BrokerController controller = buildController(brokerConfig, serverNetworkConfig, clientNetworkConfig, storeConfig);
         addShutdownHook(controller);
         controller.startup();
         System.out.printf("broker startup success: %s@%s%n", brokerConfig.getBrokerName(), serverNetworkConfig.getListenPort());
@@ -41,12 +41,12 @@ public class BrokerApplication {
         return new ClientNetworkConfig();
     }
 
-    private static MessageStoreConfig getMessageStoreConfig() {
-        return new MessageStoreConfig();
+    private static StoreConfig getMessageStoreConfig() {
+        return new StoreConfig();
     }
 
-    private static BrokerController buildController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig, MessageStoreConfig messageStoreConfig) {
-        return new BrokerController(brokerConfig, serverNetworkConfig, clientNetworkConfig, messageStoreConfig);
+    private static BrokerController buildController(BrokerConfig brokerConfig, ServerNetworkConfig serverNetworkConfig, ClientNetworkConfig clientNetworkConfig, StoreConfig storeConfig) {
+        return new BrokerController(brokerConfig, serverNetworkConfig, clientNetworkConfig, storeConfig);
     }
 
     private static void addShutdownHook(BrokerController controller) {

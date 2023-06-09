@@ -4,7 +4,7 @@ import com.clouditora.mq.client.broker.BrokerController;
 import com.clouditora.mq.client.broker.BrokerQueueManager;
 import com.clouditora.mq.client.consumer.Consumer;
 import com.clouditora.mq.client.consumer.ConsumerConfig;
-import com.clouditora.mq.client.consumer.handler.ConsumerQueue;
+import com.clouditora.mq.client.consumer.handler.ConsumeQueue;
 import com.clouditora.mq.client.consumer.offset.AbstractOffsetManager;
 import com.clouditora.mq.client.instance.ClientInstance;
 import com.clouditora.mq.common.constant.MessageModel;
@@ -63,7 +63,7 @@ public class PullMessageService extends AbstractLaterService {
     }
 
     private boolean flowControl(PullMessageRequest request, Consumer consumer) {
-        ConsumerQueue queue = request.getConsumerQueue();
+        ConsumeQueue queue = request.getConsumeQueue();
         long messageCount = queue.getMessageCount();
         int macMessageCount = this.consumerConfig.getPullThresholdForQueue();
         if (messageCount > macMessageCount) {

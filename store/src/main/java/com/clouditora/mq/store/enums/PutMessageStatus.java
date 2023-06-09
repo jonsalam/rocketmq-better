@@ -1,6 +1,9 @@
 package com.clouditora.mq.store.enums;
 
-public enum PutStatus {
+/**
+ * @link org.apache.rocketmq.store.PutMessageStatus
+ */
+public enum PutMessageStatus {
     SUCCESS,
     UNKNOWN_ERROR,
     FLUSH_DISK_TIMEOUT,

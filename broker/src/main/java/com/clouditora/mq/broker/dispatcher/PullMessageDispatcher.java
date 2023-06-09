@@ -10,7 +10,7 @@ import com.clouditora.mq.network.command.AsyncCommandDispatcher;
 import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
-import com.clouditora.mq.store.MessageStore;
+import com.clouditora.mq.store.StoreController;
 import com.clouditora.mq.store.file.GetMessageResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +20,13 @@ public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDis
     protected final BrokerConfig brokerConfig;
     protected final TopicQueueConfigManager topicQueueConfigManager;
     protected final ConsumerManager consumerManager;
-    protected final MessageStore messageStore;
+    protected final StoreController storeController;
 
-    public PullMessageDispatcher(BrokerConfig brokerConfig, TopicQueueConfigManager topicQueueConfigManager, ConsumerManager consumerManager, MessageStore messageStore) {
+    public PullMessageDispatcher(BrokerConfig brokerConfig, TopicQueueConfigManager topicQueueConfigManager, ConsumerManager consumerManager, StoreController storeController) {
         this.brokerConfig = brokerConfig;
         this.topicQueueConfigManager = topicQueueConfigManager;
         this.consumerManager = consumerManager;
-        this.messageStore = messageStore;
+        this.storeController = storeController;
     }
 
     @Override

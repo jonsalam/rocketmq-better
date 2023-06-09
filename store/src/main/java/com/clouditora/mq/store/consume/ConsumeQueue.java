@@ -1,6 +1,6 @@
 package com.clouditora.mq.store.consume;
 
-import com.clouditora.mq.store.MessageStoreConfig;
+import com.clouditora.mq.store.StoreConfig;
 import com.clouditora.mq.store.file.MappedFileQueue;
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Getter;
@@ -13,8 +13,8 @@ import java.nio.ByteBuffer;
  * @link org.apache.rocketmq.store.ConsumeQueue
  */
 @Slf4j
-public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
-    private final MessageStoreConfig config;
+public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
+    private final StoreConfig config;
     private final String topic;
     private final int queueId;
     @Getter
@@ -22,7 +22,7 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
     @Getter
     private volatile long maxOffset = 0;
 
-    public ConsumeFileQueue(MessageStoreConfig config, String topic, int queueId) {
+    public ConsumeQueue(StoreConfig config, String topic, int queueId) {
         super("%s/%s/%s".formatted(config.getConsumeQueuePath(), topic, queueId), config.getConsumeQueueFileSize());
         this.config = config;
         this.topic = topic;
@@ -60,6 +60,14 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
     }
 
     /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#getIndexBuffer
+     */
+    @Override
+    public ConsumeFile slice(long offset) {
+        return super.slice(offset * ConsumeFile.UNIT_SIZE);
+    }
+
+    /**
      * @link org.apache.rocketmq.store.ConsumeQueue#fillPreBlank
      */
     private void fillBlank(ConsumeFile mappedFile, long untilWhere) {
@@ -76,14 +84,6 @@ public class ConsumeFileQueue extends MappedFileQueue<ConsumeFile> {
         } catch (Exception e) {
             log.error("fill blank exception", e);
         }
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#getIndexBuffer
-     */
-    @Override
-    public ConsumeFile slice(long offset) {
-        return super.slice(offset * ConsumeFile.UNIT_SIZE);
     }
 
     /**

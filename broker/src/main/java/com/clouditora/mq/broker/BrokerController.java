@@ -21,8 +21,8 @@ import com.clouditora.mq.network.ClientNetwork;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetwork;
 import com.clouditora.mq.network.ServerNetworkConfig;
-import com.clouditora.mq.store.MessageStore;
-import com.clouditora.mq.store.MessageStoreConfig;
+import com.clouditora.mq.store.StoreConfig;
+import com.clouditora.mq.store.StoreController;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,14 +45,14 @@ public class BrokerController extends AbstractScheduledService {
     private final ConsumerManager consumerManager;
     private final ConsumerLockManager consumerLockManager;
     private final TopicQueueConfigManager topicQueueConfigManager;
-    private final MessageStore messageStore;
+    private final StoreController storeController;
     private final List<ExecutorService> executors = new ArrayList<>();
 
     public BrokerController(
             BrokerConfig brokerConfig,
             ServerNetworkConfig serverNetworkConfig,
             ClientNetworkConfig clientNetworkConfig,
-            MessageStoreConfig messageStoreConfig
+            StoreConfig storeConfig
     ) {
         this.brokerConfig = brokerConfig;
         this.brokerConfig.setBrokerPort(serverNetworkConfig.getListenPort());
@@ -62,7 +62,7 @@ public class BrokerController extends AbstractScheduledService {
                 new ArrayBlockingQueue<>(32),
                 ThreadUtil.buildFactory("ApiExecutor", 10)
         );
-        this.topicQueueConfigManager = new TopicQueueConfigManager(brokerConfig, messageStoreConfig, this);
+        this.topicQueueConfigManager = new TopicQueueConfigManager(brokerConfig, storeConfig, this);
         this.producerManager = new ProducerManager();
         this.consumerManager = new ConsumerManager(topicQueueConfigManager);
         this.consumerLockManager = new ConsumerLockManager();
@@ -71,7 +71,7 @@ public class BrokerController extends AbstractScheduledService {
         this.clientNetwork.updateNameserverEndpoints(this.brokerConfig.getNameserverEndpoints());
         this.nameserverApiFacade = new NameserverApiFacade(brokerConfig, clientNetwork, nameserverApiExecutor);
 
-        this.messageStore = new MessageStore(messageStoreConfig);
+        this.storeController = new StoreController(storeConfig);
     }
 
     @Override
@@ -162,7 +162,7 @@ public class BrokerController extends AbstractScheduledService {
         ConsumerManageDispatcher consumerManageDispatcher = new ConsumerManageDispatcher(consumerManager);
         this.serverNetwork.registerDispatcher(RequestCode.GET_CONSUMER_LIST_BY_GROUP, consumerManageDispatcher, sendMessageExecutor);
 
-        SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher(this.brokerConfig, this.messageStore);
+        SendMessageDispatcher sendMessageDispatcher = new SendMessageDispatcher(this.brokerConfig, this.storeController);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE, sendMessageDispatcher, sendMessageExecutor);
         this.serverNetwork.registerDispatcher(RequestCode.SEND_MESSAGE_V2, sendMessageDispatcher, sendMessageExecutor);
 

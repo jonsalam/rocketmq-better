@@ -21,8 +21,8 @@ public class IndexFile extends MappedFile {
     private long beginLogOffset = 0;
     private long endLogOffset = 0;
 
-    public IndexFile(String fileName, int maxSlotCount, int maxItemCount) throws IOException {
-        super(fileName, HEADER_SIZE + (SLOT_SIZE * maxSlotCount) + (INDEX_SIZE * maxItemCount));
+    public IndexFile(String path, int maxSlotCount, int maxItemCount) throws IOException {
+        super(path, HEADER_SIZE + (SLOT_SIZE * maxSlotCount) + (INDEX_SIZE * maxItemCount));
         this.maxSlotCount = maxSlotCount;
         this.maxItemCount = maxItemCount;
     }
