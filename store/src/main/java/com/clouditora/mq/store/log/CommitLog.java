@@ -3,11 +3,7 @@ package com.clouditora.mq.store.log;
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.StoreConfig;
 import com.clouditora.mq.store.StoreController;
-import com.clouditora.mq.store.enums.PutMessageStatus;
-import com.clouditora.mq.store.file.File;
-import com.clouditora.mq.store.file.MappedFile;
-import com.clouditora.mq.store.file.MappedFileQueue;
-import com.clouditora.mq.store.file.PutResult;
+import com.clouditora.mq.store.file.*;
 import com.clouditora.mq.store.serialize.ByteBufferDeserializer;
 import com.clouditora.mq.store.serialize.ByteBufferSerializer;
 import com.clouditora.mq.store.serialize.EndOfFileException;
@@ -51,6 +47,7 @@ public class CommitLog implements File {
      */
     @Override
     public void map() {
+        // @link org.apache.rocketmq.store.CommitLog#load
         this.fileQueue.map();
         List<MappedFile> files = this.fileQueue.getFiles();
         if (CollectionUtils.isEmpty(files)) {
@@ -58,17 +55,54 @@ public class CommitLog implements File {
             // TODO 删除索引文件
             return;
         }
-        MappedFile file = files.get(Math.max(files.size() - 3, 0));
-        long offset = file.getOffset();
-        CommitLogIterator iterator = new CommitLogIterator(this, offset);
-        while (iterator.hasNext()) {
-            MessageEntity message = iterator.next();
-            if (message == null) {
-                break;
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.CommitLog#recoverAbnormally
+     */
+    public void recover(boolean normally) {
+        List<MappedFile> files = this.fileQueue.getFiles();
+        if (normally) {
+            MappedFile file = files.get(Math.max(files.size() - 3, 0));
+            long offset = file.getOffset();
+            CommitLogIterator iterator = new CommitLogIterator(this, offset);
+            while (iterator.hasNext()) {
+                MessageEntity message = iterator.next();
+                if (message == null) {
+                    break;
+                }
+                offset += message.getMessageLength();
             }
-            offset += message.getMessageLength();
+            afterMap(offset);
+        } else {
+            long offset = 0;
+            for (int index = Math.max(files.size() - 1, 0); index >= 0; index--) {
+                MappedFile file = files.get(index);
+                offset = file.getOffset();
+                MappedByteBuffer byteBuffer = file.getByteBuffer();
+                MessageEntity message = this.deserializer.deserialize(byteBuffer);
+                if (message == null) {
+                    break;
+                }
+                offset += message.getMessageLength();
+                this.storeController.dispatch(message);
+            }
+            afterMap(offset);
         }
-        afterMap(offset);
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#truncateDirtyFiles
+     */
+    private void afterMap(long offset) {
+        this.fileQueue.setFlushOffset(offset);
+        // 修正偏移量
+        MappedFile file = this.fileQueue.slice(offset);
+        file.setWritePosition((int) (offset % file.getFileSize()));
+        file.setFlushPosition((int) (offset % file.getFileSize()));
+        // 删除多余文件
+        this.fileQueue.delete(offset);
+        // TODO Clear ConsumeQueue redundant data
     }
 
     @Override
@@ -106,53 +140,13 @@ public class CommitLog implements File {
     }
 
     /**
-     * @link org.apache.rocketmq.store.CommitLog#recoverAbnormally
-     */
-    public void recover() {
-        this.fileQueue.map();
-        List<MappedFile> files = this.fileQueue.getFiles();
-        if (CollectionUtils.isEmpty(files)) {
-            this.fileQueue.setFlushOffset(0);
-            // TODO 删除索引文件
-            return;
-        }
-        long offset = 0;
-        for (int index = Math.max(files.size() - 1, 0); index >= 0; index--) {
-            MappedFile file = files.get(index);
-            offset = file.getOffset();
-            MappedByteBuffer byteBuffer = file.getByteBuffer();
-            MessageEntity message = deserializer.deserialize(byteBuffer);
-            if (message == null) {
-                break;
-            }
-            offset += message.getMessageLength();
-            this.storeController.dispatch(message);
-        }
-        afterMap(offset);
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.MappedFileQueue#truncateDirtyFiles
-     */
-    private void afterMap(long offset) {
-        this.fileQueue.setFlushOffset(offset);
-        // 修正偏移量
-        MappedFile file = this.fileQueue.slice(offset);
-        file.setWritePosition((int) (offset % file.getFileSize()));
-        file.setFlushPosition((int) (offset % file.getFileSize()));
-        // 删除多余文件
-        this.fileQueue.delete(offset);
-        // TODO Clear ConsumeQueue redundant data
-    }
-
-    /**
      * org.apache.rocketmq.store.CommitLog#asyncPutMessage
      */
-    public CompletableFuture<PutResult> put(MessageEntity message) {
+    public CompletableFuture<AppendResult> put(MessageEntity message) {
         MappedFile file = this.fileQueue.getOrCreate();
         if (file == null) {
             log.error("create commit log error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
-            return PutResult.buildAsync(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
+            return AppendResult.buildAsync(AppendStatus.CREATE_MAPPED_FILE_FAILED);
         }
         try {
             this.lock.lock();
@@ -166,17 +160,17 @@ public class CommitLog implements File {
             int free = file.getFileSize() - writePosition;
             ByteBuffer byteBuffer = this.serializer.serialize(offset, free, message);
             file.append(byteBuffer);
-            return PutResult.buildAsync(PutMessageStatus.SUCCESS, message.getMessageId(), queueOffset);
+            return AppendResult.buildAsync(AppendStatus.SUCCESS, message.getMessageId(), queueOffset);
         } catch (EndOfFileException e) {
             log.debug("end of file: file={}, messageLength={}", file, e.getLength());
             // 剩余空间不够了: 1.当前文件写满; 2.消息写入下一个文件
             file.fillBlank(e.getByteBuffer(), e.getFree());
             return put(message);
         } catch (SerializeException e) {
-            return PutResult.buildAsync(PutMessageStatus.MESSAGE_ILLEGAL);
+            return AppendResult.buildAsync(AppendStatus.MESSAGE_ILLEGAL);
         } catch (Exception e) {
             log.error("unknown error", e);
-            return PutResult.buildAsync(PutMessageStatus.UNKNOWN_ERROR);
+            return AppendResult.buildAsync(AppendStatus.UNKNOWN_ERROR);
         } finally {
             this.lock.unlock();
         }

@@ -1,6 +1,7 @@
-package com.clouditora.mq.store.file;
+package com.clouditora.mq.store.log;
 
 import com.clouditora.mq.store.enums.GetMessageStatus;
+import com.clouditora.mq.store.file.MappedFile;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 

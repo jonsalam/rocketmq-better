@@ -40,12 +40,16 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     @Setter
     protected long flushOffset = 0;
 
-    public MappedFileQueue(String dir, int fileSize) {
-        this.dir = new File(dir);
+    public MappedFileQueue(File dir, int fileSize) {
+        this.dir = dir;
         if (this.dir.exists() && !this.dir.isDirectory()) {
             throw new IllegalStateException("create mapped file exception: %s is not directory".formatted(dir));
         }
         this.fileSize = fileSize;
+    }
+
+    public MappedFileQueue(String dir, int fileSize) {
+        this(new File(dir), fileSize);
     }
 
     /**

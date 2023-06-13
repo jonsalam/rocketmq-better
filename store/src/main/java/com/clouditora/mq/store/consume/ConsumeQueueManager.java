@@ -4,6 +4,9 @@ import com.clouditora.mq.store.StoreConfig;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -38,6 +41,23 @@ public class ConsumeQueueManager {
     }
 
     /**
+     * @link org.apache.rocketmq.store.DefaultMessageStore#recoverConsumeQueue
+     */
+    public long getMaxOffset() {
+        long max = this.map.values().stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .mapToLong(e -> getMaxOffset())
+                .max()
+                .orElse(0);
+        return max;
+    }
+
+    /**
+     * topic
+     * - queue id
+     * -- consume queue
+     *
      * @link org.apache.rocketmq.store.DefaultMessageStore#loadConsumeQueue
      */
     public void map() {
@@ -57,10 +77,18 @@ public class ConsumeQueueManager {
                     continue;
                 }
                 int queueId = Integer.parseInt(queueDir.getName());
-                ConsumeQueue queue = new ConsumeQueue(this.storeConfig, topic, queueId);
+                ConsumeQueue queue = new ConsumeQueue(this.storeConfig, queueDir);
                 queue.map();
                 put(topic, queueId, queue);
             }
         }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#recover
+     */
+    public void recover(ConsumeQueue consumeQueue) {
+        List<ConsumeFile> files = consumeQueue.getFiles();
+
     }
 }

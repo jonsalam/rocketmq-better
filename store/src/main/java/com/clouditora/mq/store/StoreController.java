@@ -7,18 +7,20 @@ import com.clouditora.mq.store.consume.ConsumeFile;
 import com.clouditora.mq.store.consume.ConsumeQueue;
 import com.clouditora.mq.store.consume.ConsumeQueueManager;
 import com.clouditora.mq.store.enums.GetMessageStatus;
+import com.clouditora.mq.store.file.AppendResult;
 import com.clouditora.mq.store.file.FlushType;
-import com.clouditora.mq.store.file.GetMessageResult;
 import com.clouditora.mq.store.file.MappedFile;
-import com.clouditora.mq.store.file.PutResult;
 import com.clouditora.mq.store.index.IndexFileDispatcher;
+import com.clouditora.mq.store.index.IndexFileQueue;
 import com.clouditora.mq.store.log.CommitLog;
+import com.clouditora.mq.store.log.GetMessageResult;
 import com.clouditora.mq.store.log.dispatcher.CommitLogDispatcher;
 import com.clouditora.mq.store.log.flusher.CommitLogFlusher;
 import com.clouditora.mq.store.log.flusher.CommitLogGroupFlusher;
 import com.clouditora.mq.store.log.flusher.CommitLogScheduledFlusher;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,7 @@ public class StoreController extends AbstractNothingService {
     private final CommitLogDispatcher commitLogDispatcher;
     private final CommitLogFlusher commitLogFlusher;
     private final ConsumeQueueManager consumeQueueManager;
+    private final IndexFileQueue indexFileQueue;
 
     public StoreController(StoreConfig storeConfig) {
         this.storeConfig = storeConfig;
@@ -47,6 +50,7 @@ public class StoreController extends AbstractNothingService {
         } else {
             this.commitLogFlusher = new CommitLogScheduledFlusher(storeConfig, this.commitLog);
         }
+        this.indexFileQueue = new IndexFileQueue(storeConfig);
     }
 
     @Override
@@ -54,8 +58,23 @@ public class StoreController extends AbstractNothingService {
         return StoreController.class.getSimpleName();
     }
 
+    /**
+     * @link org.apache.rocketmq.store.DefaultMessageStore#load
+     */
     @Override
     public void startup() {
+        boolean abortFileExists = abortFileExists();
+        this.commitLog.map();
+        this.consumeQueueManager.map();
+        this.indexFileQueue.map();
+        this.consumeQueueManager.recover();
+        this.commitLog.recover(abortFileExists);
+        if (abortFileExists) {
+            log.info("prev shutdown normally");
+        } else {
+            log.info("prev shutdown abnormally");
+            this.indexFileQueue.recover();
+        }
         this.commitLogDispatcher.startup();
         this.commitLogFlusher.startup();
         super.startup();
@@ -63,9 +82,19 @@ public class StoreController extends AbstractNothingService {
 
     @Override
     public void shutdown() {
+        this.commitLog.unmap();
+        this.consumeQueueManager.unmap();
         this.commitLogDispatcher.shutdown();
         this.commitLogFlusher.shutdown();
         super.shutdown();
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.DefaultMessageStore#isTempFileExist
+     */
+    private boolean abortFileExists() {
+        File file = new File(this.storeConfig.getAbortPath());
+        return file.exists();
     }
 
     public void dispatch(MessageEntity message) {
@@ -75,7 +104,7 @@ public class StoreController extends AbstractNothingService {
     /**
      * org.apache.rocketmq.store.DefaultMessageStore#asyncPutMessage
      */
-    public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
+    public CompletableFuture<AppendResult> asyncPut(MessageEntity message) {
         return this.commitLog.put(message);
     }
 

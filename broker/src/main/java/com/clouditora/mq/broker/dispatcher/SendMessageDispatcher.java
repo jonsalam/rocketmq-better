@@ -14,7 +14,7 @@ import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.network.util.NetworkUtil;
 import com.clouditora.mq.store.StoreController;
-import com.clouditora.mq.store.file.PutResult;
+import com.clouditora.mq.store.file.AppendResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +81,7 @@ public class SendMessageDispatcher implements CommandDispatcher, AsyncCommandDis
         message.setStoreHost(this.storeHost);
         message.setReConsumeTimes(Optional.ofNullable(requestHeader.getReConsumeTimes()).orElse(0));
         message.putProperty(MessageConst.Property.CLUSTER, brokerConfig.getBrokerClusterName());
-        CompletableFuture<PutResult> result = this.storeController.asyncPut(message);
+        CompletableFuture<AppendResult> result = this.storeController.asyncPut(message);
         result.thenApply(e -> {
             if (e == null) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);

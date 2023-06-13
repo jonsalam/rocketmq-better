@@ -11,7 +11,7 @@ import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
 import com.clouditora.mq.store.StoreController;
-import com.clouditora.mq.store.file.GetMessageResult;
+import com.clouditora.mq.store.log.GetMessageResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 

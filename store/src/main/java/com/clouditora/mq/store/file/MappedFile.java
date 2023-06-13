@@ -1,6 +1,5 @@
 package com.clouditora.mq.store.file;
 
-import com.clouditora.mq.store.enums.PutMessageStatus;
 import com.clouditora.mq.store.exception.PutException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,9 +96,8 @@ public class MappedFile extends AbstractMappedFile {
     private void append(byte[] bytes, int byteLength, int writeLength) throws PutException {
         if (isFull()) {
             log.error("file is full: file={}, writePosition={}, fileSize={}", this.file, this.writePosition.get(), fileSize);
-            throw new PutException(PutMessageStatus.UNKNOWN_ERROR);
+            throw new PutException(AppendStatus.UNKNOWN_ERROR);
         }
-        // 记录写入字节数: 在EOF的时候, mappedByteBuffer的position<fileSize, 此时无法判断是否写满
         int position = this.writePosition.getAndAdd(writeLength);
         getByteBuffer().put(position, bytes, 0, byteLength);
     }

@@ -3,8 +3,8 @@ package com.clouditora.mq.store.index;
 import com.clouditora.mq.common.MessageConst;
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.StoreConfig;
-import com.clouditora.mq.store.enums.PutMessageStatus;
 import com.clouditora.mq.store.exception.PutException;
+import com.clouditora.mq.store.file.AppendStatus;
 import com.clouditora.mq.store.log.dispatcher.MessageDispatcher;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,7 +21,7 @@ public class IndexFileDispatcher implements MessageDispatcher {
         IndexFile file = indexFileQueue.getOrCreate();
         if (file == null) {
             log.error("create file error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
-            throw new PutException(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
+            throw new PutException(AppendStatus.CREATE_MAPPED_FILE_FAILED);
         }
         String key = buildKey(message);
         file.putKey(key, message.getCommitLogOffset(), message.getStoreTimestamp());

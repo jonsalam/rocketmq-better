@@ -6,6 +6,7 @@ import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -15,18 +16,14 @@ import java.nio.ByteBuffer;
 @Slf4j
 public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     private final StoreConfig config;
-    private final String topic;
-    private final int queueId;
     @Getter
     private volatile long minOffset = 0;
     @Getter
     private volatile long maxOffset = 0;
 
-    public ConsumeQueue(StoreConfig config, String topic, int queueId) {
-        super("%s/%s/%s".formatted(config.getConsumeQueuePath(), topic, queueId), config.getConsumeQueueFileSize());
+    public ConsumeQueue(StoreConfig config, File dir) {
+        super(dir, config.getConsumeQueueFileSize());
         this.config = config;
-        this.topic = topic;
-        this.queueId = queueId;
     }
 
     public void increaseMaxOffset(int size) {
@@ -70,15 +67,15 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     /**
      * @link org.apache.rocketmq.store.ConsumeQueue#fillPreBlank
      */
-    private void fillBlank(ConsumeFile mappedFile, long untilWhere) {
+    private void fillBlank(ConsumeFile mappedFile, long length) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
         byteBuffer.putLong(0L);
         byteBuffer.putInt(Integer.MAX_VALUE);
         byteBuffer.putLong(0L);
 
         try {
-            long num = untilWhere % mappedFile.getFileSize();
-            for (int i = 0; i < num; i += ConsumeFile.UNIT_SIZE) {
+            length = length % mappedFile.getFileSize();
+            for (int i = 0; i < length; i += ConsumeFile.UNIT_SIZE) {
                 mappedFile.append(byteBuffer);
             }
         } catch (Exception e) {

@@ -1,11 +1,11 @@
 package com.clouditora.mq.store.exception;
 
-import com.clouditora.mq.store.enums.PutMessageStatus;
+import com.clouditora.mq.store.file.AppendStatus;
 import lombok.Getter;
 
 public class PutException extends Exception {
     @Getter
-    private PutMessageStatus status;
+    private AppendStatus status;
 
     public PutException() {
     }
@@ -14,7 +14,7 @@ public class PutException extends Exception {
         super(desc);
     }
 
-    public PutException(PutMessageStatus status) {
+    public PutException(AppendStatus status) {
         this.status = status;
     }
 }
