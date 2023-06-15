@@ -41,6 +41,7 @@ public class MagicCodeSerializer implements Serializer {
         int magicCode = byteBuffer.getInt();
         if (magicCode == MagicCode.BLANK.getCode()) {
             message.setMagicCode(MagicCode.BLANK);
+            context.reset();
         } else if (magicCode == MagicCode.MESSAGE.getCode()) {
             message.setMagicCode(MagicCode.MESSAGE);
             context.next();

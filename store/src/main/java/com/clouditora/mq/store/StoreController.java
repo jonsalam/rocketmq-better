@@ -63,17 +63,17 @@ public class StoreController extends AbstractNothingService {
      */
     @Override
     public void startup() {
-        boolean abortFileExists = abortFileExists();
+        boolean normally = !abortFileExists();
         this.commitLog.map();
         this.consumeQueueManager.map();
-        this.indexFileQueue.map();
+//        this.indexFileQueue.map();
         this.consumeQueueManager.recover();
-        this.commitLog.recover(abortFileExists);
-        if (abortFileExists) {
+        this.commitLog.recover(normally);
+        if (normally) {
             log.info("prev shutdown normally");
         } else {
             log.info("prev shutdown abnormally");
-            this.indexFileQueue.recover();
+//            this.indexFileQueue.recover();
         }
         this.commitLogDispatcher.startup();
         this.commitLogFlusher.startup();
@@ -83,7 +83,7 @@ public class StoreController extends AbstractNothingService {
     @Override
     public void shutdown() {
         this.commitLog.unmap();
-        this.consumeQueueManager.unmap();
+//        this.consumeQueueManager.unmap();
         this.commitLogDispatcher.shutdown();
         this.commitLogFlusher.shutdown();
         super.shutdown();

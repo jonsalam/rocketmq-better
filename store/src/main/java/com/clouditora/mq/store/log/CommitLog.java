@@ -10,7 +10,6 @@ import com.clouditora.mq.store.serialize.EndOfFileException;
 import com.clouditora.mq.store.serialize.SerializeException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -49,60 +48,6 @@ public class CommitLog implements File {
     public void map() {
         // @link org.apache.rocketmq.store.CommitLog#load
         this.fileQueue.map();
-        List<MappedFile> files = this.fileQueue.getFiles();
-        if (CollectionUtils.isEmpty(files)) {
-            this.fileQueue.setFlushOffset(0);
-            // TODO 删除索引文件
-            return;
-        }
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.CommitLog#recoverAbnormally
-     */
-    public void recover(boolean normally) {
-        List<MappedFile> files = this.fileQueue.getFiles();
-        if (normally) {
-            MappedFile file = files.get(Math.max(files.size() - 3, 0));
-            long offset = file.getOffset();
-            CommitLogIterator iterator = new CommitLogIterator(this, offset);
-            while (iterator.hasNext()) {
-                MessageEntity message = iterator.next();
-                if (message == null) {
-                    break;
-                }
-                offset += message.getMessageLength();
-            }
-            afterMap(offset);
-        } else {
-            long offset = 0;
-            for (int index = Math.max(files.size() - 1, 0); index >= 0; index--) {
-                MappedFile file = files.get(index);
-                offset = file.getOffset();
-                MappedByteBuffer byteBuffer = file.getByteBuffer();
-                MessageEntity message = this.deserializer.deserialize(byteBuffer);
-                if (message == null) {
-                    break;
-                }
-                offset += message.getMessageLength();
-                this.storeController.dispatch(message);
-            }
-            afterMap(offset);
-        }
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.MappedFileQueue#truncateDirtyFiles
-     */
-    private void afterMap(long offset) {
-        this.fileQueue.setFlushOffset(offset);
-        // 修正偏移量
-        MappedFile file = this.fileQueue.slice(offset);
-        file.setWritePosition((int) (offset % file.getFileSize()));
-        file.setFlushPosition((int) (offset % file.getFileSize()));
-        // 删除多余文件
-        this.fileQueue.delete(offset);
-        // TODO Clear ConsumeQueue redundant data
     }
 
     @Override
@@ -137,6 +82,56 @@ public class CommitLog implements File {
         }
         int position = (int) (offset % this.fileSize);
         return file.slice(position, length);
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.CommitLog#recoverAbnormally
+     */
+    public void recover(boolean normally) {
+        List<MappedFile> files = this.fileQueue.getFiles();
+        if (normally) {
+            // 只处理最后3个文件
+            MappedFile file = files.get(Math.max(files.size() - 3, 0));
+            long offset = file.getOffset();
+            CommitLogIterator iterator = new CommitLogIterator(this, offset);
+            while (iterator.hasNext()) {
+                MessageEntity entity = iterator.next();
+                if (entity == null) {
+                    break;
+                }
+                offset += entity.getMessageLength();
+            }
+            afterMap(offset);
+        } else {
+            // 遍历所有文件
+            long offset = 0;
+            for (int index = Math.max(files.size() - 1, 0); index >= 0; index--) {
+                MappedFile file = files.get(index);
+                offset = file.getOffset();
+                MappedByteBuffer byteBuffer = file.getByteBuffer();
+                MessageEntity entity = this.deserializer.deserialize(byteBuffer);
+                if (entity == null) {
+                    break;
+                }
+                offset += entity.getMessageLength();
+                this.storeController.dispatch(entity);
+            }
+            afterMap(offset);
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.MappedFileQueue#truncateDirtyFiles
+     */
+    private void afterMap(long offset) {
+        this.fileQueue.setFlushOffset(offset);
+        // 修正偏移量
+        MappedFile file = this.fileQueue.slice(offset);
+        file.setWritePosition((int) (offset % file.getFileSize()));
+        file.setFlushPosition((int) (offset % file.getFileSize()));
+        // 删除多余文件
+        this.fileQueue.delete(offset);
+        // TODO Clear ConsumeQueue redundant data
     }
 
     /**

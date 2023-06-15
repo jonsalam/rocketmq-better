@@ -16,6 +16,8 @@ public class BrokerApplication {
         ServerNetworkConfig serverNetworkConfig = getServerNetworkConfig();
         ClientNetworkConfig clientNetworkConfig = getClientNetworkConfig();
         StoreConfig storeConfig = getMessageStoreConfig();
+        storeConfig.setRootPath("/Users/wangjiuling/store");
+        storeConfig.setCommitLogFileSize(1024);
         BrokerController controller = buildController(brokerConfig, serverNetworkConfig, clientNetworkConfig, storeConfig);
         addShutdownHook(controller);
         controller.startup();

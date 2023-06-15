@@ -53,7 +53,7 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
     /**
      * @link org.apache.rocketmq.store.MappedFile#flushedPosition
      */
-    protected final AtomicInteger flushPosition = new AtomicInteger(0);
+    protected final AtomicInteger flushPosition;
     /**
      * @link org.apache.rocketmq.store.ReferenceResource#cleanupOver
      */
@@ -67,6 +67,7 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         this.offset = offset;
         this.file = file;
         this.fileSize = fileSize;
+        this.flushPosition = new AtomicInteger(0);
         try {
             FileUtil.mkdir(this.file.getParent());
             this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
@@ -89,6 +90,7 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         this.fileChannel = file.fileChannel;
         this.mappedByteBuffer = mappedByteBuffer;
         this.acquiredCount.set(file.acquiredCount.get());
+        this.flushPosition = new AtomicInteger(file.getFlushPosition());
     }
 
     @Override
@@ -178,6 +180,9 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         if (!this.mapped) {
             throw new IllegalStateException();
         }
+        // 等recover的时候再修正
+        setWritePosition(this.fileSize);
+        setFlushPosition(this.fileSize);
     }
 
     /**

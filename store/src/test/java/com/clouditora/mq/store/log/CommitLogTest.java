@@ -41,6 +41,6 @@ public class CommitLogTest extends AbstractFileTest {
         config.setCommitLogFileSize(1024);
         config.setRootPath(super.path);
         CommitLog commitLog = new CommitLog(config, null);
-        commitLog.recover();
+        commitLog.recover(true);
     }
 }

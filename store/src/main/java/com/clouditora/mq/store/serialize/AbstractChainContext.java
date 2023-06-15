@@ -20,4 +20,8 @@ public abstract class AbstractChainContext {
         this.index = 0;
         this.serializers = serializers;
     }
+
+    public void reset() {
+        this.index = 0;
+    }
 }

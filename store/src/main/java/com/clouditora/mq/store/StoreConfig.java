@@ -25,25 +25,42 @@ public class StoreConfig {
     private int flushCommitLogThoroughInterval = 1000 * 10;
     private FlushType flushDiskType = FlushType.ASYNC_FLUSH;
 
-    private String commitLogPath = "%s/commitlog".formatted(rootPath);
+    public String getCommitLogPath() {
+        return "%s/commitlog".formatted(rootPath);
+    }
+
     /**
      * @link org.apache.rocketmq.store.config.StorePathConfigHelper#getStorePathConsumeQueue
      */
-    private String consumeQueuePath = "%s/consumequeue".formatted(rootPath);
+    public String getConsumeQueuePath() {
+        return "%s/consumequeue".formatted(rootPath);
+    }
+
     /**
      * @link org.apache.rocketmq.store.config.StorePathConfigHelper#getStorePathIndex
      */
-    private String indexPath = "%s/index".formatted(rootPath);
+    public String getIndexPath() {
+        return "%s/index".formatted(rootPath);
+    }
+
     /**
      * @link org.apache.rocketmq.store.config.StorePathConfigHelper#getAbortFile
      */
-    private String abortPath = "%s/abort".formatted(rootPath);
+    public String getAbortPath() {
+        return "%s/abort".formatted(rootPath);
+    }
+
     /**
      * @link org.apache.rocketmq.store.config.StorePathConfigHelper#getStoreCheckpoint
      */
-    private String checkpointPath = "%s/checkpoint".formatted(rootPath);
+    public String getCheckpointPath() {
+        return "%s/checkpoint".formatted(rootPath);
+    }
+
     /**
      * @link org.apache.rocketmq.store.config.StorePathConfigHelper#getLockFile
      */
-    private String lockPath = "%s/lock".formatted(rootPath);
+    public String getLockPath() {
+        return "%s/lock".formatted(rootPath);
+    }
 }

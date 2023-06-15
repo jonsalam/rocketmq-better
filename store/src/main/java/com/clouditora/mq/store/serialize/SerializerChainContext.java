@@ -20,18 +20,18 @@ public class SerializerChainContext extends AbstractChainContext {
     }
 
     public int calcMessageLength() {
-        for (Serializer serializer : this.serializers) {
+        for (Serializer serializer : super.serializers) {
             serializer.fieldLength(this);
         }
-        return this.serializers.stream().mapToInt(e -> e.fieldLength(this)).sum();
+        return super.serializers.stream().mapToInt(e -> e.fieldLength(this)).sum();
     }
 
     public void next() throws SerializeException {
-        if (this.index >= this.serializers.size()) {
-            this.index = 0;
+        if (super.index >= super.serializers.size()) {
+            reset();
             return;
         }
-        Serializer serializer = this.serializers.get(index++);
+        Serializer serializer = super.serializers.get(super.index++);
         serializer.serialize(this);
     }
 

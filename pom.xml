@@ -149,12 +149,21 @@
                     <compilerVersion>${maven.compiler.source}</compilerVersion>
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
+                    <compilerArgs>
+                        <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0</version>
+                <configuration>
+                    <argLine>
+                        --add-opens java.base/java.nio=ALL-UNNAMED
+                        --add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+                    </argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>

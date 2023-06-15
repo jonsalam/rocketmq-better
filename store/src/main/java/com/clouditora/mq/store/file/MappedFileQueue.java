@@ -1,10 +1,10 @@
 package com.clouditora.mq.store.file;
 
+import com.clouditora.mq.common.util.NumberUtil;
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +52,11 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
         this(new File(dir), fileSize);
     }
 
+    @Override
+    public String toString() {
+        return "%s@%s".formatted(this.dir.toString(), this.flushOffset);
+    }
+
     /**
      * @link org.apache.rocketmq.store.MappedFileQueue#load
      */
@@ -62,7 +67,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
             return;
         }
         List<File> list = Arrays.stream(files)
-                .filter(e -> NumberUtils.isCreatable(e.getName()))
+                .filter(e -> NumberUtil.isNumber(e.getName()))
                 .sorted(Comparator.comparing(File::getName))
                 .collect(Collectors.toList());
         map(list);
@@ -74,16 +79,15 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     private void map(List<File> files) {
         for (File file : files) {
             if (file.length() != this.fileSize) {
-                log.error("load file {} failed: file size not matched message store config value", file);
-                return;
+                log.error("map file {} failed: file size not matched message store config value", file);
+                throw new IllegalStateException("illegal commitlog file size");
             }
             try {
                 T mappedFile = createSilence(StoreUtil.string2Long(file.getName()));
-                mappedFile.setWritePosition(this.fileSize);
-                mappedFile.setFlushPosition(this.fileSize);
-                log.error("load file {} success", mappedFile);
+                mappedFile.map();
+                log.info("map file {} success", mappedFile);
             } catch (Exception e) {
-                log.error("load file {} exception", file, e);
+                log.error("map file {} exception", file, e);
                 return;
             }
         }

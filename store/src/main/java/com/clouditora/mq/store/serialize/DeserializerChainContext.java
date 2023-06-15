@@ -9,11 +9,11 @@ public class DeserializerChainContext extends AbstractChainContext {
     }
 
     public void next() {
-        if (index >= serializers.size()) {
-            index = 0;
+        if (super.index >= super.serializers.size()) {
+            reset();
             return;
         }
-        Serializer serializer = serializers.get(index++);
+        Serializer serializer = super.serializers.get(super.index++);
         serializer.deserialize(this);
     }
 }

@@ -85,6 +85,7 @@ public class BrokerController extends AbstractScheduledService {
         this.serverNetwork.startup();
         this.clientNetwork.startup();
         this.topicQueueConfigManager.startup();
+        this.storeController.startup();
         registerBroker();
         scheduled(10_000, brokerConfig.getRegisterNameServerPeriod(), this::registerBroker);
         scheduled(10_000, 10_000, this::cleanExpiredClient);
@@ -98,6 +99,7 @@ public class BrokerController extends AbstractScheduledService {
         this.clientNetwork.shutdown();
         this.nameserverApiExecutor.shutdown();
         this.topicQueueConfigManager.shutdown();
+        this.storeController.shutdown();
         this.executors.forEach(ExecutorService::shutdown);
         super.shutdown();
     }

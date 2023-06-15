@@ -9,7 +9,6 @@ import com.clouditora.mq.store.util.StoreUtil;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public abstract class AbstractHostSerializer implements Serializer {
@@ -44,7 +43,7 @@ public abstract class AbstractHostSerializer implements Serializer {
             InetSocketAddress address = new InetSocketAddress(InetAddress.getByAddress(bytes), port);
             setAddress(message, address);
             context.next();
-        } catch (UnknownHostException e) {
+        } catch (Exception e) {
             throw new RuntimeException(String.format("读取Host失败, sysFlag=%s, pos=%s", sysFlag, byteBuffer.position() - length));
         }
     }

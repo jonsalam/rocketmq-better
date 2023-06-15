@@ -1,11 +1,10 @@
 package com.clouditora.mq.store.consume;
 
+import com.clouditora.mq.common.util.NumberUtil;
 import com.clouditora.mq.store.StoreConfig;
-import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,23 +40,6 @@ public class ConsumeQueueManager {
     }
 
     /**
-     * @link org.apache.rocketmq.store.DefaultMessageStore#recoverConsumeQueue
-     */
-    public long getMaxOffset() {
-        long max = this.map.values().stream()
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .mapToLong(e -> getMaxOffset())
-                .max()
-                .orElse(0);
-        return max;
-    }
-
-    /**
-     * topic
-     * - queue id
-     * -- consume queue
-     *
      * @link org.apache.rocketmq.store.DefaultMessageStore#loadConsumeQueue
      */
     public void map() {
@@ -73,7 +55,7 @@ public class ConsumeQueueManager {
                 continue;
             }
             for (File queueDir : queueDirs) {
-                if (!NumberUtils.isCreatable(queueDir.getName())) {
+                if (!NumberUtil.isNumber(queueDir.getName())) {
                     continue;
                 }
                 int queueId = Integer.parseInt(queueDir.getName());
@@ -85,10 +67,12 @@ public class ConsumeQueueManager {
     }
 
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#recover
+     * @link org.apache.rocketmq.store.DefaultMessageStore#recoverConsumeQueue
      */
-    public void recover(ConsumeQueue consumeQueue) {
-        List<ConsumeFile> files = consumeQueue.getFiles();
-
+    public void recover() {
+        this.map.values().stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .forEach(ConsumeQueue::recover);
     }
 }

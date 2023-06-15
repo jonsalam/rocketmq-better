@@ -1,6 +1,7 @@
 package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.store.StoreConfig;
+import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileQueue;
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Getter;
@@ -26,14 +27,12 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
         this.config = config;
     }
 
-    public void increaseMaxOffset(int size) {
-        this.maxOffset += size;
+    public ConsumeQueue(StoreConfig config, String topic, int queueId) {
+        this(config, new File("%s/%s/%s".formatted(config.getConsumeQueuePath(), topic, queueId)));
     }
 
-    @Override
-    protected ConsumeFile create(long offset) throws IOException {
-        String path = "%s/%s".formatted(super.dir, StoreUtil.long2String(offset));
-        return new ConsumeFile(path, super.fileSize);
+    public void increaseMaxOffset(int size) {
+        this.maxOffset += size;
     }
 
     @Override
@@ -56,12 +55,40 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
         return file;
     }
 
+    @Override
+    protected ConsumeFile create(long offset) throws IOException {
+        String path = "%s/%s".formatted(super.dir, StoreUtil.long2String(offset));
+        return new ConsumeFile(path, super.fileSize);
+    }
+
     /**
      * @link org.apache.rocketmq.store.ConsumeQueue#getIndexBuffer
      */
     @Override
     public ConsumeFile slice(long offset) {
         return super.slice(offset * ConsumeFile.UNIT_SIZE);
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#recover
+     */
+    public void recover() {
+        // 只处理最后3个文件
+        MappedFile file = super.files.get(Math.max(super.files.size() - 3, 0));
+        long offset = file.getOffset();
+        ConsumeFileIterator iterator = new ConsumeFileIterator(this, offset);
+        while (iterator.hasNext()) {
+            ConsumeFileEntity entity = iterator.next();
+            if (entity == null) {
+                break;
+            }
+            offset += ConsumeFile.UNIT_SIZE;
+            this.maxOffset = entity.getCommitLogOffset() + entity.getMessageLength();
+        }
+        // 修正偏移量
+        file = slice(offset);
+        file.setWritePosition((int) (offset % file.getFileSize()));
+        file.setFlushPosition((int) (offset % file.getFileSize()));
     }
 
     /**
