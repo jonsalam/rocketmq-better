@@ -80,7 +80,7 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
         for (File file : files) {
             if (file.length() != this.fileSize) {
                 log.error("map file {} failed: file size not matched message store config value", file);
-                throw new IllegalStateException("illegal commitlog file size");
+                throw new IllegalStateException("illegal mapped file size");
             }
             try {
                 T mappedFile = createSilence(StoreUtil.string2Long(file.getName()));

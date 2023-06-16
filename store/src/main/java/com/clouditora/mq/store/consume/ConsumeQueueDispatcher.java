@@ -12,14 +12,14 @@ import java.nio.ByteBuffer;
  * @link org.apache.rocketmq.store.DefaultMessageStore.CommitLogDispatcherBuildConsumeQueue
  */
 @Slf4j
-public class ConsumeDispatcher implements MessageDispatcher {
+public class ConsumeQueueDispatcher implements MessageDispatcher {
     private final ConsumeQueueManager files;
     /**
      * @link org.apache.rocketmq.store.ConsumeQueue#byteBufferIndex
      */
     private final ByteBuffer byteBuffer;
 
-    public ConsumeDispatcher(ConsumeQueueManager files) {
+    public ConsumeQueueDispatcher(ConsumeQueueManager files) {
         this.files = files;
         this.byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
     }

@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 public class ConsumeQueueManager {
     private final StoreConfig storeConfig;
     /**
-     * topic: [queue id: files]
+     * topic: [queue id: index]
      *
      * @link org.apache.rocketmq.store.DefaultMessageStore#consumeQueueTable
      */

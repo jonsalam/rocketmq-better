@@ -3,7 +3,7 @@ package com.clouditora.mq.store.file;
 /**
  * @link org.apache.rocketmq.store.PutMessageStatus
  */
-public enum AppendStatus {
+public enum PutStatus {
     SUCCESS,
     UNKNOWN_ERROR,
     FLUSH_DISK_TIMEOUT,

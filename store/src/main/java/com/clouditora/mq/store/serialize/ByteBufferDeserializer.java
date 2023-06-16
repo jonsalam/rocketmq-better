@@ -19,9 +19,10 @@ public class ByteBufferDeserializer extends AbstractSerializer<DeserializerChain
         MessageEntity message = new MessageEntity();
         message.setMagicCode(MagicCode.BLANK);
 
-        context.setByteBuffer(byteBuffer);
-        context.setMessage(message);
-        context.next();
-        return context.getMessage();
+        super.context.reset();
+        super.context.setByteBuffer(byteBuffer);
+        super.context.setMessage(message);
+        super.context.next();
+        return super.context.getMessage();
     }
 }

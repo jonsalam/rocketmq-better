@@ -20,6 +20,15 @@ public class CommitLogScheduledFlusher extends AbstractScheduledService implemen
     public CommitLogScheduledFlusher(StoreConfig storeConfig, CommitLog commitLog) {
         this.storeConfig = storeConfig;
         this.commitLog = commitLog;
+    }
+
+    @Override
+    public String getServiceName() {
+        return CommitLogScheduledFlusher.class.getSimpleName();
+    }
+
+    @Override
+    public void startup() {
         int period = this.storeConfig.getFlushIntervalCommitLog();
         scheduled(period, period, () -> {
             int interval = this.storeConfig.getFlushCommitLogThoroughInterval();
@@ -32,11 +41,7 @@ public class CommitLogScheduledFlusher extends AbstractScheduledService implemen
             }
             this.commitLog.flush(pages);
         });
-    }
-
-    @Override
-    public String getServiceName() {
-        return CommitLogScheduledFlusher.class.getSimpleName();
+        super.startup();
     }
 
     @Override

@@ -2,14 +2,14 @@ package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.common.service.AbstractNothingService;
-import com.clouditora.mq.store.consume.ConsumeDispatcher;
+import com.clouditora.mq.store.consume.ConsumeQueueManager;
+import com.clouditora.mq.store.consume.ConsumeQueueDispatcher;
 import com.clouditora.mq.store.consume.ConsumeFile;
 import com.clouditora.mq.store.consume.ConsumeQueue;
-import com.clouditora.mq.store.consume.ConsumeQueueManager;
 import com.clouditora.mq.store.enums.GetMessageStatus;
-import com.clouditora.mq.store.file.AppendResult;
 import com.clouditora.mq.store.file.FlushType;
 import com.clouditora.mq.store.file.MappedFile;
+import com.clouditora.mq.store.file.PutResult;
 import com.clouditora.mq.store.index.IndexFileDispatcher;
 import com.clouditora.mq.store.index.IndexFileQueue;
 import com.clouditora.mq.store.log.CommitLog;
@@ -43,8 +43,8 @@ public class StoreController extends AbstractNothingService {
         this.commitLog = new CommitLog(storeConfig, this);
         this.consumeQueueManager = new ConsumeQueueManager(storeConfig);
         IndexFileDispatcher indexFileDispatcher = new IndexFileDispatcher(storeConfig);
-        ConsumeDispatcher consumeDispatcher = new ConsumeDispatcher(this.consumeQueueManager);
-        this.commitLogDispatcher = new CommitLogDispatcher(this.commitLog, consumeDispatcher, indexFileDispatcher);
+        ConsumeQueueDispatcher consumeQueueDispatcher = new ConsumeQueueDispatcher(this.consumeQueueManager);
+        this.commitLogDispatcher = new CommitLogDispatcher(this.commitLog, consumeQueueDispatcher, indexFileDispatcher);
         if (storeConfig.getFlushDiskType() == FlushType.SYNC_FLUSH) {
             this.commitLogFlusher = new CommitLogGroupFlusher(this.commitLog);
         } else {
@@ -75,8 +75,8 @@ public class StoreController extends AbstractNothingService {
             log.info("prev shutdown abnormally");
 //            this.indexFileQueue.recover();
         }
-        this.commitLogDispatcher.startup();
-        this.commitLogFlusher.startup();
+//        this.commitLogDispatcher.startup();
+//        this.commitLogFlusher.startup();
         super.startup();
     }
 
@@ -84,8 +84,8 @@ public class StoreController extends AbstractNothingService {
     public void shutdown() {
         this.commitLog.unmap();
 //        this.consumeQueueManager.unmap();
-        this.commitLogDispatcher.shutdown();
-        this.commitLogFlusher.shutdown();
+//        this.commitLogDispatcher.shutdown();
+//        this.commitLogFlusher.shutdown();
         super.shutdown();
     }
 
@@ -104,7 +104,7 @@ public class StoreController extends AbstractNothingService {
     /**
      * org.apache.rocketmq.store.DefaultMessageStore#asyncPutMessage
      */
-    public CompletableFuture<AppendResult> asyncPut(MessageEntity message) {
+    public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
         return this.commitLog.put(message);
     }
 

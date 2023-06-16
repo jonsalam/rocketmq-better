@@ -44,7 +44,7 @@ public abstract class AbstractHostSerializer implements Serializer {
             setAddress(message, address);
             context.next();
         } catch (Exception e) {
-            throw new RuntimeException(String.format("读取Host失败, sysFlag=%s, pos=%s", sysFlag, byteBuffer.position() - length));
+            throw new IllegalStateException(String.format("读取Host失败: bytes=%s, port=%s, pos=%s", StoreUtil.bytes2string(bytes), port, byteBuffer.position() - length));
         }
     }
 

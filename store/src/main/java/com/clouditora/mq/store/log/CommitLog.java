@@ -137,11 +137,11 @@ public class CommitLog implements File {
     /**
      * org.apache.rocketmq.store.CommitLog#asyncPutMessage
      */
-    public CompletableFuture<AppendResult> put(MessageEntity message) {
+    public CompletableFuture<PutResult> put(MessageEntity message) {
         MappedFile file = this.fileQueue.getOrCreate();
         if (file == null) {
             log.error("create commit log error: topic={}, bornHost={}", message.getTopic(), message.getBornHost());
-            return AppendResult.buildAsync(AppendStatus.CREATE_MAPPED_FILE_FAILED);
+            return PutResult.buildAsync(PutStatus.CREATE_MAPPED_FILE_FAILED);
         }
         try {
             this.lock.lock();
@@ -155,17 +155,17 @@ public class CommitLog implements File {
             int free = file.getFileSize() - writePosition;
             ByteBuffer byteBuffer = this.serializer.serialize(offset, free, message);
             file.append(byteBuffer);
-            return AppendResult.buildAsync(AppendStatus.SUCCESS, message.getMessageId(), queueOffset);
+            return PutResult.buildAsync(PutStatus.SUCCESS, message.getMessageId(), queueOffset);
         } catch (EndOfFileException e) {
             log.debug("end of file: file={}, messageLength={}", file, e.getLength());
             // 剩余空间不够了: 1.当前文件写满; 2.消息写入下一个文件
             file.fillBlank(e.getByteBuffer(), e.getFree());
             return put(message);
         } catch (SerializeException e) {
-            return AppendResult.buildAsync(AppendStatus.MESSAGE_ILLEGAL);
+            return PutResult.buildAsync(PutStatus.MESSAGE_ILLEGAL);
         } catch (Exception e) {
             log.error("unknown error", e);
-            return AppendResult.buildAsync(AppendStatus.UNKNOWN_ERROR);
+            return PutResult.buildAsync(PutStatus.UNKNOWN_ERROR);
         } finally {
             this.lock.unlock();
         }

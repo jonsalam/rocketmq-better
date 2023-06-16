@@ -4,6 +4,7 @@ import com.clouditora.mq.common.constant.GlobalConstant;
 import com.clouditora.mq.network.ClientNetworkConfig;
 import com.clouditora.mq.network.ServerNetworkConfig;
 import com.clouditora.mq.store.StoreConfig;
+import com.clouditora.mq.store.consume.ConsumeFile;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,7 +18,8 @@ public class BrokerApplication {
         ClientNetworkConfig clientNetworkConfig = getClientNetworkConfig();
         StoreConfig storeConfig = getMessageStoreConfig();
         storeConfig.setRootPath("/Users/wangjiuling/store");
-        storeConfig.setCommitLogFileSize(1024);
+        storeConfig.setCommitLogFileSize(100 * 1024);
+        storeConfig.setConsumeQueueFileSize(300 * ConsumeFile.UNIT_SIZE);
         BrokerController controller = buildController(brokerConfig, serverNetworkConfig, clientNetworkConfig, storeConfig);
         addShutdownHook(controller);
         controller.startup();

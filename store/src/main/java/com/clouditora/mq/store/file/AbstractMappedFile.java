@@ -196,7 +196,7 @@ public abstract class AbstractMappedFile implements com.clouditora.mq.store.file
         this.mapped = false;
         this.acquiredCount.set(0);
         try {
-            StoreUtil.clean(this.mappedByteBuffer);
+//            StoreUtil.clean(this.mappedByteBuffer);
             TOTAL_MAPPED_MEMORY.addAndGet(-this.fileSize);
             TOTAL_MAPPED_FILES.decrementAndGet();
             log.info("unmapped file {}", this.file);

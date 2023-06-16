@@ -1,7 +1,7 @@
 package com.clouditora.mq.store.log.flusher;
 
 import com.clouditora.mq.common.service.AbstractWaitService;
-import com.clouditora.mq.store.file.AppendStatus;
+import com.clouditora.mq.store.file.PutStatus;
 import com.clouditora.mq.store.log.CommitLog;
 import lombok.Getter;
 
@@ -68,7 +68,7 @@ public class CommitLogGroupFlusher extends AbstractWaitService implements Commit
                     long flushPosition = this.commitLog.flush(0);
                     flushed = flushPosition >= request.getOffset();
                 }
-                request.wakeupCustomer(flushed ? AppendStatus.SUCCESS : AppendStatus.FLUSH_DISK_TIMEOUT);
+                request.wakeupCustomer(flushed ? PutStatus.SUCCESS : PutStatus.FLUSH_DISK_TIMEOUT);
             }
             this.readRequests = new LinkedList<>();
         }
@@ -102,13 +102,13 @@ public class CommitLogGroupFlusher extends AbstractWaitService implements Commit
     static class FlushFuture {
         @Getter
         private final long offset;
-        private final CompletableFuture<AppendStatus> future = new CompletableFuture<>();
+        private final CompletableFuture<PutStatus> future = new CompletableFuture<>();
 
         public FlushFuture(long offset) {
             this.offset = offset;
         }
 
-        public void wakeupCustomer(AppendStatus status) {
+        public void wakeupCustomer(PutStatus status) {
             this.future.complete(status);
         }
     }

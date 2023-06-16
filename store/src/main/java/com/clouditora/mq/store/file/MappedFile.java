@@ -96,7 +96,7 @@ public class MappedFile extends AbstractMappedFile {
     private void append(byte[] bytes, int byteLength, int writeLength) throws PutException {
         if (isFull()) {
             log.error("file is full: file={}, writePosition={}, fileSize={}", this.file, this.writePosition.get(), fileSize);
-            throw new PutException(AppendStatus.UNKNOWN_ERROR);
+            throw new PutException(PutStatus.UNKNOWN_ERROR);
         }
         int position = this.writePosition.getAndAdd(writeLength);
         getByteBuffer().put(position, bytes, 0, byteLength);

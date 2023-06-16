@@ -66,7 +66,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
      */
     @Override
     public ConsumeFile slice(long offset) {
-        return super.slice(offset * ConsumeFile.UNIT_SIZE);
+        return super.slice(offset);
     }
 
     /**
@@ -76,7 +76,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
         // 只处理最后3个文件
         MappedFile file = super.files.get(Math.max(super.files.size() - 3, 0));
         long offset = file.getOffset();
-        ConsumeFileIterator iterator = new ConsumeFileIterator(this, offset);
+        ConsumeQueueIterator iterator = new ConsumeQueueIterator(this, offset);
         while (iterator.hasNext()) {
             ConsumeFileEntity entity = iterator.next();
             if (entity == null) {
@@ -86,6 +86,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
             this.maxOffset = entity.getCommitLogOffset() + entity.getMessageLength();
         }
         // 修正偏移量
+        setFlushOffset(offset);
         file = slice(offset);
         file.setWritePosition((int) (offset % file.getFileSize()));
         file.setFlushPosition((int) (offset % file.getFileSize()));
