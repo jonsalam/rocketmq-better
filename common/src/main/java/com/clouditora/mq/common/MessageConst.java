@@ -16,6 +16,10 @@ public interface MessageConst {
         String KEYS = "KEYS";
         String MESSAGE_ID = "UNIQ_KEY";
         String CLUSTER = "CLUSTER";
+        /**
+         * @link org.apache.rocketmq.common.message.MessageConst#PROPERTY_WAIT_STORE_MSG_OK
+         */
+        String WAIT_STORE_OK = "WAIT";
 
         interface Separator {
             String KEY = " ";

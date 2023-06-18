@@ -1,9 +1,14 @@
 package com.clouditora.mq.store.log.flusher;
 
+import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.common.service.AbstractScheduledService;
 import com.clouditora.mq.store.StoreConfig;
+import com.clouditora.mq.store.file.PutResult;
+import com.clouditora.mq.store.file.PutStatus;
 import com.clouditora.mq.store.log.CommitLog;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @link org.apache.rocketmq.store.CommitLog.FlushRealTimeService
@@ -50,5 +55,10 @@ public class CommitLogScheduledFlusher extends AbstractScheduledService implemen
             this.commitLog.flush(0);
         }
         super.shutdown(interrupt, timeout);
+    }
+
+    @Override
+    public CompletableFuture<PutStatus> flush(CompletableFuture<PutResult> result, MessageEntity message) {
+        return CompletableFuture.completedFuture(PutStatus.SUCCESS);
     }
 }

@@ -15,6 +15,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -164,6 +165,7 @@ public class CommitLog implements File {
             log.debug("end of file: file={}, messageLength={}", file, e.getLength());
             // 剩余空间不够了: 1.当前文件写满; 2.消息写入下一个文件
             file.fillBlank(e.getByteBuffer(), e.getFree());
+            this.storeController.later(TimeUnit.SECONDS, 6, file::unlockMappedMemory);
             return put(message);
         } catch (SerializeException e) {
             return PutResult.buildAsync(PutStatus.MESSAGE_ILLEGAL);

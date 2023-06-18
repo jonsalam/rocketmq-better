@@ -1,11 +1,11 @@
 package com.clouditora.mq.store;
 
 import com.clouditora.mq.common.message.MessageEntity;
-import com.clouditora.mq.common.service.AbstractNothingService;
-import com.clouditora.mq.store.consume.ConsumeQueueManager;
-import com.clouditora.mq.store.consume.ConsumeQueueDispatcher;
+import com.clouditora.mq.common.service.AbstractScheduledService;
 import com.clouditora.mq.store.consume.ConsumeFile;
 import com.clouditora.mq.store.consume.ConsumeQueue;
+import com.clouditora.mq.store.consume.ConsumeQueueDispatcher;
+import com.clouditora.mq.store.consume.ConsumeQueueManager;
 import com.clouditora.mq.store.enums.GetMessageStatus;
 import com.clouditora.mq.store.file.FlushType;
 import com.clouditora.mq.store.file.MappedFile;
@@ -16,7 +16,7 @@ import com.clouditora.mq.store.log.CommitLog;
 import com.clouditora.mq.store.log.GetMessageResult;
 import com.clouditora.mq.store.log.dispatcher.CommitLogDispatcher;
 import com.clouditora.mq.store.log.flusher.CommitLogFlusher;
-import com.clouditora.mq.store.log.flusher.CommitLogGroupFlusher;
+import com.clouditora.mq.store.log.flusher.CommitLogBatchFlusher;
 import com.clouditora.mq.store.log.flusher.CommitLogScheduledFlusher;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,18 +25,22 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @link org.apache.rocketmq.store.DefaultMessageStore
  */
 @Slf4j
-public class StoreController extends AbstractNothingService {
+public class StoreController extends AbstractScheduledService {
     private final StoreConfig storeConfig;
     private final CommitLog commitLog;
     private final CommitLogDispatcher commitLogDispatcher;
     private final CommitLogFlusher commitLogFlusher;
     private final ConsumeQueueManager consumeQueueManager;
     private final IndexFileQueue indexFileQueue;
+    protected final ScheduledExecutorService scheduledExecutor;
 
     public StoreController(StoreConfig storeConfig) {
         this.storeConfig = storeConfig;
@@ -46,11 +50,12 @@ public class StoreController extends AbstractNothingService {
         ConsumeQueueDispatcher consumeQueueDispatcher = new ConsumeQueueDispatcher(this.consumeQueueManager);
         this.commitLogDispatcher = new CommitLogDispatcher(this.commitLog, consumeQueueDispatcher, indexFileDispatcher);
         if (storeConfig.getFlushDiskType() == FlushType.SYNC_FLUSH) {
-            this.commitLogFlusher = new CommitLogGroupFlusher(this.commitLog);
+            this.commitLogFlusher = new CommitLogBatchFlusher(this.commitLog);
         } else {
             this.commitLogFlusher = new CommitLogScheduledFlusher(storeConfig, this.commitLog);
         }
         this.indexFileQueue = new IndexFileQueue(storeConfig);
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
     }
 
     @Override
@@ -90,6 +95,10 @@ public class StoreController extends AbstractNothingService {
         super.shutdown();
     }
 
+    public void later(TimeUnit timeUnit, long delay, Runnable runnable) {
+        this.scheduledExecutor.schedule(runnable, delay, timeUnit);
+    }
+
     /**
      * @link org.apache.rocketmq.store.DefaultMessageStore#isTempFileExist
      */
@@ -106,7 +115,9 @@ public class StoreController extends AbstractNothingService {
      * org.apache.rocketmq.store.DefaultMessageStore#asyncPutMessage
      */
     public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
-        return this.commitLog.put(message);
+        CompletableFuture<PutResult> result = this.commitLog.put(message);
+        this.commitLogFlusher.flush(result, message);
+        return result;
     }
 
     /**

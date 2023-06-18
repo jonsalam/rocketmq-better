@@ -1,7 +1,7 @@
 package com.clouditora.mq.network.protocol;
 
 import com.alibaba.fastjson2.annotation.JSONField;
-import com.clouditora.mq.common.constant.ClassCanonical;
+import com.clouditora.mq.common.constant.ClassType;
 import com.clouditora.mq.common.constant.SerializeType;
 import com.clouditora.mq.common.network.CommandHeader;
 import com.clouditora.mq.common.network.CommandJsonBody;
@@ -149,7 +149,7 @@ public class Command {
             }
             try {
                 field.setAccessible(true);
-                Object fieldValue = ClassCanonical.parseValue(field.getType().getCanonicalName(), value);
+                Object fieldValue = ClassType.parseValue(field.getType().getCanonicalName(), value);
                 if (fieldValue != null) {
                     field.set(instance, fieldValue);
                 }

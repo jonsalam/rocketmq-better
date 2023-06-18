@@ -3,6 +3,7 @@ package com.clouditora.mq.common.message;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.clouditora.mq.common.Message;
 import com.clouditora.mq.common.MessageConst;
+import com.clouditora.mq.common.constant.ClassType;
 import com.clouditora.mq.common.constant.MagicCode;
 import com.clouditora.mq.common.util.MessageUtil;
 import lombok.Data;
@@ -91,4 +92,11 @@ public class MessageEntity extends Message {
         super.setProperties(map);
     }
 
+    public <T> T getProperty(String property, Class<T> clazz, T defaultValue) {
+        String value = this.properties.get(property);
+        if (value == null) {
+            return defaultValue;
+        }
+        return ClassType.parseValue(clazz, value);
+    }
 }
