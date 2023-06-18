@@ -23,10 +23,10 @@ public class CommitLogTest extends AbstractFileTest {
             commitLog.put(message);
         }
         int count = 0;
-        CommitLogIterator iterator = new CommitLogIterator(commitLog, 0);
-        while (iterator.hasNext()) {
-            MessageEntity next = iterator.next();
-            if (next != null && next.getMagicCode() == MagicCode.MESSAGE) {
+        CommitLogReader iterator = new CommitLogReader(commitLog, 0);
+        MessageEntity next;
+        while ((next = iterator.read()) != null) {
+            if (next.getMagicCode() == MagicCode.MESSAGE) {
                 count++;
             }
         }

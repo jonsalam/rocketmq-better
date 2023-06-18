@@ -5,16 +5,17 @@ import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.serialize.ByteBufferDeserializer;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 
 @Slf4j
-public class CommitLogIterator implements Iterator<MessageEntity> {
+public class CommitLogReader {
     private final ThreadLocal<ByteBufferDeserializer> deserializer = ThreadLocal.withInitial(ByteBufferDeserializer::new);
     private final CommitLog commitLog;
     @Getter
+    @Setter
     private long offset;
     private MappedFile file;
     private ByteBuffer byteBuffer;
@@ -23,7 +24,7 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
     private boolean prevBlankMessage = false;
     private boolean hasNext = true;
 
-    public CommitLogIterator(CommitLog commitLog, long offset) {
+    public CommitLogReader(CommitLog commitLog, long offset) {
         this.commitLog = commitLog;
         this.file = commitLog.slice(offset, -1);
         if (this.file == null) {
@@ -34,7 +35,6 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
         this.byteBuffer = this.file.getByteBuffer();
     }
 
-    @Override
     public boolean hasNext() {
         if (this.file == null) {
             return false;
@@ -45,8 +45,10 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
         return hasNext;
     }
 
-    @Override
-    public MessageEntity next() {
+    public MessageEntity read() {
+        if (!hasNext()) {
+            return null;
+        }
         MessageEntity entity;
         try {
             entity = this.deserializer.get().deserialize(this.byteBuffer);
@@ -78,7 +80,7 @@ public class CommitLogIterator implements Iterator<MessageEntity> {
             this.byteBuffer = this.file.getByteBuffer();
             this.position = 0;
             // 读取下一个文件的消息
-            return next();
+            return read();
         }
         return entity;
     }

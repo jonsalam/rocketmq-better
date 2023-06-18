@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
 public class ConsumeQueueDispatcher implements MessageDispatcher {
     private final ConsumeQueueManager files;
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#byteBufferIndex
+     * @link org.apache.rocketmq.store.ConsumeQueueManager#byteBufferIndex
      */
     private final ByteBuffer byteBuffer;
 
@@ -25,7 +25,7 @@ public class ConsumeQueueDispatcher implements MessageDispatcher {
     }
 
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#putMessagePositionInfo
+     * @link org.apache.rocketmq.store.ConsumeQueueManager#putMessagePositionInfo
      */
     @Override
     public void dispatch(MessageEntity message) throws Exception {

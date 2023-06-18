@@ -81,11 +81,11 @@ public class BrokerController extends AbstractScheduledService {
 
     @Override
     public void startup() {
+        this.storeController.startup();
+        this.topicQueueConfigManager.startup();
         registerDispatchers();
         this.serverNetwork.startup();
         this.clientNetwork.startup();
-        this.topicQueueConfigManager.startup();
-        this.storeController.startup();
         registerBroker();
         scheduled(10_000, brokerConfig.getRegisterNameServerPeriod(), this::registerBroker);
         scheduled(10_000, 10_000, this::cleanExpiredClient);

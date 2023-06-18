@@ -18,9 +18,9 @@ import java.nio.ByteBuffer;
 public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     private final StoreConfig config;
     @Getter
-    private volatile long minOffset = 0;
+    private volatile long minCommitLogOffset = 0;
     @Getter
-    private volatile long maxOffset = 0;
+    private volatile long maxCommitLogOffset = 0;
 
     public ConsumeQueue(StoreConfig config, File dir) {
         super(dir, config.getConsumeQueueFileSize());
@@ -32,7 +32,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     }
 
     public void increaseMaxOffset(int size) {
-        this.maxOffset += size;
+        this.maxCommitLogOffset += size;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
         if (file == super.files.get(0) && file.getWritePosition() == 0 && offset != 0) {
 //            this.mappedFileQueue.setFlushedWhere(expectLogicOffset);
 //            this.mappedFileQueue.setCommittedWhere(expectLogicOffset);
-            this.minOffset = offset;
+            this.minCommitLogOffset = offset;
             fillBlank(file, offset);
         }
         if (offset < file.getWritePosition() + file.getOffset()) {
@@ -62,7 +62,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     }
 
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#getIndexBuffer
+     * @link org.apache.rocketmq.store.ConsumeQueueManager#getIndexBuffer
      */
     @Override
     public ConsumeFile slice(long offset) {
@@ -70,7 +70,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     }
 
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#recover
+     * @link org.apache.rocketmq.store.ConsumeQueueManager#recover
      */
     public void recover() {
         // 只处理最后3个文件
@@ -83,7 +83,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
                 break;
             }
             offset += ConsumeFile.UNIT_SIZE;
-            this.maxOffset = entity.getCommitLogOffset() + entity.getMessageLength();
+            this.maxCommitLogOffset = entity.getCommitLogOffset() + entity.getMessageLength();
         }
         // 修正偏移量
         setFlushOffset(offset);
@@ -93,7 +93,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     }
 
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#fillPreBlank
+     * @link org.apache.rocketmq.store.ConsumeQueueManager#fillPreBlank
      */
     private void fillBlank(ConsumeFile mappedFile, long length) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
@@ -112,7 +112,7 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     }
 
     /**
-     * @link org.apache.rocketmq.store.ConsumeQueue#rollNextFile
+     * @link org.apache.rocketmq.store.ConsumeQueueManager#rollNextFile
      */
     public long rollNextFile(long offset) {
         int count = super.fileSize / ConsumeFile.UNIT_SIZE;

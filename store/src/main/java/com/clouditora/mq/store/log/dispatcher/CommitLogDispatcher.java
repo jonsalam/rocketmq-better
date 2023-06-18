@@ -3,7 +3,7 @@ package com.clouditora.mq.store.log.dispatcher;
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.common.service.AbstractLoopedService;
 import com.clouditora.mq.store.log.CommitLog;
-import com.clouditora.mq.store.log.CommitLogIterator;
+import com.clouditora.mq.store.log.CommitLogReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -14,12 +14,12 @@ import java.util.List;
  */
 @Slf4j
 public class CommitLogDispatcher extends AbstractLoopedService {
-    private final CommitLogIterator iterator;
+    private final CommitLogReader iterator;
     private final List<MessageDispatcher> dispatchers;
 
     public CommitLogDispatcher(CommitLog commitLog, MessageDispatcher... dispatchers) {
         this.dispatchers = Arrays.asList(dispatchers);
-        this.iterator = new CommitLogIterator(commitLog, 0);
+        this.iterator = new CommitLogReader(commitLog, 0);
     }
 
     @Override
@@ -28,15 +28,21 @@ public class CommitLogDispatcher extends AbstractLoopedService {
     }
 
     @Override
-    public void loop() {
+    public void loop() throws InterruptedException {
         dispatch();
+    }
+
+    public void startup(long minOffset) {
+        this.iterator.setOffset(minOffset);
+        super.startup();
     }
 
     /**
      * @link org.apache.rocketmq.store.DefaultMessageStore.ReputMessageService#doReput
      */
-    private void dispatch() {
-        MessageEntity message = this.iterator.next();
+    private void dispatch() throws InterruptedException {
+        Thread.sleep(1);
+        MessageEntity message = this.iterator.read();
         if (message == null) {
             return;
         }

@@ -10,9 +10,9 @@ import com.clouditora.mq.store.serialize.EndOfFileException;
 import com.clouditora.mq.store.serialize.SerializeException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReentrantLock;
@@ -89,35 +89,28 @@ public class CommitLog implements File {
      */
     public void recover(boolean normally) {
         List<MappedFile> files = this.fileQueue.getFiles();
+        if (CollectionUtils.isEmpty(files)) {
+            return;
+        }
+        // 只处理最后3个文件
+        MappedFile file;
         if (normally) {
-            // 只处理最后3个文件
-            MappedFile file = files.get(Math.max(files.size() - 3, 0));
-            long offset = file.getOffset();
-            CommitLogIterator iterator = new CommitLogIterator(this, offset);
-            while (iterator.hasNext()) {
-                MessageEntity entity = iterator.next();
-                if (entity == null) {
-                    break;
-                }
-                offset += entity.getMessageLength();
-            }
-            afterMap(offset);
+            file = files.get(Math.max(files.size() - 3, 0));
         } else {
-            // 遍历所有文件
-            long offset = 0;
-            for (int index = Math.max(files.size() - 1, 0); index >= 0; index--) {
-                MappedFile file = files.get(index);
-                offset = file.getOffset();
-                MappedByteBuffer byteBuffer = file.getByteBuffer();
-                MessageEntity entity = this.deserializer.deserialize(byteBuffer);
-                if (entity == null) {
-                    break;
-                }
-                offset += entity.getMessageLength();
+            // 遍历所有文件, 有了checkpoint可以过滤有效的文件
+            file = this.fileQueue.getFirst();
+        }
+        long offset = file.getOffset();
+        CommitLogReader iterator = new CommitLogReader(this, offset);
+        MessageEntity entity;
+        while ((entity = iterator.read()) != null) {
+            offset = entity.getCommitLogOffset() + entity.getMessageLength();
+            if (!normally) {
+                // 重建索引
                 this.storeController.dispatch(entity);
             }
-            afterMap(offset);
         }
+        afterMap(offset);
     }
 
     /**
@@ -131,7 +124,18 @@ public class CommitLog implements File {
         file.setFlushPosition((int) (offset % file.getFileSize()));
         // 删除多余文件
         this.fileQueue.delete(offset);
-        // TODO Clear ConsumeQueue redundant data
+        // TODO Clear ConsumeQueueManager redundant data
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.CommitLog#getMinOffset
+     */
+    public long getMinOffset() {
+        MappedFile file = this.fileQueue.getFirst();
+        if (file == null) {
+            return -1;
+        }
+        return file.getOffset();
     }
 
     /**
@@ -170,5 +174,4 @@ public class CommitLog implements File {
             this.lock.unlock();
         }
     }
-
 }

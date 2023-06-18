@@ -118,12 +118,13 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
     /**
      * @param offset 删除大于offset的文件
      * @link org.apache.rocketmq.store.MappedFileQueue#truncateDirtyFiles
+     * @link org.apache.rocketmq.store.MappedFileQueue#deleteExpiredFile
      */
     public void delete(long offset) {
         Iterator<T> iterator = this.files.iterator();
         while (iterator.hasNext()) {
             T file = iterator.next();
-            if (offset < file.getOffset()) {
+            if (file.getOffset() > offset) {
                 file.unmap();
                 iterator.remove();
                 log.info("delete file: {}", file);

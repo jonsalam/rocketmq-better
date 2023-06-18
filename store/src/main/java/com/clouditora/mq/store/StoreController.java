@@ -75,7 +75,8 @@ public class StoreController extends AbstractNothingService {
             log.info("prev shutdown abnormally");
 //            this.indexFileQueue.recover();
         }
-//        this.commitLogDispatcher.startup();
+        long minOffset = this.commitLog.getMinOffset();
+        this.commitLogDispatcher.startup(minOffset);
 //        this.commitLogFlusher.startup();
         super.startup();
     }
@@ -121,18 +122,18 @@ public class StoreController extends AbstractNothingService {
             result.setMaxOffset(0);
             return result;
         }
-        if (queue.getMaxOffset() == 0) {
+        if (queue.getMaxCommitLogOffset() == 0) {
             result.setStatus(GetMessageStatus.NO_MESSAGE_IN_QUEUE);
             result.setNextBeginOffset(0);
-        } else if (requestOffset < queue.getMinOffset()) {
+        } else if (requestOffset < queue.getMinCommitLogOffset()) {
             result.setStatus(GetMessageStatus.OFFSET_TOO_SMALL);
-            result.setNextBeginOffset(queue.getMinOffset());
-        } else if (requestOffset == queue.getMaxOffset()) {
+            result.setNextBeginOffset(queue.getMinCommitLogOffset());
+        } else if (requestOffset == queue.getMaxCommitLogOffset()) {
             result.setStatus(GetMessageStatus.OFFSET_OVER);
             result.setNextBeginOffset(requestOffset);
-        } else if (requestOffset > queue.getMaxOffset()) {
+        } else if (requestOffset > queue.getMaxCommitLogOffset()) {
             result.setStatus(GetMessageStatus.OFFSET_OVERFLOW);
-            result.setNextBeginOffset(queue.getMaxOffset());
+            result.setNextBeginOffset(queue.getMaxCommitLogOffset());
         } else {
             ConsumeFile consumeFile = queue.slice(requestOffset);
             if (consumeFile == null) {
