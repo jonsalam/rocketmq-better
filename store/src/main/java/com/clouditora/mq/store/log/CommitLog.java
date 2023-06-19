@@ -93,9 +93,9 @@ public class CommitLog implements File {
         if (CollectionUtils.isEmpty(files)) {
             return;
         }
-        // 只处理最后3个文件
         MappedFile file;
         if (normally) {
+            // 只处理最后3个文件
             file = files.get(Math.max(files.size() - 3, 0));
         } else {
             // 遍历所有文件, 有了checkpoint可以过滤有效的文件

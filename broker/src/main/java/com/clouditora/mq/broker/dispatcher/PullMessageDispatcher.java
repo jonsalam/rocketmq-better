@@ -15,6 +15,9 @@ import com.clouditora.mq.store.log.GetMessageResult;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @link org.apache.rocketmq.broker.processor.PullMessageProcessor
+ */
 @Slf4j
 public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDispatcher {
     protected final BrokerConfig brokerConfig;
