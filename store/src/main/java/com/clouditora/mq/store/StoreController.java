@@ -15,8 +15,8 @@ import com.clouditora.mq.store.index.IndexFileQueue;
 import com.clouditora.mq.store.log.CommitLog;
 import com.clouditora.mq.store.log.GetMessageResult;
 import com.clouditora.mq.store.log.dispatcher.CommitLogDispatcher;
-import com.clouditora.mq.store.log.flusher.CommitLogFlusher;
 import com.clouditora.mq.store.log.flusher.CommitLogBatchFlusher;
+import com.clouditora.mq.store.log.flusher.CommitLogFlusher;
 import com.clouditora.mq.store.log.flusher.CommitLogScheduledFlusher;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,7 +73,7 @@ public class StoreController extends AbstractScheduledService {
         this.consumeQueueManager.map();
 //        this.indexFileQueue.map();
         this.consumeQueueManager.recover();
-        this.commitLog.recover(normally);
+        this.commitLog.recover(normally, this.consumeQueueManager.getConsumeQueueMap());
         if (normally) {
             log.info("prev shutdown normally");
         } else {
@@ -116,6 +116,7 @@ public class StoreController extends AbstractScheduledService {
      */
     public CompletableFuture<PutResult> asyncPut(MessageEntity message) {
         CompletableFuture<PutResult> result = this.commitLog.put(message);
+        // 刷盘
         this.commitLogFlusher.flush(result, message);
         return result;
     }
@@ -136,9 +137,6 @@ public class StoreController extends AbstractScheduledService {
         if (queue.getMaxCommitLogOffset() == 0) {
             result.setStatus(GetMessageStatus.NO_MESSAGE_IN_QUEUE);
             result.setNextBeginOffset(0);
-        } else if (requestOffset < queue.getMinCommitLogOffset()) {
-            result.setStatus(GetMessageStatus.OFFSET_TOO_SMALL);
-            result.setNextBeginOffset(queue.getMinCommitLogOffset());
         } else if (requestOffset == queue.getMaxCommitLogOffset()) {
             result.setStatus(GetMessageStatus.OFFSET_OVER);
             result.setNextBeginOffset(requestOffset);

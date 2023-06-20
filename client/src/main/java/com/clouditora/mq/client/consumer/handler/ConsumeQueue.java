@@ -78,7 +78,7 @@ public class ConsumeQueue {
             try {
                 int validMsgCnt = 0;
                 for (MessageEntity message : messages) {
-                    MessageEntity old = this.messageMap.put(message.getQueueOffset(), message);
+                    MessageEntity old = this.messageMap.put(message.getQueuePosition(), message);
                     if (old == null) {
                         validMsgCnt++;
 //                        this.queueOffsetMax = message.getQueueOffset();
@@ -111,7 +111,7 @@ public class ConsumeQueue {
 //                long result = this.queueOffsetMax + 1;
                 long result = 0;
                 for (MessageEntity message : messages) {
-                    MessageEntity prev = this.messageMap.remove(message.getQueueOffset());
+                    MessageEntity prev = this.messageMap.remove(message.getQueuePosition());
                     if (prev != null) {
                         this.messageSize.addAndGet(-message.getBody().length);
                         this.messageCount.decrementAndGet();

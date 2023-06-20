@@ -57,17 +57,9 @@ public class CommitLogBatchFlusher extends AbstractWaitService implements Commit
         flush();
     }
 
-    @Override
-    public CompletableFuture<PutStatus> flush(CompletableFuture<PutResult> result, MessageEntity message) {
-        Boolean stored = message.getProperty(MessageConst.Property.WAIT_STORE_OK, Boolean.class, true);
-        if (stored) {
-            return putRequest(message.getCommitLogOffset() + message.getMessageLength());
-        } else {
-            wakeup();
-            return CompletableFuture.completedFuture(PutStatus.SUCCESS);
-        }
-    }
-
+    /**
+     * @link org.apache.rocketmq.store.CommitLog.GroupCommitService#swapRequests
+     */
     private void swapWriteAndRead() {
         try {
             this.lock.lock();
@@ -79,6 +71,20 @@ public class CommitLogBatchFlusher extends AbstractWaitService implements Commit
         }
     }
 
+    @Override
+    public CompletableFuture<PutStatus> flush(CompletableFuture<PutResult> result, MessageEntity message) {
+        Boolean stored = message.getProperty(MessageConst.Property.WAIT_STORE_OK, Boolean.class, true);
+        if (stored) {
+            return putRequest(message.getCommitLogOffset() + message.getMessageLength());
+        } else {
+            wakeup();
+            return CompletableFuture.completedFuture(PutStatus.SUCCESS);
+        }
+    }
+
+    /**
+     * @link org.apache.rocketmq.store.CommitLog.GroupCommitService#putRequest
+     */
     public CompletableFuture<PutStatus> putRequest(long offset) {
         try {
             this.lock.lock();
@@ -106,7 +112,6 @@ public class CommitLogBatchFlusher extends AbstractWaitService implements Commit
         public void wakeupCustomer(PutStatus status) {
             this.future.complete(status);
         }
-
     }
 
     /**

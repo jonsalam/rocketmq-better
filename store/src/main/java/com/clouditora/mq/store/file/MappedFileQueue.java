@@ -225,12 +225,8 @@ public class MappedFileQueue<T extends MappedFile> implements com.clouditora.mq.
      * @link org.apache.rocketmq.store.MappedFileQueue#doCreateMappedFile
      */
     protected MappedFile create(long offset) throws IOException {
-        try {
-            String newPath = "%s/%s".formatted(this.dir, StoreUtil.long2String(offset));
-            return new MappedFile(newPath, this.fileSize);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        String newPath = "%s/%s".formatted(this.dir, StoreUtil.long2String(offset));
+        return new MappedFile(newPath, this.fileSize);
     }
 
     /**

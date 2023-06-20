@@ -5,11 +5,11 @@ import com.clouditora.mq.store.file.MappedFile;
 import com.clouditora.mq.store.file.MappedFileQueue;
 import com.clouditora.mq.store.util.StoreUtil;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * @link org.apache.rocketmq.store.ConsumeQueue
@@ -18,21 +18,28 @@ import java.nio.ByteBuffer;
 public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     private final StoreConfig config;
     @Getter
-    private volatile long minCommitLogOffset = 0;
+    private final String topic;
     @Getter
+    private final int queueId;
+    /**
+     * @link org.apache.rocketmq.store.ConsumeQueue#maxPhysicOffset
+     */
+    @Getter
+    @Setter
     private volatile long maxCommitLogOffset = 0;
 
     public ConsumeQueue(StoreConfig config, File dir) {
         super(dir, config.getConsumeQueueFileSize());
         this.config = config;
+        this.topic = dir.getParent();
+        this.queueId = Integer.parseInt(dir.getName());
     }
 
     public ConsumeQueue(StoreConfig config, String topic, int queueId) {
-        this(config, new File("%s/%s/%s".formatted(config.getConsumeQueuePath(), topic, queueId)));
-    }
-
-    public void increaseMaxOffset(int size) {
-        this.maxCommitLogOffset += size;
+        super(new File("%s/%s/%s".formatted(config.getConsumeQueuePath(), topic, queueId)), config.getConsumeQueueFileSize());
+        this.config = config;
+        this.topic = dir.getParent();
+        this.queueId = Integer.parseInt(dir.getName());
     }
 
     @Override
@@ -41,12 +48,6 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
         ConsumeFile file = super.getOrCreate(offset);
         if (file == null) {
             return null;
-        }
-        if (file == super.files.get(0) && file.getWritePosition() == 0 && offset != 0) {
-//            this.mappedFileQueue.setFlushedWhere(expectLogicOffset);
-//            this.mappedFileQueue.setCommittedWhere(expectLogicOffset);
-            this.minCommitLogOffset = offset;
-            fillBlank(file, offset);
         }
         if (offset < file.getWritePosition() + file.getOffset()) {
             log.warn("create consume file repeatedly: expectOffset={}, currentOffset={}", offset, file.getWritePosition() + file.getOffset());
@@ -67,6 +68,11 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
     @Override
     public ConsumeFile slice(long offset) {
         return super.slice(offset);
+    }
+
+    @Override
+    public long getMaxWriteOffset() {
+        return super.getMaxWriteOffset() / ConsumeFile.UNIT_SIZE;
     }
 
     /**
@@ -90,25 +96,6 @@ public class ConsumeQueue extends MappedFileQueue<ConsumeFile> {
         file = slice(offset);
         file.setWritePosition((int) (offset % file.getFileSize()));
         file.setFlushPosition((int) (offset % file.getFileSize()));
-    }
-
-    /**
-     * @link org.apache.rocketmq.store.ConsumeQueueManager#fillPreBlank
-     */
-    private void fillBlank(ConsumeFile mappedFile, long length) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(ConsumeFile.UNIT_SIZE);
-        byteBuffer.putLong(0L);
-        byteBuffer.putInt(Integer.MAX_VALUE);
-        byteBuffer.putLong(0L);
-
-        try {
-            length = length % mappedFile.getFileSize();
-            for (int i = 0; i < length; i += ConsumeFile.UNIT_SIZE) {
-                mappedFile.append(byteBuffer);
-            }
-        } catch (Exception e) {
-            log.error("fill blank exception", e);
-        }
     }
 
     /**

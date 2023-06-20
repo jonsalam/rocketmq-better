@@ -30,7 +30,7 @@ public class ConsumeQueueDispatcher implements MessageDispatcher {
     @Override
     public void dispatch(MessageEntity message) throws Exception {
         ConsumeQueue queue = this.files.get(message.getTopic(), message.getQueueId());
-        ConsumeFile file = queue.getOrCreate(message.getQueueOffset());
+        ConsumeFile file = queue.getOrCreate(message.getQueuePosition());
         if (file == null) {
             return;
         }
@@ -41,7 +41,7 @@ public class ConsumeQueueDispatcher implements MessageDispatcher {
         this.byteBuffer.putInt(message.getMessageLength());
         this.byteBuffer.putLong(tagsCode);
         file.append(this.byteBuffer);
-        queue.increaseMaxOffset(message.getMessageLength());
+        queue.setMaxCommitLogOffset(message.getCommitLogOffset() + message.getMessageLength());
     }
 
     private int getMessageHashCode(MessageEntity message) {

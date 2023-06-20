@@ -2,6 +2,7 @@ package com.clouditora.mq.store.consume;
 
 import com.clouditora.mq.common.util.NumberUtil;
 import com.clouditora.mq.store.StoreConfig;
+import lombok.Getter;
 
 import java.io.File;
 import java.util.Collection;
@@ -16,26 +17,27 @@ public class ConsumeQueueManager {
      *
      * @link org.apache.rocketmq.store.DefaultMessageStore#consumeQueueTable
      */
-    private final ConcurrentMap<String, ConcurrentMap<Integer, ConsumeQueue>> map;
+    @Getter
+    private final ConcurrentMap<String, ConcurrentMap<Integer, ConsumeQueue>> consumeQueueMap;
 
     public ConsumeQueueManager(StoreConfig storeConfig) {
         this.storeConfig = storeConfig;
-        this.map = new ConcurrentHashMap<>(32);
+        this.consumeQueueMap = new ConcurrentHashMap<>(32);
     }
 
     /**
      * @link org.apache.rocketmq.store.DefaultMessageStore#putConsumeQueue
      */
     public void put(String topic, int queueId, ConsumeQueue consumeQueue) {
-        ConcurrentMap<Integer, ConsumeQueue> queueMap = this.map.computeIfAbsent(topic, e -> new ConcurrentHashMap<>());
-        queueMap.computeIfAbsent(queueId, e -> consumeQueue);
+        ConcurrentMap<Integer, ConsumeQueue> queueMap = this.consumeQueueMap.computeIfAbsent(topic, e -> new ConcurrentHashMap<>());
+        queueMap.put(queueId, consumeQueue);
     }
 
     /**
      * @link org.apache.rocketmq.store.DefaultMessageStore#findConsumeQueue
      */
     public ConsumeQueue get(String topic, int queueId) {
-        ConcurrentMap<Integer, ConsumeQueue> queueMap = this.map.computeIfAbsent(topic, e -> new ConcurrentHashMap<>(128));
+        ConcurrentMap<Integer, ConsumeQueue> queueMap = this.consumeQueueMap.computeIfAbsent(topic, e -> new ConcurrentHashMap<>(128));
         return queueMap.computeIfAbsent(queueId, e -> new ConsumeQueue(this.storeConfig, topic, queueId));
     }
 
@@ -70,7 +72,7 @@ public class ConsumeQueueManager {
      * @link org.apache.rocketmq.store.DefaultMessageStore#recoverConsumeQueue
      */
     public void recover() {
-        this.map.values().stream()
+        this.consumeQueueMap.values().stream()
                 .map(Map::values)
                 .flatMap(Collection::stream)
                 .forEach(ConsumeQueue::recover);

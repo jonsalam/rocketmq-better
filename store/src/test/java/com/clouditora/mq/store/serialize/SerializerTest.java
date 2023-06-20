@@ -18,7 +18,7 @@ public class SerializerTest {
     public void serializeAndDeserialize() throws PutException {
         MessageEntity message1 = TestUtil.buildMessage();
         ByteBufferSerializer serializer = new ByteBufferSerializer();
-        ByteBuffer buffer = serializer.serialize(0, 1024 * 10, message1);
+        ByteBuffer buffer = serializer.serialize(1024 * 10, message1);
 
         ByteBufferDeserializer deserializer = new ByteBufferDeserializer();
         MessageEntity message2 = deserializer.deserialize(buffer);

@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface CommitLogFlusher extends Lifecycle {
     /**
-     * @return
      * @link org.apache.rocketmq.store.CommitLog#submitFlushRequest
      */
     CompletableFuture<PutStatus> flush(CompletableFuture<PutResult> result, MessageEntity message);

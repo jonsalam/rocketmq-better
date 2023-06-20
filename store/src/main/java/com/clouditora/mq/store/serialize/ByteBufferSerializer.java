@@ -17,8 +17,7 @@ public class ByteBufferSerializer extends AbstractSerializer<SerializerChainCont
         return context;
     }
 
-    public ByteBuffer serialize(long offset, int free, MessageEntity message) throws SerializeException {
-        message.setCommitLogOffset(offset);
+    public ByteBuffer serialize(int free, MessageEntity message) throws SerializeException {
         super.context.setFree(free);
         super.context.setMessage(message);
         // 计算消息的长度

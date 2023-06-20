@@ -3,6 +3,7 @@ package com.clouditora.mq.store.log;
 import com.clouditora.mq.common.message.MessageEntity;
 import com.clouditora.mq.store.StoreConfig;
 import com.clouditora.mq.store.StoreController;
+import com.clouditora.mq.store.consume.ConsumeQueue;
 import com.clouditora.mq.store.file.*;
 import com.clouditora.mq.store.serialize.ByteBufferDeserializer;
 import com.clouditora.mq.store.serialize.ByteBufferSerializer;
@@ -15,6 +16,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,6 +31,7 @@ public class CommitLog implements File {
     private final MappedFileQueue<MappedFile> fileQueue;
     private final ByteBufferSerializer serializer;
     private final ByteBufferDeserializer deserializer;
+    private ProduceQueueManager produceQueueManager;
     /**
      * @link org.apache.rocketmq.store.CommitLog#putMessageLock
      */
@@ -88,7 +91,7 @@ public class CommitLog implements File {
     /**
      * @link org.apache.rocketmq.store.CommitLog#recoverAbnormally
      */
-    public void recover(boolean normally) {
+    public void recover(boolean normally, ConcurrentMap<String, ConcurrentMap<Integer, ConsumeQueue>> consumeQueueMap) {
         List<MappedFile> files = this.fileQueue.getFiles();
         if (CollectionUtils.isEmpty(files)) {
             return;
@@ -112,6 +115,8 @@ public class CommitLog implements File {
             }
         }
         afterMap(offset);
+
+        this.produceQueueManager = new ProduceQueueManager(consumeQueueMap);
     }
 
     /**
@@ -150,17 +155,21 @@ public class CommitLog implements File {
         }
         try {
             this.lock.lock();
-            long queueOffset = 0L;
-            message.setQueueOffset(queueOffset);
-            // 当前文件写指针
-            int writePosition = file.getWritePosition();
-            // 物理偏移量
-            long offset = file.getOffset() + writePosition;
             // 当前文件剩余空间
-            int free = file.getFileSize() - writePosition;
-            ByteBuffer byteBuffer = this.serializer.serialize(offset, free, message);
+            int free = file.getFileSize() - file.getWritePosition();
+            // 物理偏移量
+            long offset = file.getOffset() + file.getWritePosition();
+            message.setCommitLogOffset(offset);
+            // 队列偏移量
+            long queuePosition = this.produceQueueManager.get(message.getTopic(), message.getQueueId());
+            message.setQueuePosition(queuePosition);
+            // 序列化
+            ByteBuffer byteBuffer = this.serializer.serialize(free, message);
+            // 写入文件
             file.append(byteBuffer);
-            return PutResult.buildAsync(PutStatus.SUCCESS, message.getMessageId(), queueOffset);
+            // 队列偏移量+1
+            this.produceQueueManager.increase(message.getTopic(), message.getQueueId());
+            return PutResult.buildAsync(PutStatus.SUCCESS, message.getMessageId(), queuePosition);
         } catch (EndOfFileException e) {
             log.debug("end of file: file={}, messageLength={}", file, e.getLength());
             // 剩余空间不够了: 1.当前文件写满; 2.消息写入下一个文件

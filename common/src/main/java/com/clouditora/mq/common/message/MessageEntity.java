@@ -37,7 +37,7 @@ public class MessageEntity extends Message {
     private int messageLength;
     private String brokerName;
     private int queueId;
-    private long queueOffset;
+    private long queuePosition;
     private int sysFlag;
     private long bornTimestamp;
     private InetSocketAddress bornHost;
