@@ -14,6 +14,7 @@ import com.clouditora.mq.store.index.IndexFileDispatcher;
 import com.clouditora.mq.store.index.IndexFileQueue;
 import com.clouditora.mq.store.log.CommitLog;
 import com.clouditora.mq.store.log.GetMessageResult;
+import com.clouditora.mq.store.log.ProduceQueueManager;
 import com.clouditora.mq.store.log.dispatcher.CommitLogDispatcher;
 import com.clouditora.mq.store.log.flusher.CommitLogBatchFlusher;
 import com.clouditora.mq.store.log.flusher.CommitLogFlusher;
@@ -35,17 +36,20 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class StoreController extends AbstractScheduledService {
     private final StoreConfig storeConfig;
+    private final IndexFileQueue indexFileQueue;
+    private final ConsumeQueueManager consumeQueueManager;
+    private final ProduceQueueManager produceQueueManager;
     private final CommitLog commitLog;
     private final CommitLogDispatcher commitLogDispatcher;
     private final CommitLogFlusher commitLogFlusher;
-    private final ConsumeQueueManager consumeQueueManager;
-    private final IndexFileQueue indexFileQueue;
     protected final ScheduledExecutorService scheduledExecutor;
 
     public StoreController(StoreConfig storeConfig) {
         this.storeConfig = storeConfig;
-        this.commitLog = new CommitLog(storeConfig, this);
+        this.indexFileQueue = new IndexFileQueue(storeConfig);
         this.consumeQueueManager = new ConsumeQueueManager(storeConfig);
+        this.produceQueueManager = new ProduceQueueManager();
+        this.commitLog = new CommitLog(storeConfig, this, produceQueueManager);
         IndexFileDispatcher indexFileDispatcher = new IndexFileDispatcher(storeConfig);
         ConsumeQueueDispatcher consumeQueueDispatcher = new ConsumeQueueDispatcher(this.consumeQueueManager);
         this.commitLogDispatcher = new CommitLogDispatcher(this.commitLog, consumeQueueDispatcher, indexFileDispatcher);
@@ -54,7 +58,6 @@ public class StoreController extends AbstractScheduledService {
         } else {
             this.commitLogFlusher = new CommitLogScheduledFlusher(storeConfig, this.commitLog);
         }
-        this.indexFileQueue = new IndexFileQueue(storeConfig);
         this.scheduledExecutor = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, getServiceName()));
     }
 
@@ -73,13 +76,9 @@ public class StoreController extends AbstractScheduledService {
         this.consumeQueueManager.map();
 //        this.indexFileQueue.map();
         this.consumeQueueManager.recover();
-        this.commitLog.recover(normally, this.consumeQueueManager.getConsumeQueueMap());
-        if (normally) {
-            log.info("prev shutdown normally");
-        } else {
-            log.info("prev shutdown abnormally");
-//            this.indexFileQueue.recover();
-        }
+        this.commitLog.recover(normally);
+        this.produceQueueManager.recover(this.consumeQueueManager.getConsumeQueueMap());
+//        this.indexFileQueue.recover();
         long minOffset = this.commitLog.getMinOffset();
         this.commitLogDispatcher.startup(minOffset);
 //        this.commitLogFlusher.startup();
@@ -126,28 +125,28 @@ public class StoreController extends AbstractScheduledService {
      */
     public GetMessageResult get(String group, String topic, int queueId, long requestOffset, int requestNum) {
         GetMessageResult result = new GetMessageResult();
-        ConsumeQueue queue = this.consumeQueueManager.get(topic, queueId);
-        if (queue == null) {
+        ConsumeQueue consumeQueue = this.consumeQueueManager.get(topic, queueId);
+        if (consumeQueue == null) {
             result.setStatus(GetMessageStatus.NO_MATCHED_LOGIC_QUEUE);
             result.setNextBeginOffset(0);
             result.setMinOffset(0);
             result.setMaxOffset(0);
             return result;
         }
-        if (queue.getMaxCommitLogOffset() == 0) {
+        if (consumeQueue.getMaxCommitLogOffset() == 0) {
             result.setStatus(GetMessageStatus.NO_MESSAGE_IN_QUEUE);
             result.setNextBeginOffset(0);
-        } else if (requestOffset == queue.getMaxCommitLogOffset()) {
+        } else if (requestOffset == consumeQueue.getMaxCommitLogOffset()) {
             result.setStatus(GetMessageStatus.OFFSET_OVER);
             result.setNextBeginOffset(requestOffset);
-        } else if (requestOffset > queue.getMaxCommitLogOffset()) {
+        } else if (requestOffset > consumeQueue.getMaxCommitLogOffset()) {
             result.setStatus(GetMessageStatus.OFFSET_OVERFLOW);
-            result.setNextBeginOffset(queue.getMaxCommitLogOffset());
+            result.setNextBeginOffset(consumeQueue.getMaxCommitLogOffset());
         } else {
-            ConsumeFile consumeFile = queue.slice(requestOffset);
+            ConsumeFile consumeFile = consumeQueue.slice(requestOffset);
             if (consumeFile == null) {
                 result.setStatus(GetMessageStatus.OFFSET_FOUND_NULL);
-                result.setNextBeginOffset(queue.rollNextFile(requestOffset));
+                result.setNextBeginOffset(consumeQueue.rollNextFile(requestOffset));
             } else {
                 int maxOffset = Math.max(16000, requestNum * ConsumeFile.UNIT_SIZE);
                 List<MappedFile> slices = new ArrayList<>(requestNum);

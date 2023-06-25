@@ -17,7 +17,7 @@ public class CommitLogTest extends AbstractFileTest {
         StoreConfig config = new StoreConfig();
         config.setCommitLogFileSize(1024);
         config.setRootPath(super.path);
-        CommitLog commitLog = new CommitLog(config, null);
+        CommitLog commitLog = new CommitLog(config, null, null);
         MessageEntity message = TestUtil.buildMessage();
         for (int i = 0; i < total; i++) {
             commitLog.put(message);
@@ -40,7 +40,7 @@ public class CommitLogTest extends AbstractFileTest {
         StoreConfig config = new StoreConfig();
         config.setCommitLogFileSize(1024);
         config.setRootPath(super.path);
-        CommitLog commitLog = new CommitLog(config, null);
-        commitLog.recover(true, null);
+        CommitLog commitLog = new CommitLog(config, null, null);
+        commitLog.recover(true);
     }
 }

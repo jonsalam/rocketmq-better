@@ -14,7 +14,7 @@ public class ProduceQueueManager {
      */
     private final Map<String, Long> producerQueueMap = new HashMap<>(1024);
 
-    public ProduceQueueManager(Map<String, ConcurrentMap<Integer, ConsumeQueue>> consumeQueueMap) {
+    public void recover(ConcurrentMap<String, ConcurrentMap<Integer, ConsumeQueue>> consumeQueueMap) {
         for (Map<Integer, ConsumeQueue> maps : consumeQueueMap.values()) {
             for (ConsumeQueue consumeQueue : maps.values()) {
                 String key = "%s-%s".formatted(consumeQueue.getTopic(), consumeQueue.getQueueId());

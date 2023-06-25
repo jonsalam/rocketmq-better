@@ -11,7 +11,7 @@ public class ConsumeQueueIterator implements Iterator<ConsumeFileEntity> {
     private final ConsumeQueue consumeQueue;
     private MappedFile file;
     private ByteBuffer byteBuffer;
-    private long position = 0;
+    private long offset = 0;
     private boolean hasNext = true;
 
     public ConsumeQueueIterator(ConsumeQueue consumeQueue, long offset) {
@@ -29,7 +29,7 @@ public class ConsumeQueueIterator implements Iterator<ConsumeFileEntity> {
         if (this.file == null) {
             return false;
         }
-        if (this.position > this.file.getWritePosition()) {
+        if (this.offset > this.file.getWritePosition()) {
             return false;
         }
         return hasNext;
@@ -37,21 +37,21 @@ public class ConsumeQueueIterator implements Iterator<ConsumeFileEntity> {
 
     @Override
     public ConsumeFileEntity next() {
-        if (this.position >= this.file.getWritePosition()) {
+        if (this.offset >= this.file.getWritePosition()) {
             // 下一个文件的offset
-            this.file = this.consumeQueue.slice(this.position);
+            this.file = this.consumeQueue.slice(this.offset);
             if (this.file == null) {
                 // 下一个文件没有了
                 return null;
             }
             this.byteBuffer = this.file.getByteBuffer();
-            this.position = 0;
+            this.offset = 0;
             // 读取下一个文件的消息
             return next();
         }
         ConsumeFileEntity entity = deserialize(byteBuffer);
         if (entity != null) {
-            this.position += ConsumeFile.UNIT_SIZE;
+            this.offset += ConsumeFile.UNIT_SIZE;
         }
         return entity;
     }

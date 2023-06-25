@@ -44,9 +44,6 @@ public class MessagePullCommand {
         private String expression;
 
         private ExpressionType expressionType;
-
-        @JSONField(name = "subVersion")
-        private Long version;
     }
 
     @Data

@@ -3,6 +3,8 @@ package com.clouditora.mq.broker.dispatcher;
 import com.clouditora.mq.broker.BrokerConfig;
 import com.clouditora.mq.broker.client.TopicQueueConfigManager;
 import com.clouditora.mq.broker.client.consumer.ConsumerManager;
+import com.clouditora.mq.broker.client.consumer.ConsumerSubscribeManager;
+import com.clouditora.mq.common.message.SysFlag;
 import com.clouditora.mq.common.network.command.MessagePullCommand;
 import com.clouditora.mq.common.topic.TopicQueueConfig;
 import com.clouditora.mq.common.topic.TopicSubscription;
@@ -10,6 +12,7 @@ import com.clouditora.mq.network.command.AsyncCommandDispatcher;
 import com.clouditora.mq.network.command.CommandDispatcher;
 import com.clouditora.mq.network.protocol.Command;
 import com.clouditora.mq.network.protocol.ResponseCode;
+import com.clouditora.mq.network.util.NetworkUtil;
 import com.clouditora.mq.store.StoreController;
 import com.clouditora.mq.store.log.GetMessageResult;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,69 +48,60 @@ public class PullMessageDispatcher implements CommandDispatcher, AsyncCommandDis
 
 //        boolean hasSuspendFlag = PullSysFlag.hasSuspendFlag(requestHeader.getSysFlag());
 //        boolean hasCommitOffsetFlag = PullSysFlag.hasCommitOffsetFlag(requestHeader.getSysFlag());
-//        boolean hasSubscriptionFlag = PullSysFlag.hasSubscriptionFlag(requestHeader.getSysFlag());
+        boolean hasSubscriptionFlag = SysFlag.hasSubscriptionFlag(requestHeader.getSysFlag());
 //        long suspendTimeoutMillisLong = hasSuspendFlag ? requestHeader.getSuspendTimeoutMillis() : 0;
 
         TopicQueueConfig topicConfig = this.topicQueueConfigManager.get(requestHeader.getTopic());
         if (topicConfig == null) {
-//            log.error("the topic {} not exist, consumer: {}", requestHeader.getTopic(), NetworkUtil.parseChannelRemopteAddr(channel));
+            log.warn("topic not exist:{}, consumer={}", requestHeader.getTopic(), NetworkUtil.toEndpoint(context.channel()));
             response.setCode(ResponseCode.TOPIC_NOT_EXIST);
-            response.setRemark(String.format("topic[%s] not exist, apply first please!", requestHeader.getTopic()));
+            response.setRemark(String.format("topic %s not exist", requestHeader.getTopic()));
             return response;
         }
 
         if (requestHeader.getQueueId() < 0 || requestHeader.getQueueId() >= topicConfig.getReadQueueNum()) {
-            String errorInfo = String.format("queueId[%d] is illegal, topic:[%s] topicConfig.readQueueNums:[%d] consumer:[%s]", requestHeader.getQueueId(), requestHeader.getTopic(), topicConfig.getReadQueueNum(), context.channel().remoteAddress());
-            log.warn(errorInfo);
+            log.warn("queueId is illegal: {}, topic={}, readQueueNum={}, consumer={}", requestHeader.getQueueId(), requestHeader.getTopic(), topicConfig.getReadQueueNum(), NetworkUtil.toEndpoint(context.channel()));
             response.setCode(ResponseCode.SYSTEM_ERROR);
-            response.setRemark(errorInfo);
+            response.setRemark("queueId is illegal: %s, readQueueNum=%s".formatted(requestHeader.getQueueId(), topicConfig.getReadQueueNum()));
             return response;
         }
 
-//        TopicSubscription subscription = null;
-//        if (hasSubscriptionFlag) {
-//            try {
-//                subscription = TopicSubscription.build(requestHeader.getTopic(), requestHeader.getExpression(), requestHeader.getExpressionType());
-//            } catch (Exception e) {
-//                log.warn("Parse the consumer subscription failed: group={}, expression={}", requestHeader.getGroup(), requestHeader.getExpression());
-//                response.setCode(ResponseCode.SUBSCRIPTION_PARSE_FAILED);
-//                response.setRemark("parse the consumer's subscription failed");
-//                return response;
-//            }
-//        } else {
-//            ConsumerSubscribeManager consumerSubscription = this.consumerManager.getConsumerSubscription(requestHeader.getGroup());
-//            if (consumerSubscription == null) {
-//                log.warn("the consumer's group info not exist, group: {}", requestHeader.getGroup());
-//                response.setCode(ResponseCode.SUBSCRIPTION_NOT_EXIST);
-//                response.setRemark("the consumer's group info not exist");
-//                return response;
-//            }
-//
-//            if (!subscriptionGroupConfig.isConsumeBroadcastEnable() && consumerSubscription.getMessageModel() == MessageModel.BROADCASTING) {
-//                response.setCode(ResponseCode.NO_PERMISSION);
-//                response.setRemark("the consumer group[" + requestHeader.getGroup() + "] can not consume by broadcast way");
-//                return response;
-//            }
-//
-//            subscription = consumerSubscription.get(requestHeader.getTopic());
-//            if (subscription == null) {
-//                log.warn("the consumer's subscription not exist, group: {}, topic:{}", requestHeader.getGroup(), requestHeader.getTopic());
-//                response.setCode(ResponseCode.SUBSCRIPTION_NOT_EXIST);
-//                response.setRemark("the consumer's subscription not exist");
-//                return response;
-//            }
-//
-//            if (subscription.getVersion() < requestHeader.getVersion()) {
-//                log.warn("The broker's subscription is not latest, group: {} {}", requestHeader.getGroup(), subscription.getExpression());
-//                response.setCode(ResponseCode.SUBSCRIPTION_NOT_LATEST);
-//                response.setRemark("the consumer's subscription not latest");
-//                return response;
-//            }
-//        }
+        TopicSubscription subscription = null;
+        if (hasSubscriptionFlag) {
+            try {
+                subscription = TopicSubscription.build(requestHeader.getTopic(), requestHeader.getExpression(), requestHeader.getExpressionType());
+            } catch (Exception e) {
+                log.warn("build subscription failed: group={}, expression={}, consumer={}", requestHeader.getGroup(), requestHeader.getExpression(), NetworkUtil.toEndpoint(context.channel()));
+                response.setCode(ResponseCode.SUBSCRIPTION_PARSE_FAILED);
+                response.setRemark("parse the consumer's subscription failed");
+                return response;
+            }
+        } else {
+            ConsumerSubscribeManager subscribeManager = this.consumerManager.getConsumerSubscription(requestHeader.getGroup());
+            if (subscribeManager == null) {
+                log.warn("the consumer's group info not exist, group: {}", requestHeader.getGroup());
+                response.setCode(ResponseCode.SUBSCRIPTION_NOT_EXIST);
+                response.setRemark("the consumer's group info not exist");
+                return response;
+            }
 
-//        MessageFilter messageFilter;
-//        messageFilter = new ExpressionMessageFilter(subscription, consumerFilterData, this.brokerController.getConsumerFilterManager());
-//        GetMessageResult result = this.messageStore.get(requestHeader.getGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getPullOffset(), requestHeader.getPullNum(), messageFilter);
+            subscription = subscribeManager.get(requestHeader.getTopic());
+            if (subscription == null) {
+                log.warn("the consumer's subscription not exist, group: {}, topic:{}", requestHeader.getGroup(), requestHeader.getTopic());
+                response.setCode(ResponseCode.SUBSCRIPTION_NOT_EXIST);
+                response.setRemark("the consumer's subscription not exist");
+                return response;
+            }
+        }
+
+        GetMessageResult result = this.storeController.get(
+                requestHeader.getGroup(),
+                requestHeader.getTopic(),
+                requestHeader.getQueueId(),
+                requestHeader.getPullOffset(),
+                requestHeader.getPullNum(),
+                subscription
+        );
 //        if (result == null) {
 //            response.setCode(ResponseCode.SYSTEM_ERROR);
 //            response.setRemark("store getMessage return null");

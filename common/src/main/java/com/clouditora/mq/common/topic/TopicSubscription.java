@@ -28,17 +28,17 @@ public class TopicSubscription {
     @JSONField(name = "codeSet")
     private Set<Integer> codes;
 
-    @JSONField(name = "subVersion")
-    private long version = System.currentTimeMillis();
-
-    public static TopicSubscription build(String topic, String expression, ExpressionType expressionType) throws Exception {
+    public static TopicSubscription build(String topic, String expression, ExpressionType expressionType) {
         if (expressionType == null || expressionType == ExpressionType.TAG) {
             return buildTagSubscription(topic, expression);
         }
         return null;
     }
 
-    private static TopicSubscription buildTagSubscription(String topic, String expression) throws Exception {
+    /**
+     * @link org.apache.rocketmq.common.filter.FilterAPI#buildSubscriptionData
+     */
+    private static TopicSubscription buildTagSubscription(String topic, String expression) {
         TopicSubscription subscription = new TopicSubscription();
         subscription.setTopic(topic);
 
@@ -53,7 +53,7 @@ public class TopicSubscription {
 
             String[] split = expression.split("\\|\\|");
             if (split.length == 0) {
-                throw new Exception("subString split error");
+                throw new IllegalStateException("expression split error");
             }
             for (String tag : split) {
                 String trim = tag.trim();
